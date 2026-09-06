@@ -4,11 +4,13 @@
   "type": "module",
   "scripts": {
     "build": "react-router build",
+    "cli": "vite-node --config ./vite.cli.config.ts ./scripts/run-cli-examples.ts",
     "dev": "react-router dev",
     "start": "react-router-serve ./build/server/index.js",
     "typecheck": "react-router typegen && tsc"
   },
   "dependencies": {
+    "@electric-sql/pglite": "^0.5.8",
     "@react-router/node": "^8",
     "@react-router/serve": "^8",
     "isbot": "^5.1.36",
@@ -24,6 +26,7 @@
     "@types/react-dom": "^19.2.3",
     "tailwindcss": "^4.2.2",
     "typescript": "^5.9.3",
-    "vite": "^8.0.3"
+    "vite": "^8.0.3",
+    "vite-node": "^6.0.0"
   }
 }
