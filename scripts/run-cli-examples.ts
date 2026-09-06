@@ -18,50 +18,75 @@ if (files.length === 0) {
 for (const file of files) {
   const filePath = path.join(examplesDir, file);
   const mod = await import(pathToFileURL(filePath).href);
-  const query = normalizeQuery(mod.default, file);
+  const example = normalizeExample(mod, file);
   const db = new PGlite();
 
   try {
-    const result = await db.exec(query);
-    const explainResult = await explainLastStatement(db, query);
+    if (example.migration) {
+      await db.exec(example.migration);
+    }
+
+    if (example.seed) {
+      await db.exec(example.seed);
+    }
+
+    const result = await db.query(example.query);
+    const explainResult = await db.query(`EXPLAIN ${example.query}`);
 
     printSection("filename", file);
-    printSection("query", query);
+    printSection("migration", example.migration ?? "");
+    printSection("seed", example.seed ?? "");
+    printSection("query", example.query);
     printSection("result", JSON.stringify(result, null, 2));
     printSection("query explain", JSON.stringify(explainResult, null, 2));
   } catch (error) {
     printSection("filename", file);
-    printSection("query", query);
+    printSection("migration", example.migration ?? "");
+    printSection("seed", example.seed ?? "");
+    printSection("query", example.query);
     printSection("error", error instanceof Error ? error.message : String(error));
   } finally {
     await db.close();
   }
 }
 
-function normalizeQuery(value: unknown, file: string) {
-  if (typeof value !== "string") {
+type SqlExample = {
+  migration?: string;
+  seed?: string;
+  query: string;
+};
+
+function normalizeExample(mod: Record<string, unknown>, file: string): SqlExample {
+  const migration = normalizeOptionalSql(mod.migration, "migration", file);
+  const seed = normalizeOptionalSql(mod.seed, "seed", file);
+  const query = normalizeRequiredSql(mod.default, "default", file);
+
+  return {
+    migration,
+    seed,
+    query,
+  };
+}
+
+function normalizeRequiredSql(value: unknown, exportName: string, file: string) {
+  if (typeof value !== "string" || value.trim().length === 0) {
     throw new TypeError(`${file} must default-export a SQL string.`);
   }
 
   return value.trim();
 }
 
-async function explainLastStatement(db: PGlite, query: string) {
-  const statement = getLastStatement(query);
-
-  if (!statement) {
-    return [];
+function normalizeOptionalSql(value: unknown, exportName: string, file: string) {
+  if (value == null) {
+    return undefined;
   }
 
-  return db.query(`EXPLAIN ${statement}`);
-}
+  if (typeof value !== "string") {
+    throw new TypeError(`${file} must export ${exportName} as a SQL string.`);
+  }
 
-function getLastStatement(query: string) {
-  return query
-    .split(";")
-    .map((statement) => statement.trim())
-    .filter(Boolean)
-    .at(-1);
+  const sql = value.trim();
+  return sql.length > 0 ? sql : undefined;
 }
 
 function printSection(label: string, value: string) {
