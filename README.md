@@ -1,87 +1,48 @@
-# Welcome to React Router!
+# pgquest
 
-A modern, production-ready template for building full-stack React applications using React Router.
+Web-based PostgreSQL playground built around PGlite. The current first step is a
+small CLI that runs SQL examples from `cli_examples/`.
 
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/remix-run/react-router-templates/tree/main/default)
+## Commands
 
-## Features
-
-- 🚀 Server-side rendering
-- ⚡️ Hot Module Replacement (HMR)
-- 📦 Asset bundling and optimization
-- 🔄 Data loading and mutations
-- 🔒 TypeScript by default
-- 🎉 TailwindCSS for styling
-- 📖 [React Router docs](https://reactrouter.com/)
-
-## Getting Started
-
-### Installation
-
-Install the dependencies:
-
-```bash
-npm install
+```sh
+pnpm cli
+pnpm all
 ```
 
-### Development
+`pnpm cli` runs the example SQL files and prints the migration, seed, query,
+result, and query plan.
 
-Start the development server with HMR:
+`pnpm all` runs the fast project checks:
 
-```bash
-npm run dev
+```sh
+pnpm lint && pnpm format && pnpm typecheck && pnpm test
 ```
 
-Your application will be available at `http://localhost:5173`.
+Agents should run `pnpm all` before committing. It is the local equivalent of the
+fast checks that the CLI workflow is expected to pass.
 
-## Building for Production
+## Quality Bar
 
-Create a production build:
+Keep the code as strict as practical:
 
-```bash
-npm run build
+- Prefer precise TypeScript types over broad types.
+- Avoid `unknown` unless it is strictly needed at a boundary.
+- Use branded types when plain primitives are too easy to mix up.
+- Use `neverthrow` for explicit fallible flows instead of throwing for expected
+  validation/control-flow cases.
+- Use `ts-pattern` when it makes branching over shapes clearer and exhaustive.
+- Keep `tsconfig.json` strict and prefer tightening it over weakening checks.
+
+## SQL Examples
+
+Each example in `cli_examples/` is a `.sql.ts` module:
+
+```ts
+export const migration = `...`;
+export const seed = `...`;
+export default `SELECT ...`;
 ```
 
-## Deployment
-
-### Docker Deployment
-
-To build and run using Docker:
-
-```bash
-docker build -t my-app .
-
-# Run the container
-docker run -p 3000:3000 my-app
-```
-
-The containerized application can be deployed to any platform that supports Docker, including:
-
-- AWS ECS
-- Google Cloud Run
-- Azure Container Apps
-- Digital Ocean App Platform
-- Fly.io
-- Railway
-
-### DIY Deployment
-
-If you're familiar with deploying Node applications, the built-in app server is production-ready.
-
-Make sure to deploy the output of `npm run build`
-
-```
-├── package.json
-├── package-lock.json (or pnpm-lock.yaml, or bun.lockb)
-├── build/
-│   ├── client/    # Static assets
-│   └── server/    # Server-side code
-```
-
-## Styling
-
-This template comes with [Tailwind CSS](https://tailwindcss.com/) already configured for a simple default starting experience. You can use whatever CSS framework you prefer.
-
----
-
-Built with ❤️ using React Router.
+`migration` and `seed` are optional. The default export is the query the CLI runs
+and explains.

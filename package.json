@@ -3,10 +3,16 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "all": "pnpm lint && pnpm format && pnpm typecheck && pnpm test",
     "build": "react-router build",
     "cli": "vite-node --config ./vite.cli.config.ts ./scripts/run-cli-examples.ts",
     "dev": "react-router dev",
+    "format": "prettier . --check",
+    "format:fix": "prettier . --write",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "start": "react-router-serve ./build/server/index.js",
+    "test": "vitest run --config ./vitest.config.ts",
     "typecheck": "react-router typegen && tsc"
   },
   "dependencies": {
@@ -14,19 +20,26 @@
     "@react-router/node": "^8",
     "@react-router/serve": "^8",
     "isbot": "^5.1.36",
+    "neverthrow": "^8.2.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
-    "react-router": "^8"
+    "react-router": "^8",
+    "ts-pattern": "^5.9.0"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@react-router/dev": "^8",
     "@tailwindcss/vite": "^4.2.2",
     "@types/node": "^22",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "eslint": "^10.10.0",
+    "prettier": "^3.9.6",
     "tailwindcss": "^4.2.2",
     "typescript": "^5.9.3",
+    "typescript-eslint": "^8.69.0",
     "vite": "^8.0.3",
-    "vite-node": "^6.0.0"
+    "vite-node": "^6.0.0",
+    "vitest": "^5.0.0"
   }
 }
