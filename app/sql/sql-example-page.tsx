@@ -3,10 +3,17 @@ import { match } from "ts-pattern";
 
 import { runSqlExample } from "./run-example";
 import { SiteHeader } from "./site-header";
-import type { ExecutionOutput, LessonId, QueryRow, SqlExampleDefinition } from "./types";
+import type {
+  ExecutionOutput,
+  LessonId,
+  QueryRow,
+  SqlExampleDefinition,
+  SqlExampleId,
+} from "./types";
 
 type SqlExamplePageProps = {
   activeLesson: LessonId;
+  followUps?: readonly SqlExampleDefinition[];
   lessons: readonly SqlExampleDefinition[];
 };
 
@@ -44,7 +51,11 @@ type CachedExecutionPayload = {
   output: ExecutionOutput;
 };
 
-export function SqlExamplePage({ activeLesson, lessons }: SqlExamplePageProps) {
+export function SqlExamplePage({
+  activeLesson,
+  followUps = [],
+  lessons,
+}: SqlExamplePageProps) {
   return (
     <main className="min-h-screen bg-white text-zinc-950">
       <SiteHeader activeLesson={activeLesson} />
@@ -53,6 +64,9 @@ export function SqlExamplePage({ activeLesson, lessons }: SqlExamplePageProps) {
           {lessons.map((lesson) => (
             <LessonPanel key={lesson.id} lesson={lesson} />
           ))}
+          {followUps.map((lesson) => (
+            <FollowUpPanel key={lesson.id} lesson={lesson} />
+          ))}
         </section>
       </div>
     </main>
@@ -60,6 +74,61 @@ export function SqlExamplePage({ activeLesson, lessons }: SqlExamplePageProps) {
 }
 
 function LessonPanel({ lesson }: { lesson: SqlExampleDefinition }) {
+  const execution = useExampleExecution(lesson);
+
+  return (
+    <article className="flex min-w-0 flex-col gap-6 border-t border-zinc-200 pt-8 first:border-t-0 first:pt-0">
+      <div>
+        <div>
+          <h1 className="text-3xl font-bold text-zinc-950">{lesson.title}</h1>
+          <div className="mt-3 text-base leading-7 text-zinc-800">
+            {lesson.description.map((line) => (
+              <p key={line}>{line}</p>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-7">
+        <CodeSection
+          code={lesson.migration}
+          text={lesson.codeDescriptions.migration}
+          title="Migration"
+        />
+        <CodeSection
+          code={lesson.seed}
+          text={lesson.codeDescriptions.seed}
+          title="Seed"
+        />
+        <CodeSection code={lesson.query} text={lesson.codeDescriptions.query} />
+      </div>
+
+      <ExecutionResult execution={execution} lessonId={lesson.id} />
+    </article>
+  );
+}
+
+function FollowUpPanel({ lesson }: { lesson: SqlExampleDefinition }) {
+  const execution = useExampleExecution(lesson);
+
+  return (
+    <article className="flex min-w-0 flex-col gap-6 border-t border-zinc-200 pt-8">
+      <div>
+        <h2 className="text-2xl font-bold text-zinc-950">{lesson.title}</h2>
+        <div className="mt-3 text-base leading-7 text-zinc-800">
+          {lesson.description.map((line) => (
+            <p key={line}>{line}</p>
+          ))}
+        </div>
+      </div>
+
+      <CodeSection code={lesson.query} text={lesson.codeDescriptions.query} />
+      <ExecutionResult execution={execution} lessonId={lesson.id} />
+    </article>
+  );
+}
+
+function useExampleExecution(lesson: SqlExampleDefinition): ExecutionState {
   const [execution, setExecution] = useState<ExecutionState>({ status: "loading" });
 
   useEffect(() => {
@@ -96,36 +165,7 @@ function LessonPanel({ lesson }: { lesson: SqlExampleDefinition }) {
     };
   }, [lesson]);
 
-  return (
-    <article className="flex min-w-0 flex-col gap-6 border-t border-zinc-200 pt-8 first:border-t-0 first:pt-0">
-      <div>
-        <div>
-          <h1 className="text-3xl font-bold text-zinc-950">{lesson.title}</h1>
-          <div className="mt-3 text-base leading-7 text-zinc-800">
-            {lesson.description.map((line) => (
-              <p key={line}>{line}</p>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="flex flex-col gap-7">
-        <CodeSection
-          code={lesson.migration}
-          text={lesson.codeDescriptions.migration}
-          title="Migration"
-        />
-        <CodeSection
-          code={lesson.seed}
-          text={lesson.codeDescriptions.seed}
-          title="Seed"
-        />
-        <CodeSection code={lesson.query} text={lesson.codeDescriptions.query} />
-      </div>
-
-      <ExecutionResult execution={execution} />
-    </article>
-  );
+  return execution;
 }
 
 function CodeSection({
@@ -163,7 +203,13 @@ function CodeWindow({ code }: { code: string }) {
   );
 }
 
-function ExecutionResult({ execution }: { execution: ExecutionState }) {
+function ExecutionResult({
+  execution,
+  lessonId,
+}: {
+  execution: ExecutionState;
+  lessonId: SqlExampleId;
+}) {
   return match(execution)
     .with({ status: "loading" }, () => (
       <OutputBlock tone="neutral" title="Running">
@@ -183,9 +229,31 @@ function ExecutionResult({ execution }: { execution: ExecutionState }) {
           <ResultTable rows={output.rows} />
         </OutputBlock>
         <OutputBlock tone="plan" title="Explanation">
+          {lessonId === "example1-basic-select" ? (
+            <p className="mb-3 text-base leading-7 text-zinc-700">
+              Add <code className="font-mono text-sm">EXPLAIN</code> before a SQL query to
+              see how PostgreSQL plans to execute it. Read the{" "}
+              <a
+                className="text-sky-700 underline decoration-sky-300 underline-offset-4"
+                href="https://www.postgresql.org/docs/current/sql-explain.html"
+                rel="noreferrer"
+                target="_blank"
+              >
+                PostgreSQL EXPLAIN documentation
+              </a>
+              .
+            </p>
+          ) : null}
           <pre className="overflow-auto whitespace-pre-wrap rounded-md bg-[#22251f] px-5 py-4 font-mono text-sm leading-6 text-zinc-100">
             {output.plan}
           </pre>
+          <p className="mt-3 text-base leading-7 text-zinc-700">
+            {lessonId === "example1-basic-select"
+              ? 'Seq Scan on "User" means PostgreSQL reads every row from the beginning of the table to the end. The cost, 0.00..18.50, is an estimate of startup and total work, not milliseconds. rows=850 is the estimated number of rows, and width=68 is the estimated average row size in bytes. The row estimate is not the two rows we inserted because this simple example has not collected table statistics.'
+              : lessonId === "example1-specific-select"
+                ? "The WHERE clause filters for Ada's email, so PostgreSQL adds a Filter step and keeps only rows with that email. This plan still uses a Seq Scan, so it reads the table from beginning to end and checks each email. Unlike the first SELECT, which returned every row and had no filter, this query returns only the matching user. The planner estimates rows=4 instead of rows=850 because the filter narrows the result, while the estimated total cost changes from 18.50 to 20.62."
+                : "This plan describes the steps PostgreSQL expects to use, along with estimates for the work, result count, and row size."}
+          </p>
         </OutputBlock>
       </div>
     ))

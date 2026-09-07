@@ -1,5 +1,9 @@
 export type SqlExampleId =
-  "example1-basic-select" | "example2-sequential-scan" | "example2-index-scan";
+  | "example1-basic-select"
+  | "example1-specific-select"
+  | "example1-insert"
+  | "example2-sequential-scan"
+  | "example2-index-scan";
 
 export type SqlExampleDefinition = {
   id: SqlExampleId;

@@ -35,6 +35,25 @@ export default function Home() {
     <main className="min-h-screen bg-white text-zinc-950">
       <SiteHeader />
       <div className="mx-auto w-full max-w-6xl px-5 py-12">
+        <section className="mb-20 max-w-3xl border-b border-zinc-200 pb-14">
+          <h1 className="text-5xl font-bold tracking-tight text-zinc-950">
+            What this is
+          </h1>
+          <p className="mt-6 text-2xl font-semibold leading-10 text-zinc-700">
+            In my career, I have met a surprisingly large number of very talented
+            engineers who are not comfortable with PostgreSQL and SQL fundamentals.
+          </p>
+          <p className="mt-5 text-xl leading-9 text-zinc-700">
+            PgQuest is a concise, interactive introduction to the basics of PostgreSQL.
+            The code and the examples do most of the explaining, so you can learn by
+            reading queries and seeing what PostgreSQL does with them.
+          </p>
+          <p className="mt-10 text-xl leading-9 text-zinc-700">
+            It is written for experienced developers who want a practical grounding in SQL and
+            PostgreSQL, without starting with a long textbook or a large application.
+          </p>
+        </section>
+
         <header className="flex flex-col gap-3 border-b border-zinc-200 pb-12 sm:flex-row sm:items-start sm:justify-between">
           <h1 className="text-5xl font-bold tracking-tight text-zinc-950">Curriculum</h1>
           <p className="text-xl font-semibold text-zinc-500">

@@ -2,6 +2,14 @@ import exampleOneQuery, {
   migration as exampleOneMigration,
   seed as exampleOneSeed,
 } from "../../cli_examples/example1.sql";
+import exampleOneSpecificQuery, {
+  migration as exampleOneSpecificMigration,
+  seed as exampleOneSpecificSeed,
+} from "../../cli_examples/example1b.sql";
+import exampleOneInsertQuery, {
+  migration as exampleOneInsertMigration,
+  seed as exampleOneInsertSeed,
+} from "../../cli_examples/example1c.sql";
 import exampleTwoQuery, {
   migration as exampleTwoMigration,
   seed as exampleTwoSeed,
@@ -17,18 +25,54 @@ export const exampleOne: SqlExampleDefinition = {
   id: "example1-basic-select",
   title: "My first query",
   description: [
-    "Create a small user table, seed two rows, and read them back.",
-    "The plan is a sequential scan because the query reads the full table.",
+    "In SQL, you cannot start by writing users: the database needs a table schema first.",
+    "We create the schema with a migration, add example rows with a seed, then run a query.",
   ],
   codeDescriptions: {
     migration:
-      "Before you can store rows, you define the table schema in a migration. A migration is SQL run before the app uses the database; CREATE TABLE adds the table.",
-    seed: "Seed data inserts a couple of rows so the query has something to read.",
-    query: "This SELECT reads every row from the User table.",
+      "A migration defines the table schema before the application uses the database. It is SQL usually run during deployment or setup; CREATE TABLE creates the table.",
+    seed: "A seed inserts initial or example data after the schema exists. It is also SQL, but it runs after migrations so there is a table to insert into.",
+    query:
+      "Once the table and rows exist, this SELECT reads the users back. EXPLAIN shows the plan: Seq Scan reads the whole table; cost, rows, and width are estimates for the work, result count, and row size.",
   },
   migration: exampleOneMigration,
   seed: exampleOneSeed,
   query: exampleOneQuery,
+};
+
+export const exampleOneSpecific: SqlExampleDefinition = {
+  id: "example1-specific-select",
+  title: "Let's select a specific user by email",
+  description: [
+    "Instead of reading every user, we can filter the table by a known email address.",
+    "The result contains only Ada Lovelace's row.",
+  ],
+  codeDescriptions: {
+    migration: "",
+    seed: "",
+    query:
+      "This SELECT looks for one user whose email matches the value in the WHERE clause.",
+  },
+  migration: exampleOneSpecificMigration,
+  seed: exampleOneSpecificSeed,
+  query: exampleOneSpecificQuery,
+};
+
+export const exampleOneInsert: SqlExampleDefinition = {
+  id: "example1-insert",
+  title: "Here is how you can add a new user:",
+  description: [
+    "INSERT adds a new row to a table that already exists.",
+    "RETURNING sends the inserted row back as the query result.",
+  ],
+  codeDescriptions: {
+    migration: "",
+    seed: "",
+    query: "This INSERT creates a new user and returns the row PostgreSQL added.",
+  },
+  migration: exampleOneInsertMigration,
+  seed: exampleOneInsertSeed,
+  query: exampleOneInsertQuery,
 };
 
 export const exampleTwoSequential: SqlExampleDefinition = {
