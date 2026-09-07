@@ -1,5 +1,9 @@
 import type { Route } from "./+types/lesson-1";
-import { exampleOne, exampleOneSpecific } from "../sql/example-definitions";
+import {
+  exampleOne,
+  exampleOneInsert,
+  exampleOneSpecific,
+} from "../sql/example-definitions";
 import { SqlExamplePage } from "../sql/sql-example-page";
 
 export function meta(_args: Route.MetaArgs) {
@@ -14,7 +18,7 @@ export default function LessonOne() {
     <SqlExamplePage
       activeLesson="lesson1"
       lessons={[exampleOne]}
-      followUps={[exampleOneSpecific]}
+      followUps={[exampleOneSpecific, exampleOneInsert]}
     />
   );
 }
