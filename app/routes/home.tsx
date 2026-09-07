@@ -49,8 +49,8 @@ export default function Home() {
             reading queries and seeing what PostgreSQL does with them.
           </p>
           <p className="mt-10 text-xl leading-9 text-zinc-700">
-            It is written for experienced developers who want a practical grounding in SQL and
-            PostgreSQL, without starting with a long textbook or a large application.
+            It is written for experienced developers who want a practical grounding in SQL
+            and PostgreSQL, without starting with a long textbook or a large application.
           </p>
         </section>
 
