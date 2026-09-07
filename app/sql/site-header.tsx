@@ -10,8 +10,9 @@ export function SiteHeader({ activeLesson }: SiteHeaderProps) {
   return (
     <header className="bg-[#222222] text-white">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-2 px-5 py-4">
-        <NavLink className="text-3xl font-bold text-white no-underline" to="/">
-          PgQuest
+        <NavLink className="flex w-fit items-center gap-3 text-white no-underline" to="/">
+          <img alt="" className="h-10 w-10" src="/favicon.svg" />
+          <span className="text-3xl font-bold">PgQuest</span>
         </NavLink>
 
         <nav className="flex items-center gap-2 text-sm text-zinc-300">

@@ -22,6 +22,11 @@ pnpm lint && pnpm format && pnpm typecheck && pnpm test
 Agents should run `pnpm all` before committing. It is the local equivalent of the
 fast checks that the CLI workflow is expected to pass.
 
+## Deployment
+
+Pushes to `main` run the GitHub Actions checks in parallel, then deploy to Fly.io.
+The repository needs a `FLY_API_TOKEN` Actions secret with a Fly deploy token.
+
 ## Quality Bar
 
 Keep the code as strict as practical:
