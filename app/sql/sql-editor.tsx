@@ -402,6 +402,46 @@ function PlanExplanation({ lessonId }: { lessonId?: SqlExampleId | undefined }) 
     );
   }
 
+  if (lessonId === "example2-sequential-scan") {
+    return (
+      <div className="mt-3 text-base leading-7 text-zinc-700">
+        <p>
+          Without an index on <code className="font-mono text-sm">email</code>, PostgreSQL
+          has no shortcut for finding one address. It chooses a{" "}
+          <code className="font-mono text-sm">Seq Scan</code>, reads the{" "}
+          <code className="font-mono text-sm">users</code> table row by row, and applies
+          the <code className="font-mono text-sm">Filter</code> to keep only the matching
+          email.
+        </p>
+      </div>
+    );
+  }
+
+  if (lessonId === "example2-index-scan") {
+    return (
+      <div className="mt-3 text-base leading-7 text-zinc-700">
+        <p>Compared to the first plan, PostgreSQL now has a better access path:</p>
+        <ul className="mt-2 list-disc space-y-2 pl-5">
+          <li>
+            <code className="font-mono text-sm">Index Scan using users_email_idx</code>{" "}
+            means PostgreSQL uses the email index instead of scanning every row.
+          </li>
+          <li>
+            <code className="font-mono text-sm">Index Cond</code> shows the condition used
+            to jump through the index:{" "}
+            <code className="font-mono text-sm">email = 'user9000@example.com'</code>.
+          </li>
+          <li>
+            The total estimated cost drops from{" "}
+            <code className="font-mono text-sm">218.00</code> to{" "}
+            <code className="font-mono text-sm">8.30</code> because the planner expects
+            the index lookup to touch far less data than a full table scan.
+          </li>
+        </ul>
+      </div>
+    );
+  }
+
   return (
     <p className="mt-3 text-base leading-7 text-zinc-700">
       {getPlanExplanation(lessonId)}

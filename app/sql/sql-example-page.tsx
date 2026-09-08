@@ -85,6 +85,20 @@ function FollowUpPanel({ lesson }: { lesson: SqlExampleDefinition }) {
         </div>
       </div>
 
+      {lesson.codeDescriptions.migration ? (
+        <CodeSection
+          code={lesson.migration}
+          text={lesson.codeDescriptions.migration}
+          title="Migration"
+        />
+      ) : null}
+      {lesson.codeDescriptions.seed ? (
+        <CodeSection
+          code={lesson.seed}
+          text={lesson.codeDescriptions.seed}
+          title="Seed"
+        />
+      ) : null}
       <CodeSection
         code={lesson.query}
         text={lesson.codeDescriptions.query}
