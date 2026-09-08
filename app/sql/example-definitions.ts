@@ -33,7 +33,7 @@ export const exampleOne: SqlExampleDefinition = {
       "A migration defines the table schema before the application uses the database. It is SQL usually run during deployment or setup; CREATE TABLE creates the table.",
     seed: "A seed inserts initial or example data after the schema exists. It is also SQL, but it runs after migrations so there is a table to insert into.",
     query:
-      "Once the table and rows exist, this SELECT reads the users back. EXPLAIN shows the plan: Seq Scan reads the whole table; cost, rows, and width are estimates for the work, result count, and row size.",
+      "Once the table and rows exist, this SELECT reads every user back without a filter.",
   },
   migration: exampleOneMigration,
   seed: exampleOneSeed,

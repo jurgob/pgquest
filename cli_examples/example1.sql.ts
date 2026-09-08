@@ -11,6 +11,9 @@ INSERT INTO "User" (name, email)
 VALUES
   ('Ada Lovelace', 'ada@example.com'),
   ('Grace Hopper', 'grace@example.com');
+
+-- Collect table statistics so EXPLAIN can estimate this tiny table accurately.
+ANALYZE "User";
 `;
 
 export default `

@@ -10,17 +10,22 @@ import type {
 } from "./types";
 
 type SqlEditorProps = {
+  className?: string | undefined;
+  description?: string | undefined;
   example?: SqlExampleDefinition | undefined;
+  explanationDetail?: ExplanationDetail | undefined;
   initialQuery?: string | undefined;
+  title?: string | undefined;
 };
 
-type ExecutionState =
+export type SqlExecutionState =
   | { status: "idle" }
   | { status: "done"; output: ExecutionOutput }
   | { status: "error"; message: string }
   | { status: "loading" };
 
 type SqlTokenKind =
+  | "comment"
   | "identifier"
   | "keyword"
   | "number"
@@ -33,6 +38,9 @@ type SqlToken = {
   kind: SqlTokenKind;
   value: string;
 };
+
+type SqlOutputView = "both" | "plan" | "result";
+type ExplanationDetail = "lesson" | "plan-only";
 
 const baseSuggestions = [
   "SELECT",
@@ -51,9 +59,17 @@ const baseSuggestions = [
   "RETURNING",
 ];
 
-export function SqlEditor({ example, initialQuery }: SqlEditorProps) {
+export function SqlEditor({
+  className = "",
+  description,
+  example,
+  explanationDetail = "plan-only",
+  initialQuery,
+  title = "Interactive Playground",
+}: SqlEditorProps) {
   const [query, setQuery] = useState(initialQuery ?? example?.query ?? "");
-  const [execution, setExecution] = useState<ExecutionState>({ status: "idle" });
+  const [execution, setExecution] = useState<SqlExecutionState>({ status: "idle" });
+  const [outputView, setOutputView] = useState<SqlOutputView>("result");
   const [selectionStart, setSelectionStart] = useState(query.length);
   const [isFocused, setIsFocused] = useState(false);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
@@ -77,16 +93,18 @@ export function SqlEditor({ example, initialQuery }: SqlEditorProps) {
     });
   }
 
-  async function runQuery() {
+  async function runQuery(view: Exclude<SqlOutputView, "both">) {
     if (!example || !query.trim()) {
       return;
     }
 
+    setOutputView(view);
     setExecution({ status: "loading" });
+
     const result = await runSqlQuery(example, query);
 
     setExecution(
-      result.match<ExecutionState>(
+      result.match<SqlExecutionState>(
         (output) => ({ status: "done", output }),
         (message) => ({ status: "error", message }),
       ),
@@ -94,90 +112,155 @@ export function SqlEditor({ example, initialQuery }: SqlEditorProps) {
   }
 
   return (
-    <section className="min-w-0 border-t border-zinc-200 pt-6">
-      <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <section className={["min-w-0 border-t border-zinc-200 pt-6", className].join(" ")}>
+      <div className="mb-3">
         <div>
-          <h2 className="text-xl font-bold text-zinc-950">Editor</h2>
+          <h2 className="text-xl font-bold text-zinc-950">{title}</h2>
           <p className="mt-1 text-base leading-7 text-zinc-700">
-            {example
-              ? `Loaded with ${example.title}.`
-              : "Choose a migration and seed before running a query."}
+            {description ??
+              (example
+                ? `Experiment with the ${example.title} database yourself. Edit the query and run it in your browser.`
+                : "Choose a database before running a query.")}
           </p>
         </div>
+      </div>
+
+      <div className="relative">
+        <div className="relative min-h-[220px] overflow-hidden rounded-md bg-[#22251f]">
+          <pre
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 m-0 overflow-auto whitespace-pre-wrap break-words px-5 py-4 font-mono text-sm leading-6 text-zinc-100"
+          >
+            <code>
+              {tokenizeSql(query || " ").map((token, index) => (
+                <span
+                  className={getSqlTokenClassName(token.kind)}
+                  key={`${index}-${token.value}`}
+                >
+                  {token.value}
+                </span>
+              ))}
+            </code>
+          </pre>
+          <textarea
+            aria-label="SQL query editor"
+            className="relative block min-h-[220px] w-full resize-y overflow-auto bg-transparent px-5 py-4 font-mono text-sm leading-6 text-transparent caret-white outline-none selection:bg-sky-500/40"
+            disabled={!example}
+            onBlur={() => setIsFocused(false)}
+            onChange={(event) => {
+              setQuery(event.target.value);
+              setSelectionStart(event.target.selectionStart);
+              setExecution({ status: "idle" });
+            }}
+            onClick={syncSelection}
+            onFocus={() => setIsFocused(true)}
+            onKeyDown={(event) => {
+              const firstSuggestion = suggestions[0];
+
+              if (event.key === "Tab" && firstSuggestion) {
+                event.preventDefault();
+                insertSuggestion(firstSuggestion);
+              }
+            }}
+            onKeyUp={syncSelection}
+            placeholder="SELECT * FROM users;"
+            ref={textAreaRef}
+            spellCheck={false}
+            value={query}
+          />
+        </div>
+
+        {isFocused && suggestions.length > 0 ? (
+          <div className="absolute left-0 right-0 top-full z-10 mt-2 flex flex-wrap gap-2 rounded-sm border border-zinc-200 bg-white p-2 shadow-lg">
+            {suggestions.map((suggestion) => (
+              <button
+                className="rounded-sm border border-zinc-300 px-2 py-1 font-mono text-xs text-zinc-800 transition hover:border-sky-700 hover:text-sky-700"
+                key={suggestion}
+                onMouseDown={(event) => {
+                  event.preventDefault();
+                  insertSuggestion(suggestion);
+                }}
+                type="button"
+              >
+                {suggestion}
+              </button>
+            ))}
+          </div>
+        ) : null}
+      </div>
+
+      <div className="mt-4 flex justify-end gap-2">
         <button
-          className="h-10 rounded-sm bg-zinc-950 px-4 font-mono text-sm font-semibold text-white transition enabled:hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-zinc-300 disabled:text-zinc-600"
+          className="inline-flex h-10 items-center justify-center rounded-sm bg-zinc-950 px-5 font-mono text-sm font-semibold text-white transition enabled:hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-zinc-300 disabled:text-zinc-600"
           disabled={!canRun || execution.status === "loading"}
-          onClick={runQuery}
+          onClick={() => runQuery("result")}
+          onMouseDown={(event) => event.preventDefault()}
           type="button"
         >
-          {execution.status === "loading" ? "Running..." : "Run query"}
+          {execution.status === "loading" && outputView === "result" ? (
+            "Running..."
+          ) : (
+            <>
+              <PlayIcon />
+              Run
+            </>
+          )}
+        </button>
+        <button
+          className="inline-flex h-10 items-center justify-center rounded-sm border border-zinc-300 px-5 font-mono text-sm font-semibold text-zinc-950 transition enabled:hover:border-zinc-950 enabled:hover:bg-zinc-950 enabled:hover:text-white disabled:cursor-not-allowed disabled:border-zinc-200 disabled:bg-zinc-100 disabled:text-zinc-500"
+          disabled={!canRun || execution.status === "loading"}
+          onClick={() => runQuery("plan")}
+          onMouseDown={(event) => event.preventDefault()}
+          type="button"
+        >
+          {execution.status === "loading" && outputView === "plan" ? (
+            "Explaining..."
+          ) : (
+            <>
+              <ExplainIcon />
+              Explain
+            </>
+          )}
         </button>
       </div>
 
-      <div className="relative min-h-[220px] overflow-hidden rounded-md bg-[#22251f]">
-        <pre
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 m-0 overflow-auto whitespace-pre-wrap break-words px-5 py-4 font-mono text-sm leading-6 text-zinc-100"
-        >
-          <code>
-            {tokenizeSql(query || " ").map((token, index) => (
-              <span
-                className={getSqlTokenClassName(token.kind)}
-                key={`${index}-${token.value}`}
-              >
-                {token.value}
-              </span>
-            ))}
-          </code>
-        </pre>
-        <textarea
-          aria-label="SQL query editor"
-          className="relative block min-h-[220px] w-full resize-y overflow-auto bg-transparent px-5 py-4 font-mono text-sm leading-6 text-transparent caret-white outline-none selection:bg-sky-500/40"
-          disabled={!example}
-          onBlur={() => setIsFocused(false)}
-          onChange={(event) => {
-            setQuery(event.target.value);
-            setSelectionStart(event.target.selectionStart);
-            setExecution({ status: "idle" });
-          }}
-          onClick={syncSelection}
-          onFocus={() => setIsFocused(true)}
-          onKeyDown={(event) => {
-            const firstSuggestion = suggestions[0];
-
-            if (event.key === "Tab" && firstSuggestion) {
-              event.preventDefault();
-              insertSuggestion(firstSuggestion);
-            }
-          }}
-          onKeyUp={syncSelection}
-          placeholder="SELECT * FROM users;"
-          ref={textAreaRef}
-          spellCheck={false}
-          value={query}
-        />
-      </div>
-
-      {isFocused && suggestions.length > 0 ? (
-        <div className="mt-2 flex flex-wrap gap-2">
-          {suggestions.map((suggestion) => (
-            <button
-              className="rounded-sm border border-zinc-300 px-2 py-1 font-mono text-xs text-zinc-800 transition hover:border-sky-700 hover:text-sky-700"
-              key={suggestion}
-              onMouseDown={(event) => {
-                event.preventDefault();
-                insertSuggestion(suggestion);
-              }}
-              type="button"
-            >
-              {suggestion}
-            </button>
-          ))}
-        </div>
-      ) : null}
-
-      <ExecutionResult execution={execution} lessonId={example?.id} />
+      <SqlExecutionResult
+        execution={execution}
+        explanationDetail={explanationDetail}
+        lessonId={example?.id}
+        view={outputView}
+      />
     </section>
+  );
+}
+
+function PlayIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="mr-2 inline h-3.5 w-3.5"
+      fill="currentColor"
+      viewBox="0 0 16 16"
+    >
+      <path d="M4 2.75v10.5L12.5 8 4 2.75Z" />
+    </svg>
+  );
+}
+
+function ExplainIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="mr-2 inline h-3.5 w-3.5"
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.8"
+      viewBox="0 0 16 16"
+    >
+      <path d="M3 4h10M3 8h10M3 12h6" />
+    </svg>
   );
 }
 
@@ -198,12 +281,18 @@ export function CodeWindow({ code }: { code: string }) {
   );
 }
 
-function ExecutionResult({
+export function SqlExecutionResult({
   execution,
+  explanationDetail = "lesson",
   lessonId,
+  query,
+  view = "both",
 }: {
-  execution: ExecutionState;
+  execution: SqlExecutionState;
+  explanationDetail?: ExplanationDetail | undefined;
   lessonId?: SqlExampleId | undefined;
+  query?: string | undefined;
+  view?: SqlOutputView | undefined;
 }) {
   return match(execution)
     .with({ status: "idle" }, () => null)
@@ -221,35 +310,94 @@ function ExecutionResult({
     ))
     .with({ status: "done" }, ({ output }) => (
       <div className="mt-6 flex flex-col gap-6">
-        <OutputBlock tone="neutral" title="Result">
-          <ResultTable rows={output.rows} />
-        </OutputBlock>
-        <OutputBlock tone="plan" title="Explanation">
-          {lessonId === "example1-basic-select" ? (
-            <p className="mb-3 text-base leading-7 text-zinc-700">
-              Add <code className="font-mono text-sm">EXPLAIN</code> before a SQL query to
-              see how PostgreSQL plans to execute it. Read the{" "}
-              <a
-                className="text-sky-700 underline decoration-sky-300 underline-offset-4"
-                href="https://www.postgresql.org/docs/current/sql-explain.html"
-                rel="noreferrer"
-                target="_blank"
-              >
-                PostgreSQL EXPLAIN documentation
-              </a>
-              .
-            </p>
-          ) : null}
-          <pre className="overflow-auto whitespace-pre-wrap rounded-md bg-[#22251f] px-5 py-4 font-mono text-sm leading-6 text-zinc-100">
-            {output.plan}
-          </pre>
-          <p className="mt-3 text-base leading-7 text-zinc-700">
-            {getPlanExplanation(lessonId)}
-          </p>
-        </OutputBlock>
+        {view === "both" || view === "result" ? (
+          <OutputBlock tone="neutral" title="Result">
+            <ResultTable rows={output.rows} />
+          </OutputBlock>
+        ) : null}
+        {view === "both" || view === "plan" ? (
+          <OutputBlock tone="plan" title="Explanation">
+            {lessonId === "example1-basic-select" && query ? (
+              <p className="mb-3 text-base leading-7 text-zinc-700">
+                Add <code className="font-mono text-sm">EXPLAIN</code> before a query to
+                ask PostgreSQL how it plans to run it. Plain{" "}
+                <code className="font-mono text-sm">EXPLAIN</code> does not execute the
+                query; it only builds the plan.{" "}
+                <code className="font-mono text-sm">EXPLAIN ANALYZE</code> is the version
+                that actually runs the query and reports real timings.
+              </p>
+            ) : null}
+            {query ? <CodeWindow code={`EXPLAIN ${query.trim()}`} /> : null}
+            <pre className="mt-3 overflow-auto whitespace-pre-wrap rounded-md bg-[#22251f] px-5 py-4 font-mono text-sm leading-6 text-zinc-100">
+              {output.plan}
+            </pre>
+            {explanationDetail === "lesson" ? (
+              <PlanExplanation lessonId={lessonId} />
+            ) : null}
+          </OutputBlock>
+        ) : null}
       </div>
     ))
     .exhaustive();
+}
+
+function PlanExplanation({ lessonId }: { lessonId?: SqlExampleId | undefined }) {
+  if (lessonId === "example1-basic-select") {
+    return (
+      <div className="mt-3 text-base leading-7 text-zinc-700">
+        <p>Read the plan from left to right:</p>
+        <ul className="mt-2 list-disc space-y-2 pl-5">
+          <li>
+            <code className="font-mono text-sm">Seq Scan</code> means sequential scan:
+            PostgreSQL plans to read the table from beginning to end.
+          </li>
+          <li>
+            <code className="font-mono text-sm">on "User"</code> names the table being
+            scanned.
+          </li>
+          <li>
+            <code className="font-mono text-sm">cost=0.00..1.02</code> is the estimated
+            startup cost and total cost. A planner cost is PostgreSQL's internal estimate
+            of relative work, based on things like reading pages, checking rows, and CPU
+            work. It is useful for comparing plans, but it is not a time measurement.
+          </li>
+          <li>
+            <code className="font-mono text-sm">rows=2</code> is PostgreSQL's estimated
+            number of rows this step will return.
+          </li>
+          <li>
+            <code className="font-mono text-sm">width=34</code> is the estimated average
+            row size in bytes.
+          </li>
+        </ul>
+      </div>
+    );
+  }
+
+  if (lessonId === "example1-specific-select") {
+    return (
+      <div className="mt-3 text-base leading-7 text-zinc-700">
+        <p>Compared to the first plan, two things changed:</p>
+        <ul className="mt-2 list-disc space-y-2 pl-5">
+          <li>
+            PostgreSQL still uses a <code className="font-mono text-sm">Seq Scan</code>,
+            so it still reads the whole table from beginning to end.
+          </li>
+          <li>
+            The plan now has a <code className="font-mono text-sm">Filter</code> step for
+            the <code className="font-mono text-sm">WHERE email = ...</code> condition, so
+            rows that do not match Ada's email are discarded after they are read.
+          </li>
+        </ul>
+      </div>
+    );
+  }
+
+  return (
+    <p className="mt-3 text-base leading-7 text-zinc-700">
+      {getPlanExplanation(lessonId)}
+    </p>
+  );
 }
 
 function OutputBlock({
@@ -404,6 +552,12 @@ function readSqlToken(sql: string): SqlToken {
     return { kind: "whitespace", value: whitespace[0] };
   }
 
+  const lineComment = sql.match(/^--[^\n]*/);
+
+  if (lineComment?.[0]) {
+    return { kind: "comment", value: lineComment[0] };
+  }
+
   const stringLiteral = sql.match(/^'(?:''|[^'])*'/);
 
   if (stringLiteral?.[0]) {
@@ -446,6 +600,7 @@ function isSqlKeyword(value: string) {
 
 function getSqlTokenClassName(kind: SqlTokenKind) {
   return match(kind)
+    .with("comment", () => "text-zinc-400")
     .with("keyword", () => "font-semibold text-cyan-300")
     .with("string", () => "text-lime-300")
     .with("number", () => "text-yellow-200")
@@ -458,7 +613,7 @@ function getSqlTokenClassName(kind: SqlTokenKind) {
 
 function getPlanExplanation(lessonId: SqlExampleId | undefined) {
   return lessonId === "example1-basic-select"
-    ? 'Seq Scan on "User" means PostgreSQL reads every row from the beginning of the table to the end. The cost, 0.00..18.50, is an estimate of startup and total work, not milliseconds. rows=850 is the estimated number of rows, and width=68 is the estimated average row size in bytes. The row estimate is not the two rows we inserted because this simple example has not collected table statistics.'
+    ? 'Seq Scan on "User" means PostgreSQL reads every row from the beginning of the table to the end. The cost, 0.00..1.02, is an estimate of startup and total work, not milliseconds. rows=2 is the estimated number of rows, and width=34 is the estimated average row size in bytes.'
     : lessonId === "example1-specific-select"
       ? "The WHERE clause filters for Ada's email, so PostgreSQL adds a Filter step and keeps only rows with that email. This plan still uses a Seq Scan, so it reads the table from beginning to end and checks each email."
       : "This plan describes the steps PostgreSQL expects to use, along with estimates for the work, result count, and row size.";
