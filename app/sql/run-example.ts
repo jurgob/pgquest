@@ -8,13 +8,18 @@ import type {
 } from "./types";
 
 export function runSqlExample(example: SqlExampleDefinition) {
-  return ResultAsync.fromPromise(executeSqlExample(example), (error) =>
+  return runSqlQuery(example, example.query);
+}
+
+export function runSqlQuery(example: SqlExampleDefinition, query: string) {
+  return ResultAsync.fromPromise(executeSqlQuery(example, query), (error) =>
     error instanceof Error ? error.message : String(error),
   );
 }
 
-async function executeSqlExample(
+async function executeSqlQuery(
   example: SqlExampleDefinition,
+  query: string,
 ): Promise<ExecutionOutput> {
   const { PGlite } = await import("@electric-sql/pglite");
   const db = new PGlite();
@@ -23,8 +28,8 @@ async function executeSqlExample(
     await db.exec(example.migration);
     await db.exec(example.seed);
 
-    const result = await db.query<QueryRow>(example.query);
-    const explainResult = await db.query<ExplainRow>(`EXPLAIN ${example.query}`);
+    const result = await db.query<QueryRow>(query);
+    const explainResult = await db.query<ExplainRow>(`EXPLAIN ${query}`);
 
     return {
       rows: result.rows,

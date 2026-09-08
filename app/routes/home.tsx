@@ -13,7 +13,7 @@ const tracks = [
   {
     id: "Track 01",
     title: "My first query",
-    href: "/lesson-1",
+    href: "/lessons/lesson-1",
     summary:
       "Create a small table, seed two rows, SELECT them back, and inspect the plan Postgres uses.",
     meta: "1 lesson · SELECT · EXPLAIN",
@@ -22,7 +22,7 @@ const tracks = [
   {
     id: "Track 02",
     title: "Using an index",
-    href: "/lesson-2",
+    href: "/lessons/lesson-2",
     summary:
       "Indexes and EXPLAIN plans, comparing a sequential scan with an index scan on the same query.",
     meta: "2 lessons · INDEX · EXPLAIN",
@@ -52,6 +52,20 @@ export default function Home() {
             It is written for experienced developers who want a practical grounding in SQL
             and PostgreSQL, without starting with a long textbook or a large application.
           </p>
+          <Link
+            className="mt-10 block border-y border-zinc-200 py-6 text-zinc-950 no-underline transition hover:bg-zinc-50"
+            to="/playground"
+          >
+            <p className="font-mono text-sm font-semibold text-sky-700">Playground</p>
+            <h2 className="mt-3 text-2xl font-bold leading-tight">
+              Load any lesson database
+            </h2>
+            <p className="mt-3 text-xl leading-9 text-zinc-700">
+              Use the same browser SQL editor without following a lesson. Load any
+              database used in the lessons, edit the query, and run it directly in PGlite.
+            </p>
+            <p className="mt-5 font-mono text-sm font-semibold text-sky-700">Open</p>
+          </Link>
         </section>
 
         <header className="flex flex-col gap-3 border-b border-zinc-200 pb-12 sm:flex-row sm:items-start sm:justify-between">

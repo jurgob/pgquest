@@ -1,5 +1,5 @@
 import type { Route } from "./+types/example-2";
-import { exampleTwoIndexed, exampleTwoSequential } from "../sql/example-definitions";
+import { exampleTwoIndexed } from "../sql/example-definitions";
 import { SqlExamplePage } from "../sql/sql-example-page";
 
 export function meta(_args: Route.MetaArgs) {
@@ -10,10 +10,5 @@ export function meta(_args: Route.MetaArgs) {
 }
 
 export default function ExampleTwo() {
-  return (
-    <SqlExamplePage
-      activeLesson="lesson2"
-      lessons={[exampleTwoSequential, exampleTwoIndexed]}
-    />
-  );
+  return <SqlExamplePage activeLesson="lesson2" lesson={exampleTwoIndexed} />;
 }

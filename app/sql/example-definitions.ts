@@ -108,3 +108,11 @@ export const exampleTwoIndexed: SqlExampleDefinition = {
   seed: exampleTwoIndexedSeed,
   query: exampleTwoIndexedQuery,
 };
+
+export const sqlExamples = [
+  exampleOne,
+  exampleOneSpecific,
+  exampleOneInsert,
+  exampleTwoSequential,
+  exampleTwoIndexed,
+] as const;
