@@ -356,10 +356,19 @@ function PlanExplanation({ lessonId }: { lessonId?: SqlExampleId | undefined }) 
             scanned.
           </li>
           <li>
-            <code className="font-mono text-sm">cost=0.00..1.02</code> is the estimated
-            startup cost and total cost. A planner cost is PostgreSQL's internal estimate
-            of relative work, based on things like reading pages, checking rows, and CPU
-            work. It is useful for comparing plans, but it is not a time measurement.
+            <code className="font-mono text-sm">0.00</code> is the startup cost,{" "}
+            <code className="font-mono text-sm">1.02</code> is the total cost. These
+            numbers are{" "}
+            <a
+              className="text-sky-700 underline decoration-sky-300 underline-offset-4"
+              href="https://www.postgresql.org/docs/current/using-explain.html"
+              rel="noreferrer"
+              target="_blank"
+            >
+              internal planner units
+            </a>
+            , not milliseconds; they are based on PostgreSQL's estimate of relative work,
+            such as reading table pages, checking rows, and CPU work.
           </li>
           <li>
             <code className="font-mono text-sm">rows=2</code> is PostgreSQL's estimated
