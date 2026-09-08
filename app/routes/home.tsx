@@ -9,23 +9,23 @@ export function meta(_args: Route.MetaArgs) {
   ];
 }
 
-const tracks = [
+const lessons = [
   {
-    id: "Track 01",
+    id: "Lesson 01",
     title: "My first query",
     href: "/lessons/lesson-1",
     summary:
       "Create a small table, seed two rows, SELECT them back, and inspect the plan Postgres uses.",
-    meta: "1 lesson · SELECT · EXPLAIN",
+    meta: "SELECT · EXPLAIN",
     time: "10 min",
   },
   {
-    id: "Track 02",
+    id: "Lesson 02",
     title: "Using an index",
     href: "/lessons/lesson-2",
     summary:
       "Indexes and EXPLAIN plans, comparing a sequential scan with an index scan on the same query.",
-    meta: "2 lessons · INDEX · EXPLAIN",
+    meta: "INDEX · EXPLAIN",
     time: "15 min",
   },
 ] as const;
@@ -71,31 +71,33 @@ export default function Home() {
         <header className="flex flex-col gap-3 border-b border-zinc-200 pb-12 sm:flex-row sm:items-start sm:justify-between">
           <h1 className="text-5xl font-bold tracking-tight text-zinc-950">Curriculum</h1>
           <p className="text-xl font-semibold text-zinc-500">
-            Two tracks · 3 lessons · roughly 25 minutes
+            2 lessons · roughly 25 minutes
           </p>
         </header>
 
         <section>
-          {tracks.map((track) => (
+          {lessons.map((lesson) => (
             <Link
               className="grid gap-6 border-b border-zinc-200 py-10 text-zinc-950 no-underline transition hover:bg-zinc-50 md:grid-cols-[220px_minmax(0,1fr)_90px]"
-              key={track.id}
-              to={track.href}
+              key={lesson.id}
+              to={lesson.href}
             >
               <div>
-                <p className="font-mono text-sm font-semibold text-sky-700">{track.id}</p>
-                <h2 className="mt-3 text-2xl font-bold leading-tight">{track.title}</h2>
+                <p className="font-mono text-sm font-semibold text-sky-700">
+                  {lesson.id}
+                </p>
+                <h2 className="mt-3 text-2xl font-bold leading-tight">{lesson.title}</h2>
               </div>
 
               <div>
                 <p className="text-2xl font-semibold leading-10 text-zinc-700">
-                  {track.summary}
+                  {lesson.summary}
                 </p>
-                <p className="mt-5 font-mono text-sm text-zinc-500">{track.meta}</p>
+                <p className="mt-5 font-mono text-sm text-zinc-500">{lesson.meta}</p>
               </div>
 
               <p className="font-mono text-sm text-zinc-500 md:text-right">
-                {track.time}
+                {lesson.time}
               </p>
             </Link>
           ))}
