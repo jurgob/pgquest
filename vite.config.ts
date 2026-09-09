@@ -7,4 +7,15 @@ export default defineConfig({
   resolve: {
     tsconfigPaths: true,
   },
+  server: {
+    watch: {
+      ignored: [
+        "**/.git/**",
+        "**/.pnpm-store/**",
+        "**/.react-router/**",
+        "**/build/**",
+        "**/node_modules/**",
+      ],
+    },
+  },
 });

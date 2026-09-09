@@ -7,7 +7,7 @@
     "all": "pnpm lint && pnpm format && pnpm typecheck && pnpm test && pnpm build",
     "build": "react-router build",
     "cli": "vite-node --config ./vite.cli.config.ts ./scripts/run-cli-examples.ts",
-    "dev": "react-router dev --port 9999",
+    "dev": "CHOKIDAR_USEPOLLING=1 react-router dev --port 9999",
     "format": "prettier . --check",
     "format:fix": "prettier . --write",
     "lint": "eslint .",
