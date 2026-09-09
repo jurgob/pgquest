@@ -60,8 +60,9 @@ export const exampleOneSpecific: SqlExampleDefinition = {
 
 export const exampleOneInsert: SqlExampleDefinition = {
   id: "example1-insert",
-  title: "Here is how you can add a new user:",
+  title: "Insert a new user",
   description: [
+    "Tables are not only for reading data. You can also insert new rows into them.",
     "INSERT adds a new row to a table that already exists.",
     "RETURNING sends the inserted row back as the query result.",
   ],

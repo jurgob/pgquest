@@ -8,7 +8,7 @@ export type SqlExampleId =
 export type SqlExampleDefinition = {
   id: SqlExampleId;
   title: string;
-  description: readonly [string, string];
+  description: readonly string[];
   codeDescriptions: {
     migration: string;
     seed: string;
@@ -17,6 +17,11 @@ export type SqlExampleDefinition = {
   migration: string;
   seed: string;
   query: string;
+};
+
+export type SqlExecutionInput = {
+  query: string;
+  sqlLoad: string;
 };
 
 export type SqlValue = string | number | boolean | null;

@@ -1,20 +1,21 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { match } from "ts-pattern";
+import type { PGlite } from "@electric-sql/pglite";
 
-import { runSqlQuery } from "./run-example";
+import { createSqlDatabase, runSqlQueryOnDatabase } from "./run-example";
 import type {
   ExecutionOutput,
   QueryRow,
   SqlExampleDefinition,
-  SqlExampleId,
+  SqlExecutionInput,
 } from "./types";
 
 type SqlEditorProps = {
   className?: string | undefined;
   description?: string | undefined;
   example?: SqlExampleDefinition | undefined;
-  explanationDetail?: ExplanationDetail | undefined;
   initialQuery?: string | undefined;
+  sqlLoad?: string | undefined;
   title?: string | undefined;
 };
 
@@ -40,7 +41,6 @@ type SqlToken = {
 };
 
 type SqlOutputView = "both" | "plan" | "result";
-type ExplanationDetail = "lesson" | "plan-only";
 
 const baseSuggestions = [
   "SELECT",
@@ -63,8 +63,8 @@ export function SqlEditor({
   className = "",
   description,
   example,
-  explanationDetail = "plan-only",
   initialQuery,
+  sqlLoad,
   title = "Interactive Playground",
 }: SqlEditorProps) {
   const [query, setQuery] = useState(initialQuery ?? example?.query ?? "");
@@ -72,9 +72,57 @@ export function SqlEditor({
   const [outputView, setOutputView] = useState<SqlOutputView>("result");
   const [selectionStart, setSelectionStart] = useState(query.length);
   const [isFocused, setIsFocused] = useState(false);
+  const [databaseState, setDatabaseState] = useState<DatabaseState>({ status: "idle" });
+  const databaseRef = useRef<PGlite | undefined>(undefined);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
   const suggestions = useSqlSuggestions(example, query, selectionStart);
-  const canRun = Boolean(example && query.trim());
+  const sqlInput = getSqlExecutionInput(example, sqlLoad);
+  const canRun = Boolean(databaseRef.current && query.trim());
+
+  useEffect(() => {
+    let isCurrent = true;
+    let db: PGlite | undefined;
+
+    async function loadDatabase() {
+      if (!sqlInput.sqlLoad) {
+        databaseRef.current = undefined;
+        setDatabaseState({ status: "idle" });
+        return;
+      }
+
+      setExecution({ status: "idle" });
+      setDatabaseState({ status: "loading" });
+
+      try {
+        db = await createSqlDatabase(sqlInput.sqlLoad);
+
+        if (!isCurrent) {
+          await db.close();
+          return;
+        }
+
+        databaseRef.current = db;
+        setDatabaseState({ status: "ready" });
+      } catch (error) {
+        if (!isCurrent) {
+          return;
+        }
+
+        setDatabaseState({
+          message: error instanceof Error ? error.message : String(error),
+          status: "error",
+        });
+      }
+    }
+
+    void loadDatabase();
+
+    return () => {
+      isCurrent = false;
+      databaseRef.current = undefined;
+      void db?.close();
+    };
+  }, [sqlInput.sqlLoad]);
 
   function syncSelection() {
     setSelectionStart(textAreaRef.current?.selectionStart ?? 0);
@@ -94,14 +142,16 @@ export function SqlEditor({
   }
 
   async function runQuery(view: Exclude<SqlOutputView, "both">) {
-    if (!example || !query.trim()) {
+    const db = databaseRef.current;
+
+    if (!db || !query.trim()) {
       return;
     }
 
     setOutputView(view);
     setExecution({ status: "loading" });
 
-    const result = await runSqlQuery(example, query);
+    const result = await runSqlQueryOnDatabase(db, query);
 
     setExecution(
       result.match<SqlExecutionState>(
@@ -118,9 +168,7 @@ export function SqlEditor({
           <h2 className="text-xl font-bold text-zinc-950">{title}</h2>
           <p className="mt-1 text-base leading-7 text-zinc-700">
             {description ??
-              (example
-                ? `Experiment with the ${example.title} database yourself. Edit the query and run it in your browser.`
-                : "Choose a database before running a query.")}
+              "The database is already loaded. Write any query you want and run it directly in your browser."}
           </p>
         </div>
       </div>
@@ -145,7 +193,7 @@ export function SqlEditor({
           <textarea
             aria-label="SQL query editor"
             className="relative block min-h-[220px] w-full resize-y overflow-auto bg-transparent px-5 py-4 font-mono text-sm leading-6 text-transparent caret-white outline-none selection:bg-sky-500/40"
-            disabled={!example}
+            disabled={!sqlInput.sqlLoad}
             onBlur={() => setIsFocused(false)}
             onChange={(event) => {
               setQuery(event.target.value);
@@ -224,13 +272,35 @@ export function SqlEditor({
         </button>
       </div>
 
-      <SqlExecutionResult
-        execution={execution}
-        explanationDetail={explanationDetail}
-        lessonId={example?.id}
-        view={outputView}
-      />
+      <DatabaseStatus state={databaseState} />
+      <SqlExecutionResult execution={execution} view={outputView} />
     </section>
+  );
+}
+
+type DatabaseState =
+  | { status: "error"; message: string }
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "ready" };
+
+function DatabaseStatus({ state }: { state: DatabaseState }) {
+  if (state.status === "idle" || state.status === "ready") {
+    return null;
+  }
+
+  if (state.status === "loading") {
+    return (
+      <p className="mt-3 text-sm font-semibold text-zinc-600">Loading database...</p>
+    );
+  }
+
+  return (
+    <OutputBlock tone="danger" title="Database Error">
+      <pre className="overflow-auto whitespace-pre-wrap text-sm text-red-800">
+        {state.message}
+      </pre>
+    </OutputBlock>
   );
 }
 
@@ -265,6 +335,16 @@ function ExplainIcon() {
 }
 
 export function CodeWindow({ code }: { code: string }) {
+  return <CodeViewer code={code} />;
+}
+
+export function CodeViewer({
+  code,
+  syntax: _syntax = "sql",
+}: {
+  code: string;
+  syntax?: "explain" | "sql";
+}) {
   return (
     <pre className="mt-3 min-w-0 overflow-auto rounded-md bg-[#22251f] px-5 py-4 font-mono text-sm leading-6 text-zinc-100">
       <code>
@@ -283,14 +363,12 @@ export function CodeWindow({ code }: { code: string }) {
 
 export function SqlExecutionResult({
   execution,
-  explanationDetail = "lesson",
-  lessonId,
+  children,
   query,
   view = "both",
 }: {
+  children?: React.ReactNode;
   execution: SqlExecutionState;
-  explanationDetail?: ExplanationDetail | undefined;
-  lessonId?: SqlExampleId | undefined;
   query?: string | undefined;
   view?: SqlOutputView | undefined;
 }) {
@@ -317,136 +395,16 @@ export function SqlExecutionResult({
         ) : null}
         {view === "both" || view === "plan" ? (
           <OutputBlock tone="plan" title="Explanation">
-            {lessonId === "example1-basic-select" && query ? (
-              <p className="mb-3 text-base leading-7 text-zinc-700">
-                Add <code className="font-mono text-sm">EXPLAIN</code> before a query to
-                ask PostgreSQL how it plans to run it. Plain{" "}
-                <code className="font-mono text-sm">EXPLAIN</code> does not execute the
-                query; it only builds the plan.{" "}
-                <code className="font-mono text-sm">EXPLAIN ANALYZE</code> is the version
-                that actually runs the query and reports real timings.
-              </p>
-            ) : null}
             {query ? <CodeWindow code={`EXPLAIN ${query.trim()}`} /> : null}
             <pre className="mt-3 overflow-auto whitespace-pre-wrap rounded-md bg-[#22251f] px-5 py-4 font-mono text-sm leading-6 text-zinc-100">
               {output.plan}
             </pre>
-            {explanationDetail === "lesson" ? (
-              <PlanExplanation lessonId={lessonId} />
-            ) : null}
+            {children}
           </OutputBlock>
         ) : null}
       </div>
     ))
     .exhaustive();
-}
-
-function PlanExplanation({ lessonId }: { lessonId?: SqlExampleId | undefined }) {
-  if (lessonId === "example1-basic-select") {
-    return (
-      <div className="mt-3 text-base leading-7 text-zinc-700">
-        <p>Read the plan from left to right:</p>
-        <ul className="mt-2 list-disc space-y-2 pl-5">
-          <li>
-            <code className="font-mono text-sm">Seq Scan</code> means sequential scan:
-            PostgreSQL plans to read the table from beginning to end.
-          </li>
-          <li>
-            <code className="font-mono text-sm">on "User"</code> names the table being
-            scanned.
-          </li>
-          <li>
-            <code className="font-mono text-sm">0.00</code> is the startup cost,{" "}
-            <code className="font-mono text-sm">1.02</code> is the total cost. These
-            numbers are{" "}
-            <a
-              className="text-sky-700 underline decoration-sky-300 underline-offset-4"
-              href="https://www.postgresql.org/docs/current/using-explain.html"
-              rel="noreferrer"
-              target="_blank"
-            >
-              internal planner units
-            </a>
-            , not milliseconds; they are based on PostgreSQL's estimate of relative work,
-            such as reading table pages, checking rows, and CPU work.
-          </li>
-          <li>
-            <code className="font-mono text-sm">rows=2</code> is PostgreSQL's estimated
-            number of rows this step will return.
-          </li>
-          <li>
-            <code className="font-mono text-sm">width=34</code> is the estimated average
-            row size in bytes.
-          </li>
-        </ul>
-      </div>
-    );
-  }
-
-  if (lessonId === "example1-specific-select") {
-    return (
-      <div className="mt-3 text-base leading-7 text-zinc-700">
-        <p>Compared to the first plan, two things changed:</p>
-        <ul className="mt-2 list-disc space-y-2 pl-5">
-          <li>
-            PostgreSQL still uses a <code className="font-mono text-sm">Seq Scan</code>,
-            so it still reads the whole table from beginning to end.
-          </li>
-          <li>
-            The plan now has a <code className="font-mono text-sm">Filter</code> step for
-            the <code className="font-mono text-sm">WHERE email = ...</code> condition, so
-            rows that do not match Ada's email are discarded after they are read.
-          </li>
-        </ul>
-      </div>
-    );
-  }
-
-  if (lessonId === "example2-sequential-scan") {
-    return (
-      <div className="mt-3 text-base leading-7 text-zinc-700">
-        <p>
-          Without an index on <code className="font-mono text-sm">email</code>, PostgreSQL
-          has no shortcut for finding one address. It chooses a{" "}
-          <code className="font-mono text-sm">Seq Scan</code>, reads the{" "}
-          <code className="font-mono text-sm">users</code> table row by row, and applies
-          the <code className="font-mono text-sm">Filter</code> to keep only the matching
-          email.
-        </p>
-      </div>
-    );
-  }
-
-  if (lessonId === "example2-index-scan") {
-    return (
-      <div className="mt-3 text-base leading-7 text-zinc-700">
-        <p>Compared to the first plan, PostgreSQL now has a better access path:</p>
-        <ul className="mt-2 list-disc space-y-2 pl-5">
-          <li>
-            <code className="font-mono text-sm">Index Scan using users_email_idx</code>{" "}
-            means PostgreSQL uses the email index instead of scanning every row.
-          </li>
-          <li>
-            <code className="font-mono text-sm">Index Cond</code> shows the condition used
-            to jump through the index:{" "}
-            <code className="font-mono text-sm">email = 'user9000@example.com'</code>.
-          </li>
-          <li>
-            The total estimated cost drops from{" "}
-            <code className="font-mono text-sm">218.00</code> to{" "}
-            <code className="font-mono text-sm">8.30</code> because the planner expects
-            the index lookup to touch far less data than a full table scan.
-          </li>
-        </ul>
-      </div>
-    );
-  }
-
-  return (
-    <p className="mt-3 text-base leading-7 text-zinc-700">
-      {getPlanExplanation(lessonId)}
-    </p>
-  );
 }
 
 function OutputBlock({
@@ -549,6 +507,16 @@ function extractIdentifiers(example: SqlExampleDefinition | undefined) {
     .filter((value): value is string => typeof value === "string")
     .filter((value) => value && !isSqlKeyword(value))
     .slice(0, 50);
+}
+
+function getSqlExecutionInput(
+  example: SqlExampleDefinition | undefined,
+  sqlLoad: string | undefined,
+): SqlExecutionInput {
+  return {
+    query: example?.query ?? "",
+    sqlLoad: sqlLoad ?? (example ? `${example.migration}\n${example.seed}` : ""),
+  };
 }
 
 function getCurrentWord(query: string, selectionStart: number) {
@@ -658,14 +626,6 @@ function getSqlTokenClassName(kind: SqlTokenKind) {
     .with("punctuation", () => "text-zinc-100")
     .with("whitespace", () => "")
     .exhaustive();
-}
-
-function getPlanExplanation(lessonId: SqlExampleId | undefined) {
-  return lessonId === "example1-basic-select"
-    ? 'Seq Scan on "User" means PostgreSQL reads every row from the beginning of the table to the end. The cost, 0.00..1.02, is an estimate of startup and total work, not milliseconds. rows=2 is the estimated number of rows, and width=34 is the estimated average row size in bytes.'
-    : lessonId === "example1-specific-select"
-      ? "The WHERE clause filters for Ada's email, so PostgreSQL adds a Filter step and keeps only rows with that email. This plan still uses a Seq Scan, so it reads the table from beginning to end and checks each email."
-      : "This plan describes the steps PostgreSQL expects to use, along with estimates for the work, result count, and row size.";
 }
 
 const sqlKeywords = new Set([
