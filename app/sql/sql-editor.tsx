@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { match } from "ts-pattern";
-import type { PGlite } from "@electric-sql/pglite";
+import type { PGliteInterface } from "@electric-sql/pglite";
 import {
   autocompletion,
   type Completion,
@@ -77,14 +77,14 @@ export function SqlEditor({
   const [execution, setExecution] = useState<SqlExecutionState>({ status: "idle" });
   const [outputView, setOutputView] = useState<SqlOutputView>("result");
   const [databaseState, setDatabaseState] = useState<DatabaseState>({ status: "idle" });
-  const databaseRef = useRef<PGlite | undefined>(undefined);
+  const databaseRef = useRef<PGliteInterface | undefined>(undefined);
   const databaseSql = databaseInit ?? "";
   const schema = useMemo(() => getSqlSchema(databaseSql), [databaseSql]);
   const canRun = Boolean(databaseRef.current && query.trim());
 
   useEffect(() => {
     let isCurrent = true;
-    let db: PGlite | undefined;
+    let db: PGliteInterface | undefined;
 
     async function loadDatabase() {
       if (!databaseSql) {
@@ -416,7 +416,9 @@ function DatabaseStatus({ state }: { state: DatabaseState }) {
 
   if (state.status === "loading") {
     return (
-      <p className="mt-3 text-sm font-semibold text-zinc-600">Loading database...</p>
+      <OutputBlock tone="neutral" title="Result">
+        <SqlResultSkeleton />
+      </OutputBlock>
     );
   }
 
@@ -496,19 +498,21 @@ export function CodeViewer({
 export function SqlExecutionResult({
   execution,
   children,
+  loading,
   query,
   view = "both",
 }: {
   children?: React.ReactNode;
   execution: SqlExecutionState;
+  loading?: React.ReactNode;
   query?: string | undefined;
   view?: SqlOutputView | undefined;
 }) {
   return match(execution)
     .with({ status: "idle" }, () => null)
     .with({ status: "loading" }, () => (
-      <OutputBlock tone="neutral" title="Running">
-        <p className="text-base text-zinc-700">Preparing the database...</p>
+      <OutputBlock tone="neutral" title={view === "plan" ? "Explanation" : "Result"}>
+        {loading ?? <SqlResultSkeleton />}
       </OutputBlock>
     ))
     .with({ status: "error" }, ({ message }) => (
@@ -537,6 +541,18 @@ export function SqlExecutionResult({
       </div>
     ))
     .exhaustive();
+}
+
+export function SqlResultSkeleton() {
+  return (
+    <div aria-label="Loading result" className="animate-pulse space-y-3" role="status">
+      <div className="h-4 w-2/5 bg-zinc-200" />
+      <div className="h-4 w-4/5 bg-zinc-200" />
+      <div className="h-4 w-3/5 bg-zinc-200" />
+      <div className="mt-6 h-px w-full bg-zinc-200" />
+      <div className="h-4 w-1/2 bg-zinc-200" />
+    </div>
+  );
 }
 
 function OutputBlock({
