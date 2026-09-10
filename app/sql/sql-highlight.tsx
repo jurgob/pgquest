@@ -157,7 +157,9 @@ export function sqlHighlight(
     <span
       className={[
         `sql-hl-${token.kind}`,
-        defaultStyleClasses[token.kind],
+        token.kind === "identifier" && token.value.startsWith('"')
+          ? "sql-hl-quoted-identifier text-lime-300"
+          : defaultStyleClasses[token.kind],
         options.styleClasses?.[token.kind],
       ]
         .filter(Boolean)
