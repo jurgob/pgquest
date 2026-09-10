@@ -1,10 +1,11 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import {
-  exerciseCounts,
   loadExerciseProgress,
   saveExerciseProgress,
   type ExerciseProgress,
 } from "./exercise-progress";
+import { allExercises, lessonIds } from "./lesson-sql-catalog";
+import type { LessonId } from "./types";
 
 type ProgressMap = Record<string, ExerciseProgress>;
 type ExerciseProgressContextValue = {
@@ -34,7 +35,7 @@ export function ExerciseProgressProvider({ children }: { children: React.ReactNo
   );
 }
 
-export function useExerciseProgress(lessonId: keyof typeof exerciseCounts) {
+export function useExerciseProgress(lessonId: LessonId) {
   const context = useContext(ExerciseProgressContext);
 
   if (!context) {
@@ -47,8 +48,10 @@ export function useExerciseProgress(lessonId: keyof typeof exerciseCounts) {
   return useMemo(
     () => ({
       isComplete:
-        exerciseCounts[lessonId] > 0 &&
-        progress.completed.length >= exerciseCounts[lessonId],
+        allExercises.some((exercise) => exercise.lessonId === lessonId) &&
+        allExercises
+          .filter((exercise) => exercise.lessonId === lessonId)
+          .every((exercise) => progress.completed.includes(exercise.id)),
       progress,
       save: (nextProgress: ExerciseProgress) => {
         saveExerciseProgress(lessonId, nextProgress);
@@ -57,4 +60,24 @@ export function useExerciseProgress(lessonId: keyof typeof exerciseCounts) {
     }),
     [lessonId, progress, setProgressMap],
   );
+}
+
+export function useAllExercisesComplete() {
+  const context = useContext(ExerciseProgressContext);
+
+  if (!context) {
+    throw new Error(
+      "useAllExercisesComplete must be used inside ExerciseProgressProvider",
+    );
+  }
+
+  return lessonIds.every((lessonId) => {
+    const exercises = allExercises.filter((exercise) => exercise.lessonId === lessonId);
+    const progress = context.progressMap[lessonId];
+
+    return (
+      exercises.length > 0 &&
+      exercises.every((exercise) => progress?.completed.includes(exercise.id))
+    );
+  });
 }

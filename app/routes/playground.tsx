@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 
 import type { SqlExample } from "../../cli_examples/types";
 import type { Route } from "./+types/playground";
-import { sqlExamples } from "../sql/example-definitions";
+import { allDatabaseInits } from "../sql/lesson-sql-catalog";
 import { SiteHeader } from "../sql/site-header";
 import { SqlEditor } from "../sql/sql-editor";
 
@@ -19,9 +19,12 @@ export default function Playground() {
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState("");
   const [loadedId, setLoadedId] = useState("");
-  const selectedExample = sqlExamples.find((example) => example.id === selectedId);
-  const loadedExample = sqlExamples.find((example) => example.id === loadedId);
-  const filteredExamples = useMemo(() => filterExamples(sqlExamples, search), [search]);
+  const selectedExample = allDatabaseInits.find((example) => example.id === selectedId);
+  const loadedExample = allDatabaseInits.find((example) => example.id === loadedId);
+  const filteredExamples = useMemo(
+    () => filterExamples(allDatabaseInits, search),
+    [search],
+  );
 
   function selectExample(example: SqlExample) {
     setSelectedId(example.id);
@@ -147,8 +150,8 @@ export default function Playground() {
         </section>
 
         <SqlEditor
-          databaseInit={loadedExample?.database_init?.query}
-          query={loadedExample?.query ?? ""}
+          databaseInit={loadedExample?.query}
+          query=""
           key={loadedExample?.id ?? "empty"}
         />
       </div>

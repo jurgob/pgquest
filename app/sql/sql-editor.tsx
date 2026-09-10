@@ -118,10 +118,13 @@ export function SqlEditor({
       }
     }
 
-    void loadDatabase();
+    const timeoutId = window.setTimeout(() => {
+      void loadDatabase();
+    }, 0);
 
     return () => {
       isCurrent = false;
+      window.clearTimeout(timeoutId);
       databaseRef.current = undefined;
       void db?.close();
     };

@@ -1,8 +1,3 @@
-export const exerciseCounts = {
-  lesson1: 3,
-  lesson2: 0,
-} as const;
-
 export type ExerciseProgress = {
   completed: string[];
   queries: Record<string, string>;

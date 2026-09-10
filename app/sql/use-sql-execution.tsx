@@ -10,24 +10,26 @@ export function useSqlExecution(input: SqlExecutionInput) {
 
   useEffect(() => {
     let isCurrent = true;
+    const timeoutId = window.setTimeout(() => {
+      setExecution({ status: "loading" });
 
-    setExecution({ status: "loading" });
+      void runSqlQuery(stableInput, stableInput.query).then((result) => {
+        if (!isCurrent) {
+          return;
+        }
 
-    void runSqlQuery(stableInput, stableInput.query).then((result) => {
-      if (!isCurrent) {
-        return;
-      }
-
-      setExecution(
-        result.match<SqlExecutionState>(
-          (output) => ({ status: "done", output }),
-          (message) => ({ status: "error", message }),
-        ),
-      );
-    });
+        setExecution(
+          result.match<SqlExecutionState>(
+            (output) => ({ status: "done", output }),
+            (message) => ({ status: "error", message }),
+          ),
+        );
+      });
+    }, 0);
 
     return () => {
       isCurrent = false;
+      window.clearTimeout(timeoutId);
     };
   }, [stableInput]);
 

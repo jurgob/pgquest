@@ -1,6 +1,10 @@
 import type { Route } from "./+types/home";
-import { Link } from "react-router";
-import { useExerciseProgress } from "../sql/exercise-progress-context";
+import { Link, useSearchParams } from "react-router";
+import {
+  useAllExercisesComplete,
+  useExerciseProgress,
+} from "../sql/exercise-progress-context";
+import { CompletionCelebration } from "../sql/completion-celebration";
 import { SiteHeader } from "../sql/site-header";
 
 export function meta(_args: Route.MetaArgs) {
@@ -34,15 +38,48 @@ const lessons = [
 export default function Home() {
   const lessonOneProgress = useExerciseProgress("lesson1");
   const lessonTwoProgress = useExerciseProgress("lesson2");
+  const allExercisesComplete = useAllExercisesComplete();
+  const [searchParams] = useSearchParams();
   const completedLessons = {
     lesson1: lessonOneProgress.isComplete,
     lesson2: lessonTwoProgress.isComplete,
   };
+  const showCompletion =
+    allExercisesComplete || searchParams.get("showComplete") === "true";
 
   return (
     <main className="min-h-screen bg-white text-zinc-950">
       <SiteHeader />
       <div className="mx-auto w-full max-w-6xl px-5 py-12">
+        {showCompletion ? (
+          <div className="mb-20 max-w-4xl">
+            <section className="border-2 border-zinc-950 bg-zinc-50 p-6 sm:p-8">
+              <div className="flex flex-col gap-2 border-b border-zinc-300 pb-6 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <p className="font-mono text-sm font-semibold uppercase tracking-wide text-emerald-700">
+                    Achievement unlocked
+                  </p>
+                  <h1 className="mt-3 text-4xl font-bold tracking-tight text-zinc-950">
+                    PostgreSQL Quest Complete
+                  </h1>
+                </div>
+                <p className="font-mono text-sm text-zinc-500">ALL EXERCISES PASSED</p>
+              </div>
+              <p className="mt-6 max-w-2xl text-xl leading-9 text-zinc-700">
+                You completed every exercise currently available in PgQuest. The database
+                is no longer mysterious: you can create it, query it, and read the plan.
+              </p>
+            </section>
+
+            <section className="mt-6 border border-zinc-300 bg-zinc-950 p-6 sm:p-8">
+              <div className="flex items-center justify-between gap-4">
+                <h2 className="text-2xl font-bold text-white">Victory</h2>
+                <span className="font-mono text-sm text-emerald-300">QUEST COMPLETE</span>
+              </div>
+              <CompletionCelebration />
+            </section>
+          </div>
+        ) : null}
         <section className="mb-20 max-w-3xl border-b border-zinc-200 pb-14">
           <h1 className="text-5xl font-bold tracking-tight text-zinc-950">
             What this is
