@@ -319,6 +319,7 @@ export default function LessonOne() {
         <Section>
           <Title2>Explanation</Title2>
           <CodeViewer code={"EXPLAIN " + exampleOneSpecificQuery.trim()} />
+          <SqlPlan execution={exampleOneSpecific} />
           <div className="mt-3 text-base leading-7 text-zinc-700">
             <p>Compared to the first plan, two things changed:</p>
             <ul className="mt-2 list-disc space-y-2 pl-5">
@@ -335,7 +336,6 @@ export default function LessonOne() {
               </li>
             </ul>
           </div>
-          <SqlPlan execution={exampleOneSpecific} />
         </Section>
       </LessonSection>
 
