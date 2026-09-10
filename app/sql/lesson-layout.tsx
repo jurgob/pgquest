@@ -2,18 +2,26 @@ import { SiteHeader } from "./site-header";
 import type { LessonId } from "./types";
 import { SqlEditor } from "./sql-editor";
 
+export type WhatWeLearnedItem = {
+  concept: string;
+  description: React.ReactNode;
+  url?: string | undefined;
+};
+
 export function LessonPage({
   activeLesson,
   children,
   defaultQuery,
   sqlLoad,
   title,
+  whatWeLearned,
 }: {
   activeLesson: LessonId;
   children: React.ReactNode;
   defaultQuery?: string | undefined;
   sqlLoad?: string | undefined;
   title: string;
+  whatWeLearned?: readonly WhatWeLearnedItem[] | undefined;
 }) {
   return (
     <main className="min-h-screen bg-white text-zinc-950">
@@ -23,9 +31,45 @@ export function LessonPage({
           <Title>{title}</Title>
           <div className="flex min-w-0 flex-col gap-6">{children}</div>
           <TryYourself defaultQuery={defaultQuery} sqlLoad={sqlLoad} />
+          <WhatWeLearned items={whatWeLearned} />
         </article>
       </div>
     </main>
+  );
+}
+
+export function WhatWeLearned({
+  items,
+}: {
+  items?: readonly WhatWeLearnedItem[] | undefined;
+}) {
+  if (!items?.length) {
+    return null;
+  }
+
+  return (
+    <section className="mt-6 border-t border-zinc-200 pt-8">
+      <Title2>What We Learned</Title2>
+      <ul className="mt-5 flex flex-col gap-5">
+        {items.map((item) => (
+          <li className="text-base leading-7 text-zinc-800" key={item.concept}>
+            {item.url ? (
+              <a
+                className="font-semibold text-sky-700 underline decoration-sky-300 underline-offset-2 hover:text-sky-900"
+                href={item.url}
+                rel="noreferrer"
+                target="_blank"
+              >
+                {item.concept}
+              </a>
+            ) : (
+              <span className="font-semibold text-zinc-950">{item.concept}</span>
+            )}
+            <span className="ml-2">{item.description}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

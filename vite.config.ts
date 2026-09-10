@@ -9,6 +9,7 @@ export default defineConfig({
   },
   server: {
     watch: {
+      interval: 1000,
       ignored: [
         "**/.git/**",
         "**/.pnpm-store/**",
@@ -16,6 +17,7 @@ export default defineConfig({
         "**/build/**",
         "**/node_modules/**",
       ],
+      usePolling: true,
     },
   },
 });
