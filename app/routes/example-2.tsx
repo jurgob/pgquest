@@ -29,7 +29,10 @@ export default function ExampleTwo() {
   const sequentialLoad = `${exampleTwoMigration}\n${exampleTwoSeed}`;
   const indexedLoad = `${exampleTwoIndexedMigration}\n${exampleTwoIndexedSeed}`;
   const sequential = useSqlExecution({ query: exampleTwoQuery, sqlLoad: sequentialLoad });
-  const indexed = useSqlExecution({ query: exampleTwoIndexedQuery, sqlLoad: indexedLoad });
+  const indexed = useSqlExecution({
+    query: exampleTwoIndexedQuery,
+    sqlLoad: indexedLoad,
+  });
 
   return (
     <LessonPage
@@ -59,7 +62,9 @@ export default function ExampleTwo() {
 
       <Section>
         <Title2>Query</Title2>
-        <Paragraph>Find one user by email and inspect the plan PostgreSQL chooses.</Paragraph>
+        <Paragraph>
+          Find one user by email and inspect the plan PostgreSQL chooses.
+        </Paragraph>
         <CodeViewer code={exampleTwoQuery} />
       </Section>
 
@@ -88,13 +93,17 @@ export default function ExampleTwo() {
 
         <Section>
           <Title2>Migration</Title2>
-          <Paragraph>Create the same table, then add an index on the email column.</Paragraph>
+          <Paragraph>
+            Create the same table, then add an index on the email column.
+          </Paragraph>
           <CodeViewer code={exampleTwoIndexedMigration} />
         </Section>
 
         <Section>
           <Title2>Seed</Title2>
-          <Paragraph>Use the same data, then analyze it so the index can be considered.</Paragraph>
+          <Paragraph>
+            Use the same data, then analyze it so the index can be considered.
+          </Paragraph>
           <CodeViewer code={exampleTwoIndexedSeed} />
         </Section>
 
@@ -110,7 +119,9 @@ export default function ExampleTwo() {
             <p>Compared to the first plan, PostgreSQL now has a better access path:</p>
             <ul className="mt-2 list-disc space-y-2 pl-5">
               <li>
-                <code className="font-mono text-sm">Index Scan using users_email_idx</code>{" "}
+                <code className="font-mono text-sm">
+                  Index Scan using users_email_idx
+                </code>{" "}
                 means PostgreSQL uses the email index instead of scanning every row.
               </li>
               <li>

@@ -123,7 +123,9 @@ export default function LessonOne() {
         <div>
           <Title2>Let's select a specific user by email</Title2>
           <Paragraphs>
-            <p>Instead of reading every user, we can filter the table by a known email.</p>
+            <p>
+              Instead of reading every user, we can filter the table by a known email.
+            </p>
             <p>The result contains only Ada Lovelace's row.</p>
           </Paragraphs>
         </div>

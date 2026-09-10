@@ -21,6 +21,7 @@ import {
 import { tags } from "@lezer/highlight";
 
 import { createSqlDatabase, runSqlQueryOnDatabase } from "./run-example";
+import { isSqlKeyword, sqlHighlight } from "./sql-highlight";
 import type {
   ExecutionOutput,
   QueryRow,
@@ -42,21 +43,6 @@ export type SqlExecutionState =
   | { status: "done"; output: ExecutionOutput }
   | { status: "error"; message: string }
   | { status: "loading" };
-
-type SqlTokenKind =
-  | "comment"
-  | "identifier"
-  | "keyword"
-  | "number"
-  | "operator"
-  | "punctuation"
-  | "string"
-  | "whitespace";
-
-type SqlToken = {
-  kind: SqlTokenKind;
-  value: string;
-};
 
 type SqlOutputView = "both" | "plan" | "result";
 
@@ -88,7 +74,9 @@ export function SqlEditor({
   sqlLoad,
   title = "Interactive Playground",
 }: SqlEditorProps) {
-  const [query, setQuery] = useState(() => formatInitialQuery(initialQuery ?? example?.query));
+  const [query, setQuery] = useState(() =>
+    formatInitialQuery(initialQuery ?? example?.query),
+  );
   const [execution, setExecution] = useState<SqlExecutionState>({ status: "idle" });
   const [outputView, setOutputView] = useState<SqlOutputView>("result");
   const [databaseState, setDatabaseState] = useState<DatabaseState>({ status: "idle" });
@@ -442,16 +430,7 @@ export function CodeViewer({
 }) {
   return (
     <pre className="mt-3 min-w-0 overflow-auto rounded-md bg-[#22251f] px-5 py-4 font-mono text-sm leading-6 text-zinc-100">
-      <code>
-        {tokenizeSql(code.trim()).map((token, index) => (
-          <span
-            className={getSqlTokenClassName(token.kind)}
-            key={`${index}-${token.value}`}
-          >
-            {token.value}
-          </span>
-        ))}
-      </code>
+      <code>{sqlHighlight(code.trim())}</code>
     </pre>
   );
 }
@@ -680,9 +659,7 @@ function getCompletionMode(sqlBeforeCursor: string) {
   }
 
   if (
-    /(^|[\s,(])(SELECT|WHERE|AND|OR|BY|SET|RETURNING)\s+[^;]*$/i.test(
-      sqlBeforeCursor,
-    )
+    /(^|[\s,(])(SELECT|WHERE|AND|OR|BY|SET|RETURNING)\s+[^;]*$/i.test(sqlBeforeCursor)
   ) {
     return "column";
   }
@@ -742,124 +719,6 @@ function formatCell(value: QueryRow[string] | undefined) {
 
   return String(value);
 }
-
-function tokenizeSql(sql: string): SqlToken[] {
-  const tokens: SqlToken[] = [];
-  let position = 0;
-
-  while (position < sql.length) {
-    const rest = sql.slice(position);
-    const token = readSqlToken(rest);
-
-    tokens.push(token);
-    position += token.value.length;
-  }
-
-  return tokens;
-}
-
-function readSqlToken(sql: string): SqlToken {
-  const whitespace = sql.match(/^\s+/);
-
-  if (whitespace?.[0]) {
-    return { kind: "whitespace", value: whitespace[0] };
-  }
-
-  const lineComment = sql.match(/^--[^\n]*/);
-
-  if (lineComment?.[0]) {
-    return { kind: "comment", value: lineComment[0] };
-  }
-
-  const stringLiteral = sql.match(/^'(?:''|[^'])*'/);
-
-  if (stringLiteral?.[0]) {
-    return { kind: "string", value: stringLiteral[0] };
-  }
-
-  const quotedIdentifier = sql.match(/^"(?:""|[^"])*"/);
-
-  if (quotedIdentifier?.[0]) {
-    return { kind: "identifier", value: quotedIdentifier[0] };
-  }
-
-  const numberLiteral = sql.match(/^\d+(?:\.\d+)?/);
-
-  if (numberLiteral?.[0]) {
-    return { kind: "number", value: numberLiteral[0] };
-  }
-
-  const word = sql.match(/^[A-Za-z_][A-Za-z0-9_]*/);
-
-  if (word?.[0]) {
-    return {
-      kind: isSqlKeyword(word[0]) ? "keyword" : "identifier",
-      value: word[0],
-    };
-  }
-
-  const punctuation = sql.match(/^[(),.;]/);
-
-  if (punctuation?.[0]) {
-    return { kind: "punctuation", value: punctuation[0] };
-  }
-
-  return { kind: "operator", value: sql[0] ?? "" };
-}
-
-function isSqlKeyword(value: string) {
-  return sqlKeywords.has(value.toUpperCase());
-}
-
-function getSqlTokenClassName(kind: SqlTokenKind) {
-  return match(kind)
-    .with("comment", () => "text-zinc-400")
-    .with("keyword", () => "font-semibold text-cyan-300")
-    .with("string", () => "text-lime-300")
-    .with("number", () => "text-yellow-200")
-    .with("identifier", () => "text-zinc-100")
-    .with("operator", () => "text-zinc-100")
-    .with("punctuation", () => "text-zinc-100")
-    .with("whitespace", () => "")
-    .exhaustive();
-}
-
-const sqlKeywords = new Set([
-  "ANALYZE",
-  "AND",
-  "AS",
-  "BY",
-  "CASE",
-  "CREATE",
-  "DEFAULT",
-  "DELETE",
-  "ELSE",
-  "END",
-  "EXPLAIN",
-  "FROM",
-  "GENERATE_SERIES",
-  "GROUP",
-  "INDEX",
-  "INSERT",
-  "INTO",
-  "KEY",
-  "LIMIT",
-  "NOT",
-  "NULL",
-  "ON",
-  "ORDER",
-  "PRIMARY",
-  "RETURNING",
-  "SELECT",
-  "SERIAL",
-  "TABLE",
-  "TEXT",
-  "THEN",
-  "UPDATE",
-  "VALUES",
-  "WHEN",
-  "WHERE",
-]);
 
 const sqlHighlightStyle = HighlightStyle.define([
   { tag: tags.keyword, color: "#67e8f9", fontWeight: "600" },
