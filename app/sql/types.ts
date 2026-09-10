@@ -1,24 +1,3 @@
-export type SqlExampleId =
-  | "example1-basic-select"
-  | "example1-specific-select"
-  | "example1-insert"
-  | "example2-sequential-scan"
-  | "example2-index-scan";
-
-export type SqlExampleDefinition = {
-  id: SqlExampleId;
-  title: string;
-  description: readonly string[];
-  codeDescriptions: {
-    migration: string;
-    seed: string;
-    query: string;
-  };
-  migration: string;
-  seed: string;
-  query: string;
-};
-
 export type SqlExecutionInput = {
   query: string;
   sqlLoad: string;

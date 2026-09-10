@@ -1,10 +1,10 @@
 import { useMemo, useState } from "react";
 
+import type { SqlExample } from "../../cli_examples/types";
 import type { Route } from "./+types/playground";
 import { sqlExamples } from "../sql/example-definitions";
 import { SiteHeader } from "../sql/site-header";
 import { SqlEditor } from "../sql/sql-editor";
-import type { SqlExampleDefinition } from "../sql/types";
 
 export function meta(_args: Route.MetaArgs) {
   return [
@@ -23,7 +23,7 @@ export default function Playground() {
   const loadedExample = sqlExamples.find((example) => example.id === loadedId);
   const filteredExamples = useMemo(() => filterExamples(sqlExamples, search), [search]);
 
-  function selectExample(example: SqlExampleDefinition) {
+  function selectExample(example: SqlExample) {
     setSelectedId(example.id);
     setSearch("");
     setIsPickerOpen(false);
@@ -75,7 +75,7 @@ export default function Playground() {
               >
                 {selectedExample ? (
                   <span className="inline-flex max-w-full items-center gap-2 rounded-sm bg-sky-50 px-2 py-1 text-sm font-semibold text-zinc-950">
-                    <span className="truncate">{selectedExample.title}</span>
+                    <span className="truncate">{selectedExample.name}</span>
                     <button
                       aria-label="Remove selected example"
                       className="flex h-5 w-5 items-center justify-center rounded-sm text-zinc-500 transition hover:bg-white hover:text-zinc-950"
@@ -114,7 +114,7 @@ export default function Playground() {
                       type="button"
                     >
                       <span className="block font-semibold text-zinc-950">
-                        {example.title}
+                        {example.name}
                       </span>
                       <span className="mt-1 block font-mono text-xs text-zinc-500">
                         {example.id}
@@ -141,14 +141,14 @@ export default function Playground() {
 
           {loadedExample ? (
             <p className="mt-3 text-sm font-semibold text-zinc-700">
-              Dataset loaded: {loadedExample.title}
+              Dataset loaded: {loadedExample.name}
             </p>
           ) : null}
         </section>
 
         <SqlEditor
-          example={loadedExample}
-          initialQuery={loadedExample?.query ?? ""}
+          databaseInit={loadedExample?.database_init?.query}
+          query={loadedExample?.query ?? ""}
           key={loadedExample?.id ?? "empty"}
         />
       </div>
@@ -156,7 +156,7 @@ export default function Playground() {
   );
 }
 
-function filterExamples(examples: readonly SqlExampleDefinition[], search: string) {
+function filterExamples(examples: readonly SqlExample[], search: string) {
   const needle = search.trim().toLowerCase();
 
   if (!needle) {
@@ -164,7 +164,7 @@ function filterExamples(examples: readonly SqlExampleDefinition[], search: strin
   }
 
   return examples.filter((example) =>
-    [example.id, example.title, ...example.description]
+    [example.id, example.name, example.description]
       .join(" ")
       .toLowerCase()
       .includes(needle),

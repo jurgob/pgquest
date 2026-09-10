@@ -1,12 +1,9 @@
 import type { Route } from "./+types/example-2";
-import exampleTwoQuery, {
-  migration as exampleTwoMigration,
-  seed as exampleTwoSeed,
+import {
+  examples as exampleTwoExamples,
+  exercises as exampleTwoExercises,
 } from "../../cli_examples/example2a.sql";
-import exampleTwoIndexedQuery, {
-  migration as exampleTwoIndexedMigration,
-  seed as exampleTwoIndexedSeed,
-} from "../../cli_examples/example2b.sql";
+import { getSqlExample, SQL_EXAMPLE_IDS } from "../../cli_examples/types";
 import {
   LessonPage,
   LessonSection,
@@ -26,8 +23,31 @@ export function meta(_args: Route.MetaArgs) {
 }
 
 export default function ExampleTwo() {
-  const sequentialLoad = `${exampleTwoMigration}\n${exampleTwoSeed}`;
-  const indexedLoad = `${exampleTwoIndexedMigration}\n${exampleTwoIndexedSeed}`;
+  const sequentialExample = getSqlExample(
+    exampleTwoExamples,
+    SQL_EXAMPLE_IDS.example2SequentialScan,
+  );
+  const indexedExample = getSqlExample(
+    exampleTwoExamples,
+    SQL_EXAMPLE_IDS.example2IndexScan,
+  );
+  const sequentialLoad = sequentialExample.database_init?.query ?? "";
+  const indexedLoad = indexedExample.database_init?.query ?? "";
+  const exampleTwoMigration = getSqlExample(
+    exampleTwoExamples,
+    SQL_EXAMPLE_IDS.example2Migration,
+  ).query;
+  const exampleTwoSeed = getSqlExample(
+    exampleTwoExamples,
+    SQL_EXAMPLE_IDS.example2Seed,
+  ).query;
+  const exampleTwoQuery = sequentialExample.query;
+  const exampleTwoIndexedMigration = getSqlExample(
+    exampleTwoExamples,
+    SQL_EXAMPLE_IDS.example2IndexedMigration,
+  ).query;
+  const exampleTwoIndexedSeed = exampleTwoSeed;
+  const exampleTwoIndexedQuery = indexedExample.query;
   const sequential = useSqlExecution({ query: exampleTwoQuery, sqlLoad: sequentialLoad });
   const indexed = useSqlExecution({
     query: exampleTwoIndexedQuery,
@@ -38,6 +58,7 @@ export default function ExampleTwo() {
     <LessonPage
       activeLesson="lesson2"
       defaultQuery={exampleTwoIndexedQuery}
+      exercises={exampleTwoExercises}
       sqlLoad={indexedLoad}
       title="Email lookup without an index"
     >

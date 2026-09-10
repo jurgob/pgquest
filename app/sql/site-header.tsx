@@ -1,5 +1,6 @@
 import { NavLink } from "react-router";
 
+import { useExerciseProgress } from "./exercise-progress-context";
 import { lessonSummaries } from "./lesson-summaries";
 
 type SiteHeaderProps = {
@@ -7,6 +8,13 @@ type SiteHeaderProps = {
 };
 
 export function SiteHeader({ activeLesson }: SiteHeaderProps) {
+  const lessonOneProgress = useExerciseProgress("lesson1");
+  const lessonTwoProgress = useExerciseProgress("lesson2");
+  const completedLessons = {
+    lesson1: lessonOneProgress.isComplete,
+    lesson2: lessonTwoProgress.isComplete,
+  };
+
   return (
     <header className="bg-[#222222] text-white">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-2 px-5 py-4">
@@ -21,6 +29,9 @@ export function SiteHeader({ activeLesson }: SiteHeaderProps) {
             <NavLink
               className={[
                 "inline-flex h-7 min-w-7 items-center justify-center rounded-sm border border-zinc-500 px-2 text-white no-underline transition hover:border-white hover:bg-white hover:text-zinc-950",
+                completedLessons[lesson.id]
+                  ? "relative border-emerald-400 bg-emerald-950 text-emerald-100 hover:border-emerald-300 hover:bg-emerald-900 hover:text-white"
+                  : "",
                 activeLesson === lesson.id ? "border-white bg-white text-zinc-950" : "",
               ].join(" ")}
               key={lesson.id}
@@ -28,10 +39,23 @@ export function SiteHeader({ activeLesson }: SiteHeaderProps) {
               to={lesson.href}
             >
               {lesson.number}
+              {completedLessons[lesson.id] ? <CompletionMark /> : null}
             </NavLink>
           ))}
         </nav>
       </div>
     </header>
+  );
+}
+
+function CompletionMark() {
+  return (
+    <span
+      aria-label="Lesson complete"
+      className="absolute -bottom-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-400 text-[9px] font-bold leading-none text-zinc-950"
+      title="Lesson complete"
+    >
+      ✓
+    </span>
   );
 }

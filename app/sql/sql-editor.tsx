@@ -22,19 +22,16 @@ import { tags } from "@lezer/highlight";
 
 import { createSqlDatabase, runSqlQueryOnDatabase } from "./run-example";
 import { isSqlKeyword, sqlHighlight } from "./sql-highlight";
-import type {
-  ExecutionOutput,
-  QueryRow,
-  SqlExampleDefinition,
-  SqlExecutionInput,
-} from "./types";
+import type { ExecutionOutput, QueryRow } from "./types";
 
 type SqlEditorProps = {
   className?: string | undefined;
   description?: string | undefined;
-  example?: SqlExampleDefinition | undefined;
-  initialQuery?: string | undefined;
-  sqlLoad?: string | undefined;
+  databaseInit?: string | undefined;
+  headerAction?: React.ReactNode;
+  onSuccess?: ((query: string) => void) | undefined;
+  status?: string | undefined;
+  query?: string | undefined;
   title?: string | undefined;
 };
 
@@ -68,21 +65,21 @@ const keywordCompletions: readonly Completion[] = [
 
 export function SqlEditor({
   className = "",
+  databaseInit,
   description,
-  example,
-  initialQuery,
-  sqlLoad,
+  headerAction,
+  onSuccess,
+  status,
+  query: initialQuery,
   title = "Interactive Playground",
 }: SqlEditorProps) {
-  const [query, setQuery] = useState(() =>
-    formatInitialQuery(initialQuery ?? example?.query),
-  );
+  const [query, setQuery] = useState(() => formatInitialQuery(initialQuery));
   const [execution, setExecution] = useState<SqlExecutionState>({ status: "idle" });
   const [outputView, setOutputView] = useState<SqlOutputView>("result");
   const [databaseState, setDatabaseState] = useState<DatabaseState>({ status: "idle" });
   const databaseRef = useRef<PGlite | undefined>(undefined);
-  const sqlInput = getSqlExecutionInput(example, sqlLoad);
-  const schema = useMemo(() => getSqlSchema(sqlInput.sqlLoad), [sqlInput.sqlLoad]);
+  const databaseSql = databaseInit ?? "";
+  const schema = useMemo(() => getSqlSchema(databaseSql), [databaseSql]);
   const canRun = Boolean(databaseRef.current && query.trim());
 
   useEffect(() => {
@@ -90,7 +87,7 @@ export function SqlEditor({
     let db: PGlite | undefined;
 
     async function loadDatabase() {
-      if (!sqlInput.sqlLoad) {
+      if (!databaseSql) {
         databaseRef.current = undefined;
         setDatabaseState({ status: "idle" });
         return;
@@ -100,7 +97,7 @@ export function SqlEditor({
       setDatabaseState({ status: "loading" });
 
       try {
-        db = await createSqlDatabase(sqlInput.sqlLoad);
+        db = await createSqlDatabase(databaseSql);
 
         if (!isCurrent) {
           await db.close();
@@ -128,7 +125,7 @@ export function SqlEditor({
       databaseRef.current = undefined;
       void db?.close();
     };
-  }, [sqlInput.sqlLoad]);
+  }, [databaseSql]);
 
   async function runQuery(view: Exclude<SqlOutputView, "both">) {
     const db = databaseRef.current;
@@ -142,19 +139,33 @@ export function SqlEditor({
 
     const result = await runSqlQueryOnDatabase(db, query);
 
-    setExecution(
-      result.match<SqlExecutionState>(
-        (output) => ({ status: "done", output }),
-        (message) => ({ status: "error", message }),
-      ),
+    const nextExecution = result.match<SqlExecutionState>(
+      (output) => ({ status: "done", output }),
+      (message) => ({ status: "error", message }),
     );
+
+    setExecution(nextExecution);
+
+    if (nextExecution.status === "done") {
+      onSuccess?.(query);
+    }
   }
 
   return (
     <section className={["min-w-0 border-t border-zinc-200 pt-6", className].join(" ")}>
       <div className="mb-3">
         <div>
-          <h2 className="text-xl font-bold text-zinc-950">{title}</h2>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex min-w-0 items-center gap-4">
+              <h2 className="text-xl font-bold text-zinc-950">{title}</h2>
+              {status ? (
+                <span className="font-mono text-sm uppercase tracking-wide text-zinc-500">
+                  {status}
+                </span>
+              ) : null}
+            </div>
+            {headerAction}
+          </div>
           <p className="mt-1 text-base leading-7 text-zinc-700">
             {description ??
               "The database is already loaded. Write any query you want and run it directly in your browser."}
@@ -163,7 +174,7 @@ export function SqlEditor({
       </div>
 
       <CodeMirrorSqlEditor
-        disabled={!sqlInput.sqlLoad}
+        disabled={!databaseSql}
         onChange={(nextQuery) => {
           setQuery(nextQuery);
           setExecution({ status: "idle" });
@@ -172,39 +183,67 @@ export function SqlEditor({
         value={query}
       />
 
-      <div className="mt-4 flex justify-end gap-2">
-        <button
-          className="inline-flex h-10 items-center justify-center rounded-sm bg-zinc-950 px-5 font-mono text-sm font-semibold text-white transition enabled:hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-zinc-300 disabled:text-zinc-600"
-          disabled={!canRun || execution.status === "loading"}
-          onClick={() => runQuery("result")}
-          onMouseDown={(event) => event.preventDefault()}
-          type="button"
-        >
-          {execution.status === "loading" && outputView === "result" ? (
-            "Running..."
-          ) : (
-            <>
-              <PlayIcon />
-              Run
-            </>
-          )}
-        </button>
+      <div className="mt-4 flex items-center justify-between gap-2">
         <button
           className="inline-flex h-10 items-center justify-center rounded-sm border border-zinc-300 px-5 font-mono text-sm font-semibold text-zinc-950 transition enabled:hover:border-zinc-950 enabled:hover:bg-zinc-950 enabled:hover:text-white disabled:cursor-not-allowed disabled:border-zinc-200 disabled:bg-zinc-100 disabled:text-zinc-500"
-          disabled={!canRun || execution.status === "loading"}
-          onClick={() => runQuery("plan")}
+          disabled={!databaseSql}
+          onClick={() => {
+            setQuery(formatInitialQuery(initialQuery));
+            setExecution({ status: "idle" });
+          }}
           onMouseDown={(event) => event.preventDefault()}
           type="button"
         >
-          {execution.status === "loading" && outputView === "plan" ? (
-            "Explaining..."
-          ) : (
-            <>
-              <ExplainIcon />
-              Explain
-            </>
-          )}
+          <ResetIcon />
+          Reset
         </button>
+        <div className="flex gap-2">
+          <button
+            className="inline-flex h-10 items-center justify-center rounded-sm border border-zinc-300 px-5 font-mono text-sm font-semibold text-zinc-950 transition enabled:hover:border-zinc-950 enabled:hover:bg-zinc-950 enabled:hover:text-white disabled:cursor-not-allowed disabled:border-zinc-200 disabled:bg-zinc-100 disabled:text-zinc-500"
+            disabled={!databaseSql}
+            onClick={() => {
+              setQuery("");
+              setExecution({ status: "idle" });
+            }}
+            onMouseDown={(event) => event.preventDefault()}
+            type="button"
+          >
+            <ClearIcon />
+            Clean
+          </button>
+          <button
+            className="inline-flex h-10 items-center justify-center rounded-sm bg-zinc-950 px-5 font-mono text-sm font-semibold text-white transition enabled:hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-zinc-300 disabled:text-zinc-600"
+            disabled={!canRun || execution.status === "loading"}
+            onClick={() => runQuery("result")}
+            onMouseDown={(event) => event.preventDefault()}
+            type="button"
+          >
+            {execution.status === "loading" && outputView === "result" ? (
+              "Running..."
+            ) : (
+              <>
+                <PlayIcon />
+                Run
+              </>
+            )}
+          </button>
+          <button
+            className="inline-flex h-10 items-center justify-center rounded-sm border border-zinc-300 px-5 font-mono text-sm font-semibold text-zinc-950 transition enabled:hover:border-zinc-950 enabled:hover:bg-zinc-950 enabled:hover:text-white disabled:cursor-not-allowed disabled:border-zinc-200 disabled:bg-zinc-100 disabled:text-zinc-500"
+            disabled={!canRun || execution.status === "loading"}
+            onClick={() => runQuery("plan")}
+            onMouseDown={(event) => event.preventDefault()}
+            type="button"
+          >
+            {execution.status === "loading" && outputView === "plan" ? (
+              "Explaining..."
+            ) : (
+              <>
+                <ExplainIcon />
+                Explain
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       <DatabaseStatus state={databaseState} />
@@ -417,6 +456,22 @@ function ExplainIcon() {
   );
 }
 
+function ResetIcon() {
+  return (
+    <span aria-hidden="true" className="mr-2">
+      ↻
+    </span>
+  );
+}
+
+function ClearIcon() {
+  return (
+    <span aria-hidden="true" className="mr-2">
+      ×
+    </span>
+  );
+}
+
 export function CodeWindow({ code }: { code: string }) {
   return <CodeViewer code={code} />;
 }
@@ -550,16 +605,6 @@ function ResultTable({ rows }: { rows: QueryRow[] }) {
       </tbody>
     </table>
   );
-}
-
-function getSqlExecutionInput(
-  example: SqlExampleDefinition | undefined,
-  sqlLoad: string | undefined,
-): SqlExecutionInput {
-  return {
-    query: example?.query ?? "",
-    sqlLoad: sqlLoad ?? (example ? `${example.migration}\n${example.seed}` : ""),
-  };
 }
 
 function formatInitialQuery(query: string | undefined) {

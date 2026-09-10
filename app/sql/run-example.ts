@@ -1,17 +1,12 @@
 import { ResultAsync } from "neverthrow";
 import type { PGlite } from "@electric-sql/pglite";
+import type { SqlExample } from "../../cli_examples/types";
 
-import type {
-  ExecutionOutput,
-  ExplainRow,
-  QueryRow,
-  SqlExampleDefinition,
-  SqlExecutionInput,
-} from "./types";
+import type { ExecutionOutput, ExplainRow, QueryRow, SqlExecutionInput } from "./types";
 
-export function runSqlExample(example: SqlExampleDefinition) {
+export function runSqlExample(example: SqlExample) {
   return runSqlQuery(
-    { query: example.query, sqlLoad: `${example.migration}\n${example.seed}` },
+    { query: example.query, sqlLoad: example.database_init?.query ?? "" },
     example.query,
   );
 }

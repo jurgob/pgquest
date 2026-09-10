@@ -1,10 +1,10 @@
 import type { Route } from "./+types/lesson-1";
-import exampleOneQuery, {
-  migration as exampleOneMigration,
-  seed as exampleOneSeed,
+import {
+  database_inits as exampleOneDatabaseInits,
+  examples as exampleOneExamples,
+  exercises as exampleOneExercises,
 } from "../../cli_examples/example1.sql";
-import exampleOneSpecificQuery from "../../cli_examples/example1b.sql";
-import exampleOneInsertQuery from "../../cli_examples/example1c.sql";
+import { getSqlExample, SQL_EXAMPLE_IDS } from "../../cli_examples/types";
 import {
   LessonPage,
   LessonSection,
@@ -24,7 +24,31 @@ export function meta(_args: Route.MetaArgs) {
 }
 
 export default function LessonOne() {
-  const sqlLoad = `${exampleOneMigration}\n${exampleOneSeed}`;
+  const exampleOneMigration = getSqlExample(
+    exampleOneExamples,
+    SQL_EXAMPLE_IDS.example1Migration,
+  ).query;
+  const exampleOneSeed = getSqlExample(
+    exampleOneExamples,
+    SQL_EXAMPLE_IDS.example1Seed,
+  ).query;
+  const exampleOneQuery = getSqlExample(
+    exampleOneExamples,
+    SQL_EXAMPLE_IDS.example1BasicSelect,
+  ).query;
+  const exampleOneSpecificQuery = getSqlExample(
+    exampleOneExamples,
+    SQL_EXAMPLE_IDS.example1SpecificSelect,
+  ).query;
+  const exampleOneInsertQuery = getSqlExample(
+    exampleOneExamples,
+    SQL_EXAMPLE_IDS.example1Insert,
+  ).query;
+  const databaseInit = getSqlExample(
+    exampleOneDatabaseInits,
+    SQL_EXAMPLE_IDS.example1DatabaseInit,
+  );
+  const sqlLoad = databaseInit.query;
   const exampleOne = useSqlExecution({ query: exampleOneQuery, sqlLoad });
   const exampleOneSpecific = useSqlExecution({
     query: exampleOneSpecificQuery,
@@ -39,6 +63,7 @@ export default function LessonOne() {
     <LessonPage
       activeLesson="lesson1"
       defaultQuery={exampleOneInsertQuery}
+      exercises={exampleOneExercises}
       sqlLoad={sqlLoad}
       title="My first query"
       whatWeLearned={[

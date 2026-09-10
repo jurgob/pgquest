@@ -1,5 +1,6 @@
 import type { Route } from "./+types/home";
 import { Link } from "react-router";
+import { useExerciseProgress } from "../sql/exercise-progress-context";
 import { SiteHeader } from "../sql/site-header";
 
 export function meta(_args: Route.MetaArgs) {
@@ -31,6 +32,13 @@ const lessons = [
 ] as const;
 
 export default function Home() {
+  const lessonOneProgress = useExerciseProgress("lesson1");
+  const lessonTwoProgress = useExerciseProgress("lesson2");
+  const completedLessons = {
+    lesson1: lessonOneProgress.isComplete,
+    lesson2: lessonTwoProgress.isComplete,
+  };
+
   return (
     <main className="min-h-screen bg-white text-zinc-950">
       <SiteHeader />
@@ -87,6 +95,11 @@ export default function Home() {
                   {lesson.id}
                 </p>
                 <h2 className="mt-3 text-2xl font-bold leading-tight">{lesson.title}</h2>
+                {completedLessons[lesson.id === "Lesson 01" ? "lesson1" : "lesson2"] ? (
+                  <p className="mt-4 font-mono text-sm font-semibold text-emerald-700">
+                    ✓ Complete
+                  </p>
+                ) : null}
               </div>
 
               <div>
