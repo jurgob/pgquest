@@ -43,8 +43,19 @@ export function useSqlExecution(input: SqlExecutionInput) {
         {children}
       </SqlExecutionResult>
     ),
-    SQLResultExplain: ({ children }: { children?: React.ReactNode }) => (
-      <SqlExecutionResult execution={execution} query={stableInput.query} view="plan">
+    SQLResultExplain: ({
+      children,
+      showQuery,
+    }: {
+      children?: React.ReactNode;
+      showQuery?: boolean;
+    }) => (
+      <SqlExecutionResult
+        execution={execution}
+        query={stableInput.query}
+        showQuery={showQuery}
+        view="plan"
+      >
         {children}
       </SqlExecutionResult>
     ),

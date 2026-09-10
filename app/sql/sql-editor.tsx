@@ -416,14 +416,14 @@ function DatabaseStatus({ state }: { state: DatabaseState }) {
 
   if (state.status === "loading") {
     return (
-      <OutputBlock tone="neutral" title="Result">
-        <SqlResultSkeleton />
+      <OutputBlock tone="danger">
+          <SqlResultSkeleton />
       </OutputBlock>
     );
   }
 
   return (
-    <OutputBlock tone="danger" title="Database Error">
+    <OutputBlock tone="danger">
       <pre className="overflow-auto whitespace-pre-wrap text-sm text-red-800">
         {state.message}
       </pre>
@@ -500,23 +500,23 @@ export function SqlExecutionResult({
   children,
   loading,
   query,
+  showQuery = true,
   view = "both",
 }: {
   children?: React.ReactNode;
   execution: SqlExecutionState;
   loading?: React.ReactNode;
   query?: string | undefined;
+  showQuery?: boolean | undefined;
   view?: SqlOutputView | undefined;
 }) {
   return match(execution)
     .with({ status: "idle" }, () => null)
     .with({ status: "loading" }, () => (
-      <OutputBlock tone="neutral" title={view === "plan" ? "Explanation" : "Result"}>
-        {loading ?? <SqlResultSkeleton />}
-      </OutputBlock>
+      <OutputBlock tone="neutral">{loading ?? <SqlResultSkeleton />}</OutputBlock>
     ))
     .with({ status: "error" }, ({ message }) => (
-      <OutputBlock tone="danger" title="Error">
+      <OutputBlock tone="danger">
         <pre className="overflow-auto whitespace-pre-wrap text-sm text-red-800">
           {message}
         </pre>
@@ -525,13 +525,13 @@ export function SqlExecutionResult({
     .with({ status: "done" }, ({ output }) => (
       <div className="mt-6 flex flex-col gap-6">
         {view === "both" || view === "result" ? (
-          <OutputBlock tone="neutral" title="Result">
+          <OutputBlock tone="neutral">
             <ResultTable rows={output.rows} />
           </OutputBlock>
         ) : null}
         {view === "both" || view === "plan" ? (
-          <OutputBlock tone="plan" title="Explanation">
-            {query ? <CodeWindow code={`EXPLAIN ${query.trim()}`} /> : null}
+          <OutputBlock tone="plan">
+            {showQuery && query ? <CodeWindow code={`EXPLAIN ${query.trim()}`} /> : null}
             <pre className="mt-3 overflow-auto whitespace-pre-wrap rounded-md bg-[#22251f] px-5 py-4 font-mono text-sm leading-6 text-zinc-100">
               {output.plan}
             </pre>
@@ -546,22 +546,18 @@ export function SqlExecutionResult({
 export function SqlResultSkeleton() {
   return (
     <div aria-label="Loading result" className="animate-pulse space-y-3" role="status">
-      <div className="h-4 w-2/5 bg-zinc-200" />
-      <div className="h-4 w-4/5 bg-zinc-200" />
       <div className="h-4 w-3/5 bg-zinc-200" />
-      <div className="mt-6 h-px w-full bg-zinc-200" />
-      <div className="h-4 w-1/2 bg-zinc-200" />
+      <div className="h-4 w-5/5 bg-zinc-200" />
+      <div className="h-4 w-5/5 bg-zinc-200" />
     </div>
   );
 }
 
-function OutputBlock({
+export function OutputBlock({
   children,
-  title,
   tone,
 }: {
   children: React.ReactNode;
-  title: string;
   tone: "danger" | "neutral" | "plan";
 }) {
   const className = match(tone)
@@ -569,23 +565,14 @@ function OutputBlock({
     .with("neutral", () => "border-zinc-200")
     .with("plan", () => "border-zinc-200")
     .exhaustive();
-  const titleClassName = match(tone)
-    .with("danger", () => "border-red-200 text-red-700")
-    .with("neutral", () => "border-zinc-200 text-zinc-950")
-    .with("plan", () => "border-zinc-200 text-zinc-950")
-    .exhaustive();
-
   return (
     <section className={["min-w-0 border-t pt-3", className].join(" ")}>
-      <div className={["mb-3 text-base font-bold", titleClassName].join(" ")}>
-        {title}
-      </div>
       <div className="overflow-auto">{children}</div>
     </section>
   );
 }
 
-function ResultTable({ rows }: { rows: QueryRow[] }) {
+export function ResultTable({ rows }: { rows: QueryRow[] }) {
   if (rows.length === 0) {
     return <p className="text-base text-zinc-600">No rows</p>;
   }

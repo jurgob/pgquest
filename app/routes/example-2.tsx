@@ -13,7 +13,7 @@ import {
   Title2,
 } from "../sql/lesson-layout";
 import { CodeViewer } from "../sql/sql-editor";
-import { useSqlExecution } from "../sql/use-sql-execution";
+import { SqlPlan, SqlResult, useLessonSqlExample } from "../sql/use-lesson-sql-example";
 
 export function meta(_args: Route.MetaArgs) {
   return [
@@ -48,8 +48,11 @@ export default function ExampleTwo() {
   ).query;
   const exampleTwoIndexedSeed = exampleTwoSeed;
   const exampleTwoIndexedQuery = indexedExample.query;
-  const sequential = useSqlExecution({ query: exampleTwoQuery, sqlLoad: sequentialLoad });
-  const indexed = useSqlExecution({
+  const sequential = useLessonSqlExample({
+    query: exampleTwoQuery,
+    sqlLoad: sequentialLoad,
+  });
+  const indexed = useLessonSqlExample({
     query: exampleTwoIndexedQuery,
     sqlLoad: indexedLoad,
   });
@@ -89,8 +92,10 @@ export default function ExampleTwo() {
         <CodeViewer code={exampleTwoQuery} />
       </Section>
 
-      <sequential.SQLResult />
-      <sequential.SQLResultExplain>
+      <SqlResult execution={sequential} />
+      <Section>
+        <Title2>Explanation</Title2>
+        <CodeViewer code={"EXPLAIN " + exampleTwoQuery.trim()} />
         <div className="mt-3 text-base leading-7 text-zinc-700">
           <p>
             Without an index on <code className="font-mono text-sm">email</code>,
@@ -101,7 +106,8 @@ export default function ExampleTwo() {
             matching email.
           </p>
         </div>
-      </sequential.SQLResultExplain>
+        <SqlPlan execution={sequential} />
+      </Section>
 
       <LessonSection>
         <div>
@@ -134,8 +140,10 @@ export default function ExampleTwo() {
           <CodeViewer code={exampleTwoIndexedQuery} />
         </Section>
 
-        <indexed.SQLResult />
-        <indexed.SQLResultExplain>
+        <SqlResult execution={indexed} />
+        <Section>
+          <Title2>Explanation</Title2>
+          <CodeViewer code={"EXPLAIN " + exampleTwoIndexedQuery.trim()} />
           <div className="mt-3 text-base leading-7 text-zinc-700">
             <p>Compared to the first plan, PostgreSQL now has a better access path:</p>
             <ul className="mt-2 list-disc space-y-2 pl-5">
@@ -158,7 +166,8 @@ export default function ExampleTwo() {
               </li>
             </ul>
           </div>
-        </indexed.SQLResultExplain>
+          <SqlPlan execution={indexed} />
+        </Section>
       </LessonSection>
     </LessonPage>
   );

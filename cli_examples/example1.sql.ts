@@ -6,7 +6,7 @@ import {
   type SqlExample,
 } from "./types";
 
-const migration = sqlStatement(`
+export const migration = sqlStatement(`
 CREATE TABLE "User" (
   id SERIAL PRIMARY KEY,
   name TEXT NOT NULL,
@@ -14,7 +14,7 @@ CREATE TABLE "User" (
 );
 `);
 
-const seed = sqlStatement(`
+export const seed = sqlStatement(`
 INSERT INTO "User" (name, email)
 VALUES
   ('Ada Lovelace', 'ada@example.com'),
@@ -24,16 +24,16 @@ VALUES
 ANALYZE "User";
 `);
 
-const selectAll = sqlStatement(`
+export const selectAll = sqlStatement(`
 SELECT * FROM "User";
 `);
 
-const selectByEmail = sqlStatement(`
+export const selectByEmail = sqlStatement(`
 SELECT * FROM "User"
 WHERE email = 'ada@example.com';
 `);
 
-const insertUser = sqlStatement(`
+export const insertUser = sqlStatement(`
 INSERT INTO "User" (name, email)
 VALUES ('Linus Torvalds', 'linus@example.com')
 RETURNING *;
@@ -46,7 +46,7 @@ const migrationInit: SqlExample = {
   query: migration,
 };
 
-const databaseInit: SqlExample = {
+export const databaseInit: SqlExample = {
   id: SQL_EXAMPLE_IDS.example1DatabaseInit,
   name: sqlExampleTitle("Example 1 database"),
   description: sqlExampleDescription("Creates and seeds the User table."),

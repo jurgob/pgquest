@@ -1,10 +1,13 @@
 import type { Route } from "./+types/lesson-1";
 import {
-  database_inits as exampleOneDatabaseInits,
-  examples as exampleOneExamples,
+  databaseInit as exampleOneDatabaseInit,
   exercises as exampleOneExercises,
+  insertUser as exampleOneInsertQuery,
+  migration as exampleOneMigration,
+  seed as exampleOneSeed,
+  selectAll as exampleOneQuery,
+  selectByEmail as exampleOneSpecificQuery,
 } from "../../cli_examples/example1.sql";
-import { getSqlExample, SQL_EXAMPLE_IDS } from "../../cli_examples/types";
 import {
   LessonPage,
   LessonSection,
@@ -14,7 +17,7 @@ import {
   Title2,
 } from "../sql/lesson-layout";
 import { CodeViewer } from "../sql/sql-editor";
-import { useSqlExecution } from "../sql/use-sql-execution";
+import { SqlPlan, SqlResult, useLessonSqlExample } from "../sql/use-lesson-sql-example";
 
 export function meta(_args: Route.MetaArgs) {
   return [
@@ -24,37 +27,13 @@ export function meta(_args: Route.MetaArgs) {
 }
 
 export default function LessonOne() {
-  const exampleOneMigration = getSqlExample(
-    exampleOneExamples,
-    SQL_EXAMPLE_IDS.example1Migration,
-  ).query;
-  const exampleOneSeed = getSqlExample(
-    exampleOneExamples,
-    SQL_EXAMPLE_IDS.example1Seed,
-  ).query;
-  const exampleOneQuery = getSqlExample(
-    exampleOneExamples,
-    SQL_EXAMPLE_IDS.example1BasicSelect,
-  ).query;
-  const exampleOneSpecificQuery = getSqlExample(
-    exampleOneExamples,
-    SQL_EXAMPLE_IDS.example1SpecificSelect,
-  ).query;
-  const exampleOneInsertQuery = getSqlExample(
-    exampleOneExamples,
-    SQL_EXAMPLE_IDS.example1Insert,
-  ).query;
-  const databaseInit = getSqlExample(
-    exampleOneDatabaseInits,
-    SQL_EXAMPLE_IDS.example1DatabaseInit,
-  );
-  const sqlLoad = databaseInit.query;
-  const exampleOne = useSqlExecution({ query: exampleOneQuery, sqlLoad });
-  const exampleOneSpecific = useSqlExecution({
+  const sqlLoad = exampleOneDatabaseInit.query;
+  const exampleOne = useLessonSqlExample({ query: exampleOneQuery, sqlLoad });
+  const exampleOneSpecific = useLessonSqlExample({
     query: exampleOneSpecificQuery,
     sqlLoad,
   });
-  const exampleOneInsert = useSqlExecution({
+  const exampleOneInsert = useLessonSqlExample({
     query: exampleOneInsertQuery,
     sqlLoad,
   });
@@ -179,18 +158,22 @@ export default function LessonOne() {
         <CodeViewer code={exampleOneQuery} />
       </Section>
 
-      <exampleOne.SQLResult />
-      <exampleOne.SQLResultExplain>
+      <SqlResult execution={exampleOne} />
+
+      <Section>
+        <Title2>Explanation</Title2>
+        <Paragraph>
+          Add <code className="font-mono text-sm">EXPLAIN</code> before a query to ask
+          PostgreSQL how it plans to run it. Plain{" "}
+          <code className="font-mono text-sm">EXPLAIN</code> does not execute the query;
+          it only builds the plan.{" "}
+          <code className="font-mono text-sm">EXPLAIN ANALYZE</code> is the version that
+          actually runs the query and reports real timings.
+        </Paragraph>
+        <CodeViewer code={"EXPLAIN " + exampleOneQuery.trim()} />
+        <SqlPlan execution={exampleOne} />
         <div className="mt-3 text-base leading-7 text-zinc-700">
-          <p>
-            Add <code className="font-mono text-sm">EXPLAIN</code> before a query to ask
-            PostgreSQL how it plans to run it. Plain{" "}
-            <code className="font-mono text-sm">EXPLAIN</code> does not execute the query;
-            it only builds the plan.{" "}
-            <code className="font-mono text-sm">EXPLAIN ANALYZE</code> is the version that
-            actually runs the query and reports real timings.
-          </p>
-          <p className="mt-3">Read the plan from left to right:</p>
+          <p>Read the plan from left to right:</p>
           <ul className="mt-2 list-disc space-y-2 pl-5">
             <li>
               <code className="font-mono text-sm">Seq Scan</code> means sequential scan:
@@ -215,7 +198,9 @@ export default function LessonOne() {
             </li>
           </ul>
         </div>
-      </exampleOne.SQLResultExplain>
+      </Section>
+
+      
 
       <LessonSection>
         <Title2>Postgres Terminology</Title2>
@@ -330,8 +315,10 @@ export default function LessonOne() {
           </Paragraph>
           <CodeViewer code={exampleOneSpecificQuery} />
         </Section>
-        <exampleOneSpecific.SQLResult />
-        <exampleOneSpecific.SQLResultExplain>
+        <SqlResult execution={exampleOneSpecific} />
+        <Section>
+          <Title2>Explanation</Title2>
+          <CodeViewer code={"EXPLAIN " + exampleOneSpecificQuery.trim()} />
           <div className="mt-3 text-base leading-7 text-zinc-700">
             <p>Compared to the first plan, two things changed:</p>
             <ul className="mt-2 list-disc space-y-2 pl-5">
@@ -348,7 +335,8 @@ export default function LessonOne() {
               </li>
             </ul>
           </div>
-        </exampleOneSpecific.SQLResultExplain>
+          <SqlPlan execution={exampleOneSpecific} />
+        </Section>
       </LessonSection>
 
       <LessonSection>
@@ -376,8 +364,10 @@ export default function LessonOne() {
           </Paragraph>
           <CodeViewer code={exampleOneInsertQuery} />
         </Section>
-        <exampleOneInsert.SQLResult />
-        <exampleOneInsert.SQLResultExplain>
+        <SqlResult execution={exampleOneInsert} />
+        <Section>
+          <Title2>Explanation</Title2>
+          <CodeViewer code={"EXPLAIN " + exampleOneInsertQuery.trim()} />
           <div className="mt-3 text-base leading-7 text-zinc-700">
             <p>
               The plan starts with{" "}
@@ -391,7 +381,8 @@ export default function LessonOne() {
               scan another table first.
             </p>
           </div>
-        </exampleOneInsert.SQLResultExplain>
+          <SqlPlan execution={exampleOneInsert} />
+        </Section>
       </LessonSection>
     </LessonPage>
   );
