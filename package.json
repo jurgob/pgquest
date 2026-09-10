@@ -8,6 +8,7 @@
     "build": "react-router build",
     "cli": "vite-node --config ./vite.cli.config.ts ./scripts/run-cli-examples.ts",
     "dev": "CHOKIDAR_USEPOLLING=1 react-router dev --port 9999",
+    "dev:native": "react-router dev --port 9999",
     "format": "prettier . --check",
     "format:fix": "prettier . --write",
     "lint": "eslint .",
@@ -17,7 +18,15 @@
     "typecheck": "react-router typegen && tsc"
   },
   "dependencies": {
+    "@codemirror/autocomplete": "^6.20.3",
+    "@codemirror/commands": "^6.11.0",
+    "@codemirror/lang-sql": "^6.10.0",
+    "@codemirror/language": "^6.12.4",
+    "@codemirror/lint": "^6.9.7",
+    "@codemirror/state": "^6.7.4",
+    "@codemirror/view": "^6.43.11",
     "@electric-sql/pglite": "^0.5.8",
+    "@lezer/highlight": "^1.2.3",
     "@react-router/node": "^8",
     "@react-router/serve": "^8",
     "isbot": "^5.1.36",

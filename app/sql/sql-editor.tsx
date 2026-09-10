@@ -1,6 +1,24 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { match } from "ts-pattern";
 import type { PGlite } from "@electric-sql/pglite";
+import {
+  autocompletion,
+  type Completion,
+  type CompletionContext,
+} from "@codemirror/autocomplete";
+import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
+import { HighlightStyle, syntaxHighlighting, syntaxTree } from "@codemirror/language";
+import { PostgreSQL, sql } from "@codemirror/lang-sql";
+import { linter, lintGutter, type Diagnostic } from "@codemirror/lint";
+import { EditorState } from "@codemirror/state";
+import {
+  drawSelection,
+  EditorView,
+  highlightActiveLine,
+  keymap,
+  lineNumbers,
+} from "@codemirror/view";
+import { tags } from "@lezer/highlight";
 
 import { createSqlDatabase, runSqlQueryOnDatabase } from "./run-example";
 import type {
@@ -42,22 +60,25 @@ type SqlToken = {
 
 type SqlOutputView = "both" | "plan" | "result";
 
-const baseSuggestions = [
+type SqlSchema = Record<string, readonly string[]>;
+
+const keywordCompletions: readonly Completion[] = [
   "SELECT",
   "FROM",
   "WHERE",
+  "AND",
+  "OR",
   "INSERT",
+  "INTO",
+  "VALUES",
   "UPDATE",
+  "SET",
   "DELETE",
-  "CREATE",
-  "INDEX",
-  "EXPLAIN",
-  "ANALYZE",
-  "ORDER",
-  "GROUP",
-  "LIMIT",
   "RETURNING",
-];
+  "ORDER BY",
+  "LIMIT",
+  "EXPLAIN",
+].map((label) => ({ label, type: "keyword" }));
 
 export function SqlEditor({
   className = "",
@@ -67,16 +88,13 @@ export function SqlEditor({
   sqlLoad,
   title = "Interactive Playground",
 }: SqlEditorProps) {
-  const [query, setQuery] = useState(initialQuery ?? example?.query ?? "");
+  const [query, setQuery] = useState(() => formatInitialQuery(initialQuery ?? example?.query));
   const [execution, setExecution] = useState<SqlExecutionState>({ status: "idle" });
   const [outputView, setOutputView] = useState<SqlOutputView>("result");
-  const [selectionStart, setSelectionStart] = useState(query.length);
-  const [isFocused, setIsFocused] = useState(false);
   const [databaseState, setDatabaseState] = useState<DatabaseState>({ status: "idle" });
   const databaseRef = useRef<PGlite | undefined>(undefined);
-  const textAreaRef = useRef<HTMLTextAreaElement>(null);
-  const suggestions = useSqlSuggestions(example, query, selectionStart);
   const sqlInput = getSqlExecutionInput(example, sqlLoad);
+  const schema = useMemo(() => getSqlSchema(sqlInput.sqlLoad), [sqlInput.sqlLoad]);
   const canRun = Boolean(databaseRef.current && query.trim());
 
   useEffect(() => {
@@ -124,23 +142,6 @@ export function SqlEditor({
     };
   }, [sqlInput.sqlLoad]);
 
-  function syncSelection() {
-    setSelectionStart(textAreaRef.current?.selectionStart ?? 0);
-  }
-
-  function insertSuggestion(value: string) {
-    const bounds = getCurrentWordBounds(query, selectionStart);
-    const nextQuery = query.slice(0, bounds.start) + value + query.slice(bounds.end);
-    const nextPosition = bounds.start + value.length;
-
-    setQuery(nextQuery);
-    setSelectionStart(nextPosition);
-    requestAnimationFrame(() => {
-      textAreaRef.current?.focus();
-      textAreaRef.current?.setSelectionRange(nextPosition, nextPosition);
-    });
-  }
-
   async function runQuery(view: Exclude<SqlOutputView, "both">) {
     const db = databaseRef.current;
 
@@ -173,69 +174,15 @@ export function SqlEditor({
         </div>
       </div>
 
-      <div className="relative">
-        <div className="relative min-h-[220px] overflow-hidden rounded-md bg-[#22251f]">
-          <pre
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0 m-0 overflow-auto whitespace-pre-wrap break-words px-5 py-4 font-mono text-sm leading-6 text-zinc-100"
-          >
-            <code>
-              {tokenizeSql(query || " ").map((token, index) => (
-                <span
-                  className={getSqlTokenClassName(token.kind)}
-                  key={`${index}-${token.value}`}
-                >
-                  {token.value}
-                </span>
-              ))}
-            </code>
-          </pre>
-          <textarea
-            aria-label="SQL query editor"
-            className="relative block min-h-[220px] w-full resize-y overflow-auto bg-transparent px-5 py-4 font-mono text-sm leading-6 text-transparent caret-white outline-none selection:bg-sky-500/40"
-            disabled={!sqlInput.sqlLoad}
-            onBlur={() => setIsFocused(false)}
-            onChange={(event) => {
-              setQuery(event.target.value);
-              setSelectionStart(event.target.selectionStart);
-              setExecution({ status: "idle" });
-            }}
-            onClick={syncSelection}
-            onFocus={() => setIsFocused(true)}
-            onKeyDown={(event) => {
-              const firstSuggestion = suggestions[0];
-
-              if (event.key === "Tab" && firstSuggestion) {
-                event.preventDefault();
-                insertSuggestion(firstSuggestion);
-              }
-            }}
-            onKeyUp={syncSelection}
-            placeholder="SELECT * FROM users;"
-            ref={textAreaRef}
-            spellCheck={false}
-            value={query}
-          />
-        </div>
-
-        {isFocused && suggestions.length > 0 ? (
-          <div className="absolute left-0 right-0 top-full z-10 mt-2 flex flex-wrap gap-2 rounded-sm border border-zinc-200 bg-white p-2 shadow-lg">
-            {suggestions.map((suggestion) => (
-              <button
-                className="rounded-sm border border-zinc-300 px-2 py-1 font-mono text-xs text-zinc-800 transition hover:border-sky-700 hover:text-sky-700"
-                key={suggestion}
-                onMouseDown={(event) => {
-                  event.preventDefault();
-                  insertSuggestion(suggestion);
-                }}
-                type="button"
-              >
-                {suggestion}
-              </button>
-            ))}
-          </div>
-        ) : null}
-      </div>
+      <CodeMirrorSqlEditor
+        disabled={!sqlInput.sqlLoad}
+        onChange={(nextQuery) => {
+          setQuery(nextQuery);
+          setExecution({ status: "idle" });
+        }}
+        schema={schema}
+        value={query}
+      />
 
       <div className="mt-4 flex justify-end gap-2">
         <button
@@ -283,6 +230,154 @@ type DatabaseState =
   | { status: "idle" }
   | { status: "loading" }
   | { status: "ready" };
+
+function CodeMirrorSqlEditor({
+  disabled,
+  onChange,
+  schema,
+  value,
+}: {
+  disabled: boolean;
+  onChange: (value: string) => void;
+  schema: SqlSchema;
+  value: string;
+}) {
+  const editorRef = useRef<HTMLDivElement>(null);
+  const viewRef = useRef<EditorView | undefined>(undefined);
+  const onChangeRef = useRef(onChange);
+
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
+
+  useEffect(() => {
+    const element = editorRef.current;
+
+    if (!element) {
+      return;
+    }
+
+    const view = new EditorView({
+      doc: value,
+      extensions: [
+        lineNumbers(),
+        lintGutter(),
+        history(),
+        drawSelection(),
+        highlightActiveLine(),
+        keymap.of([...defaultKeymap, ...historyKeymap]),
+        sql({ dialect: PostgreSQL }),
+        syntaxHighlighting(sqlHighlightStyle),
+        autocompletion({
+          activateOnTyping: true,
+          maxRenderedOptions: 12,
+          override: [createSqlCompletionSource(schema)],
+          selectOnOpen: false,
+        }),
+        linter(sqlSyntaxLinter),
+        EditorState.readOnly.of(disabled),
+        EditorView.editable.of(!disabled),
+        EditorView.lineWrapping,
+        EditorView.theme({
+          "&": {
+            backgroundColor: "#22251f",
+            borderRadius: "0.375rem",
+            color: "#f4f4f5",
+            fontSize: "0.875rem",
+            minHeight: "220px",
+          },
+          ".cm-content": {
+            caretColor: "#ffffff",
+            fontFamily:
+              'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+            minHeight: "220px",
+            padding: "1rem 1.25rem",
+          },
+          ".cm-editor": {
+            outline: "none",
+          },
+          ".cm-focused": {
+            outline: "none",
+          },
+          ".cm-gutters": {
+            backgroundColor: "#1b1d19",
+            borderRight: "1px solid #3f3f46",
+            color: "#a1a1aa",
+          },
+          ".cm-line": {
+            lineHeight: "1.5rem",
+          },
+          ".cm-cursor, .cm-dropCursor": {
+            borderLeftColor: "#ffffff",
+          },
+          ".cm-selectionBackground, .cm-content ::selection": {
+            backgroundColor: "#0369a155",
+          },
+          ".cm-diagnosticText": {
+            color: "#18181b",
+          },
+          ".cm-lintRange-error": {
+            backgroundImage:
+              "linear-gradient(45deg, transparent 65%, #ef4444 80%, transparent 90%), linear-gradient(135deg, transparent 65%, #ef4444 80%, transparent 90%)",
+          },
+          ".cm-tooltip": {
+            border: "1px solid #d4d4d8",
+            borderRadius: "0.25rem",
+          },
+          ".cm-tooltip-autocomplete": {
+            backgroundColor: "#ffffff",
+            color: "#18181b",
+          },
+          ".cm-tooltip-autocomplete ul li": {
+            color: "#18181b",
+          },
+          ".cm-tooltip-autocomplete ul li[aria-selected]": {
+            backgroundColor: "#0369a1",
+            color: "#ffffff",
+          },
+          ".cm-completionLabel": {
+            color: "inherit",
+          },
+          ".cm-completionDetail": {
+            color: "inherit",
+            opacity: "0.72",
+          },
+        }),
+        EditorView.updateListener.of((update) => {
+          if (update.docChanged) {
+            onChangeRef.current(update.state.doc.toString());
+          }
+        }),
+      ],
+      parent: element,
+    });
+
+    viewRef.current = view;
+
+    return () => {
+      view.destroy();
+      viewRef.current = undefined;
+    };
+  }, [disabled, schema]);
+
+  useEffect(() => {
+    const view = viewRef.current;
+
+    if (!view || view.state.doc.toString() === value) {
+      return;
+    }
+
+    view.dispatch({
+      changes: {
+        from: 0,
+        insert: value,
+        to: view.state.doc.length,
+      },
+    });
+  }, [value]);
+
+  return <div aria-label="SQL query editor" ref={editorRef} />;
+}
 
 function DatabaseStatus({ state }: { state: DatabaseState }) {
   if (state.status === "idle" || state.status === "ready") {
@@ -478,37 +573,6 @@ function ResultTable({ rows }: { rows: QueryRow[] }) {
   );
 }
 
-function useSqlSuggestions(
-  example: SqlExampleDefinition | undefined,
-  query: string,
-  selectionStart: number,
-) {
-  return useMemo(() => {
-    const currentWord = getCurrentWord(query, selectionStart).toUpperCase();
-
-    if (!currentWord) {
-      return [];
-    }
-
-    return [...new Set<string>([...baseSuggestions, ...extractIdentifiers(example)])]
-      .filter((suggestion) => suggestion.toUpperCase().startsWith(currentWord))
-      .filter((suggestion) => suggestion.toUpperCase() !== currentWord)
-      .slice(0, 8);
-  }, [example, query, selectionStart]);
-}
-
-function extractIdentifiers(example: SqlExampleDefinition | undefined) {
-  if (!example) {
-    return [];
-  }
-
-  const sql = `${example.migration}\n${example.seed}`;
-  return Array.from(sql.matchAll(/"?([A-Za-z_][A-Za-z0-9_]*)"?/g), ([, value]) => value)
-    .filter((value): value is string => typeof value === "string")
-    .filter((value) => value && !isSqlKeyword(value))
-    .slice(0, 50);
-}
-
 function getSqlExecutionInput(
   example: SqlExampleDefinition | undefined,
   sqlLoad: string | undefined,
@@ -519,24 +583,156 @@ function getSqlExecutionInput(
   };
 }
 
-function getCurrentWord(query: string, selectionStart: number) {
-  const bounds = getCurrentWordBounds(query, selectionStart);
-  return query.slice(bounds.start, bounds.end);
+function formatInitialQuery(query: string | undefined) {
+  return query?.trim() ?? "";
 }
 
-function getCurrentWordBounds(query: string, selectionStart: number) {
-  let start = selectionStart;
-  let end = selectionStart;
+function createSqlCompletionSource(schema: SqlSchema) {
+  const tableCompletions = Object.keys(schema).map((label) => ({
+    label: quoteIdentifierIfNeeded(label),
+    type: "type",
+  }));
+  const columnCompletions = [
+    ...new Set(Object.values(schema).flatMap((columns) => [...columns])),
+  ].map((label) => ({
+    label: quoteIdentifierIfNeeded(label),
+    type: "property",
+  }));
 
-  while (start > 0 && /[A-Za-z0-9_]/.test(query[start - 1] ?? "")) {
-    start -= 1;
+  return (context: CompletionContext) => {
+    const word = context.matchBefore(/"?[A-Za-z_][A-Za-z0-9_"]*$/);
+
+    if (!context.explicit && !word) {
+      return null;
+    }
+
+    const from = word?.from ?? context.pos;
+    const prefix = word?.text ?? "";
+    const before = context.state.sliceDoc(0, from);
+
+    if (isInsideString(before)) {
+      return null;
+    }
+
+    const mode = getCompletionMode(before);
+    const options =
+      mode === "table"
+        ? tableCompletions
+        : mode === "column"
+          ? columnCompletions
+          : context.explicit
+            ? keywordCompletions
+            : keywordCompletions.slice(0, 5);
+
+    const filteredOptions = filterCompletions(options, prefix);
+
+    if (filteredOptions.length === 0) {
+      return null;
+    }
+
+    return {
+      from,
+      options: filteredOptions,
+      validFor: /^"?[A-Za-z_][A-Za-z0-9_"]*$/,
+    };
+  };
+}
+
+function getSqlSchema(sqlLoad: string): SqlSchema {
+  const schema: SqlSchema = {};
+  const createTablePattern =
+    /CREATE\s+TABLE\s+(?:"([^"]+)"|([A-Za-z_][A-Za-z0-9_]*))\s*\(([\s\S]*?)\);/gi;
+
+  for (const match of sqlLoad.matchAll(createTablePattern)) {
+    const tableName = match[1] ?? match[2];
+    const columnBlock = match[3];
+
+    if (!tableName || !columnBlock) {
+      continue;
+    }
+
+    const columns = columnBlock
+      .split(",")
+      .map((line) => line.trim().match(/^(?:"([^"]+)"|([A-Za-z_][A-Za-z0-9_]*))/))
+      .map((columnMatch) => columnMatch?.[1] ?? columnMatch?.[2])
+      .filter((column): column is string => Boolean(column))
+      .filter((column) => !isSqlKeyword(column));
+
+    schema[tableName] = columns;
   }
 
-  while (end < query.length && /[A-Za-z0-9_]/.test(query[end] ?? "")) {
-    end += 1;
+  return schema;
+}
+
+function getCompletionMode(sqlBeforeCursor: string) {
+  const normalized = sqlBeforeCursor.replace(/\s+/g, " ").trimEnd().toUpperCase();
+
+  if (
+    /(WHERE|AND|OR)\s+[\s\S]*(=|<>|!=|<|>|<=|>=|LIKE|IN)\s*(?:'[^']*'|[0-9]+|\))\s*$/.test(
+      normalized,
+    )
+  ) {
+    return "keyword";
   }
 
-  return { end, start };
+  if (/(FROM|JOIN|INTO|UPDATE)\s+(?:"?[A-Z_][A-Z0-9_"]*)?$/.test(normalized)) {
+    return "table";
+  }
+
+  if (
+    /(^|[\s,(])(SELECT|WHERE|AND|OR|BY|SET|RETURNING)\s+[^;]*$/i.test(
+      sqlBeforeCursor,
+    )
+  ) {
+    return "column";
+  }
+
+  return "keyword";
+}
+
+function filterCompletions(options: readonly Completion[], prefix: string) {
+  const normalizedPrefix = normalizeCompletionText(prefix);
+
+  if (!normalizedPrefix) {
+    return options;
+  }
+
+  return options.filter((option) =>
+    normalizeCompletionText(option.label).startsWith(normalizedPrefix),
+  );
+}
+
+function quoteIdentifierIfNeeded(identifier: string) {
+  return /^[a-z_][a-z0-9_]*$/.test(identifier)
+    ? identifier
+    : `"${identifier.replaceAll('"', '""')}"`;
+}
+
+function normalizeCompletionText(value: string) {
+  return value.replaceAll('"', "").toLowerCase();
+}
+
+function isInsideString(sqlBeforeCursor: string) {
+  return (sqlBeforeCursor.match(/'/g) ?? []).length % 2 === 1;
+}
+
+function sqlSyntaxLinter(view: EditorView): Diagnostic[] {
+  const diagnostics: Diagnostic[] = [];
+  const tree = syntaxTree(view.state);
+  const cursor = tree.cursor();
+
+  do {
+    if (cursor.type.isError) {
+      diagnostics.push({
+        from: cursor.from,
+        message: "SQL syntax error",
+        severity: "error",
+        to: Math.max(cursor.to, cursor.from + 1),
+      });
+    }
+  } while (cursor.next());
+
+  return diagnostics;
 }
 
 function formatCell(value: QueryRow[string] | undefined) {
@@ -663,4 +859,14 @@ const sqlKeywords = new Set([
   "VALUES",
   "WHEN",
   "WHERE",
+]);
+
+const sqlHighlightStyle = HighlightStyle.define([
+  { tag: tags.keyword, color: "#67e8f9", fontWeight: "600" },
+  { tag: tags.string, color: "#bef264" },
+  { tag: tags.number, color: "#fef08a" },
+  { tag: tags.comment, color: "#a1a1aa" },
+  { tag: tags.name, color: "#f4f4f5" },
+  { tag: tags.operator, color: "#f4f4f5" },
+  { tag: tags.punctuation, color: "#f4f4f5" },
 ]);
