@@ -2,6 +2,7 @@
 .env
 /node_modules/
 /.pnpm-store/
+/.turbo/
 
 # React Router
 /.react-router/

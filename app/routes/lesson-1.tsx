@@ -200,8 +200,6 @@ export default function LessonOne() {
         </div>
       </Section>
 
-      
-
       <LessonSection>
         <Title2>Postgres Terminology</Title2>
         <Paragraphs>

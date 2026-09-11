@@ -417,7 +417,7 @@ function DatabaseStatus({ state }: { state: DatabaseState }) {
   if (state.status === "loading") {
     return (
       <OutputBlock tone="danger">
-          <SqlResultSkeleton />
+        <SqlResultSkeleton />
       </OutputBlock>
     );
   }

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "tasks": {
+    "lint": {
+      "outputs": []
+    },
+    "format": {
+      "outputs": []
+    },
+    "lint:fix": {
+      "cache": false
+    },
+    "format:fix": {
+      "cache": false
+    },
+    "typecheck": {
+      "outputs": [".react-router/**"]
+    },
+    "test": {
+      "outputs": []
+    },
+    "cli": {
+      "outputs": []
+    },
+    "build": {
+      "dependsOn": ["typecheck"],
+      "outputs": ["build/**"]
+    }
+  }
+}
