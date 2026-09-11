@@ -26,17 +26,38 @@ export function CompletionCelebration() {
       const glow = Math.round(Math.sin(time * 0.8) * 1.5);
 
       drawContext.imageSmoothingEnabled = false;
-      drawContext.fillStyle = "#2a101f";
-      drawContext.fillRect(0, 0, 80, 7);
-      drawContext.fillStyle = "#8f263d";
-      drawContext.fillRect(0, 7, 80, 16);
-      drawContext.fillStyle = "#d64b3f";
-      drawContext.fillRect(0, 23, 80, 7);
+      drawContext.fillStyle = "#621406";
+      drawContext.fillRect(0, 0, 80, 4);
+      drawContext.fillStyle = "#7b1908";
+      drawContext.fillRect(0, 4, 80, 4);
+      drawContext.fillStyle = "#941f0a";
+      drawContext.fillRect(0, 8, 80, 4);
+      drawContext.fillStyle = "#ad2810";
+      drawContext.fillRect(0, 12, 80, 4);
+      drawContext.fillStyle = "#c7351a";
+      drawContext.fillRect(0, 16, 80, 4);
+      drawContext.fillStyle = "#df4826";
+      drawContext.fillRect(0, 20, 80, 5);
+      drawContext.fillStyle = "#e05b45";
+      drawContext.fillRect(0, 25, 80, 5);
 
       // Sunset and distant mountains.
-      drawContext.fillStyle = "#ff9f1c";
-      drawContext.fillRect(55, 9 - glow, 9, 9);
-      drawContext.fillStyle = "#263b2b";
+      const sunGradient = drawContext.createRadialGradient(
+        57 - glow * 0.2,
+        9 - glow * 0.2,
+        1,
+        60,
+        12 - glow,
+        7,
+      );
+      sunGradient.addColorStop(0, "#ffd166");
+      sunGradient.addColorStop(0.55, "#f28c28");
+      sunGradient.addColorStop(1, "#d9572b");
+      drawContext.fillStyle = sunGradient;
+      drawContext.beginPath();
+      drawContext.arc(60, 12 - glow, 6.5, 0, Math.PI * 2);
+      drawContext.fill();
+      drawContext.fillStyle = "#41613f";
       drawContext.beginPath();
       drawContext.moveTo(0, 31);
       drawContext.lineTo(17, 23);
@@ -46,16 +67,39 @@ export function CompletionCelebration() {
       drawContext.lineTo(80, 25);
       drawContext.lineTo(80, 45);
       drawContext.lineTo(0, 45);
-      drawContext.fill();
+      drawContext.closePath();
+      drawContext.save();
+      drawContext.clip();
+      const mountainGradient = drawContext.createLinearGradient(0, 22, 0, 45);
+      mountainGradient.addColorStop(0, "#78a565");
+      mountainGradient.addColorStop(0.4, "#527d4b");
+      mountainGradient.addColorStop(1, "#294631");
+      drawContext.fillStyle = mountainGradient;
+      drawContext.fillRect(0, 21, 80, 24);
+      const mountainShadow = drawContext.createLinearGradient(0, 0, 60, 0);
+      mountainShadow.addColorStop(0, "rgba(18, 37, 25, 0.45)");
+      mountainShadow.addColorStop(0.75, "rgba(18, 37, 25, 0.12)");
+      mountainShadow.addColorStop(1, "rgba(18, 37, 25, 0)");
+      drawContext.fillStyle = mountainShadow;
+      drawContext.fillRect(0, 21, 80, 24);
+      drawContext.restore();
 
-      // The road narrows toward the sunset.
-      drawContext.fillStyle = "#1c241c";
+      // The road narrows toward the sunset and darkens toward the foreground.
       drawContext.beginPath();
       drawContext.moveTo(35, 29);
       drawContext.lineTo(48, 29);
       drawContext.lineTo(78, 45);
       drawContext.lineTo(2, 45);
+      drawContext.closePath();
+      drawContext.save();
+      drawContext.clip();
+      const roadGradient = drawContext.createLinearGradient(0, 29, 0, 45);
+      roadGradient.addColorStop(0, "#c99a68");
+      roadGradient.addColorStop(0.55, "#a8754e");
+      roadGradient.addColorStop(1, "#704936");
+      drawContext.fillStyle = roadGradient;
       drawContext.fill();
+      drawContext.restore();
       drawContext.fillStyle = "#5b5a38";
       drawContext.fillRect(40, 32, 3, 2);
 
@@ -64,12 +108,12 @@ export function CompletionCelebration() {
       pixel(drawContext, 39, baseY - 14, 4, 4, "#fff7e6");
       pixel(drawContext, 38, baseY - 13, 6, 1, "#d62839");
       pixel(drawContext, 43, baseY - 12, 3, 1, "#d62839");
-      pixel(drawContext, 37, baseY - 9, 8, 9, "#fff7e6");
-      pixel(drawContext, 37, baseY - 3, 8, 2, "#171326");
-      pixel(drawContext, 32, baseY - 8 + armSwing, 3, 6, "#fff7e6");
-      pixel(drawContext, 47, baseY - 8 - armSwing, 3, 6, "#fff7e6");
-      pixel(drawContext, 32, baseY - 2 + armSwing, 3, 2, "#171326");
-      pixel(drawContext, 47, baseY - 2 - armSwing, 3, 2, "#171326");
+      pixel(drawContext, 38, baseY - 9, 7, 9, "#fff7e6");
+      pixel(drawContext, 38, baseY - 3, 7, 2, "#171326");
+      pixel(drawContext, 35, baseY - 9 + armSwing, 2, 6, "#fff7e6");
+      pixel(drawContext, 46, baseY - 9 - armSwing, 2, 6, "#fff7e6");
+      pixel(drawContext, 35, baseY - 3 + armSwing, 2, 2, "#171326");
+      pixel(drawContext, 46, baseY - 3 - armSwing, 2, 2, "#171326");
       pixel(drawContext, 38, baseY, 3, step ? 8 : 6, "#fff7e6");
       pixel(drawContext, 42, baseY, 3, step ? 6 : 8, "#fff7e6");
 
