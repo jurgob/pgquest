@@ -109,4 +109,18 @@ export const examples: SqlExample[] = [
   },
 ];
 
-export const exercises: SqlExample[] = [];
+export const exercises: SqlExample[] = [
+  {
+    id: SQL_EXAMPLE_IDS.example2ExerciseFindUser2048,
+    name: sqlExampleTitle("Exercise 1"),
+    description: sqlExampleDescription(
+      "Select the user whose email is user2048@example.com from the indexed users table.",
+    ),
+    database_init: indexedDatabaseInit,
+    query: sqlStatement(`
+SELECT id, name, email, city
+FROM users
+WHERE email = 'user2048@example.com';
+`),
+  },
+];

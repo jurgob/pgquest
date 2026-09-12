@@ -64,6 +64,20 @@ export default function ExampleTwo() {
       exercises={exampleTwoExercises}
       sqlLoad={indexedLoad}
       title="Email lookup without an index"
+      whatWeLearned={[
+        {
+          concept: "CREATE INDEX",
+          description:
+            "creates an index, which gives PostgreSQL another way to find matching rows without scanning the whole table.",
+          url: "https://www.postgresql.org/docs/current/sql-createindex.html",
+        },
+        {
+          concept: "CASE",
+          description:
+            "builds conditional values inside a SQL statement. In this lesson we use it while seeding rows into different cities.",
+          url: "https://www.postgresql.org/docs/current/functions-conditional.html",
+        },
+      ]}
     >
       <Paragraphs>
         <p>Look up one email in a larger users table without a supporting index.</p>

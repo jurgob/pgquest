@@ -45,6 +45,7 @@ export const SQL_EXAMPLE_IDS = {
   example2IndexedDatabaseInit: sqlExampleId("example2IndexedDatabaseInit"),
   example2SequentialScan: sqlExampleId("example2SequentialScan"),
   example2IndexScan: sqlExampleId("example2IndexScan"),
+  example2ExerciseFindUser2048: sqlExampleId("example2ExerciseFindUser2048"),
   example3DatabaseInit: sqlExampleId("example3DatabaseInit"),
   example3DraftQuery: sqlExampleId("example3DraftQuery"),
   example4DatabaseInit: sqlExampleId("example4DatabaseInit"),
