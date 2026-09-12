@@ -93,14 +93,30 @@ async function executeSqlQueryOnDatabase(
   signal?: AbortSignal,
 ): Promise<ExecutionOutput> {
   throwIfAborted(signal);
-  const result = await db.query<QueryRow>(query);
+  const statements = splitSqlStatements(query);
+  const isMultiStatement = statements.length > 1;
+  const statementsToExec = isMultiStatement ? statements.slice(0, -1) : [];
+  const finalStatement = isMultiStatement
+    ? (statements[statements.length - 1] ?? query)
+    : query;
+
+  for (const statement of statementsToExec) {
+    await db.exec(statement);
+    throwIfAborted(signal);
+  }
+
+  const result = await db.query<QueryRow>(finalStatement);
   throwIfAborted(signal);
-  const explainResult = await db.query<ExplainRow>(`EXPLAIN ${query}`);
+  const explainResult = isMultiStatement
+    ? undefined
+    : await db.query<ExplainRow>(`EXPLAIN ${query}`);
   throwIfAborted(signal);
 
   return {
     rows: result.rows,
-    plan: explainResult.rows.map((row) => row["QUERY PLAN"]).join("\n"),
+    plan:
+      explainResult?.rows.map((row) => row["QUERY PLAN"]).join("\n") ??
+      "Unavailable for a multi-statement SQL example.",
   };
 }
 
@@ -108,4 +124,11 @@ function throwIfAborted(signal?: AbortSignal) {
   if (signal?.aborted) {
     throw new DOMException("SQL execution was cancelled.", "AbortError");
   }
+}
+
+function splitSqlStatements(sql: string) {
+  return sql
+    .split(";")
+    .map((statement) => statement.trim())
+    .filter(Boolean);
 }

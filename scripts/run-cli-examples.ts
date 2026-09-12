@@ -43,12 +43,14 @@ async function runExample(file: string, example: SqlExample) {
       await db.exec(example.database_init.query);
     }
 
-    const result = isMultiStatement(example.query)
-      ? { rows: await runMultiStatement(db, example.query) }
+    const statements = splitSqlStatements(example.query);
+    const isMulti = statements.length > 1;
+    const result = isMulti
+      ? { rows: await runMultiStatement(db, statements) }
       : await db.query<QueryRow>(example.query);
     let explain: string;
 
-    if (isMultiStatement(example.query)) {
+    if (isMulti) {
       explain = "Unavailable for a multi-statement SQL example.";
     } else {
       try {
@@ -70,13 +72,25 @@ async function runExample(file: string, example: SqlExample) {
   }
 }
 
-function isMultiStatement(sql: string) {
-  return (sql.match(/;/g) ?? []).length > 1;
+function splitSqlStatements(sql: string) {
+  return sql
+    .split(";")
+    .map((statement) => statement.trim())
+    .filter(Boolean);
 }
 
-async function runMultiStatement(db: PGlite, sql: string): Promise<QueryRow[]> {
-  await db.exec(sql);
-  return [];
+async function runMultiStatement(db: PGlite, statements: string[]): Promise<QueryRow[]> {
+  for (const statement of statements.slice(0, -1)) {
+    await db.exec(statement);
+  }
+
+  const finalStatement = statements[statements.length - 1];
+
+  if (!finalStatement) {
+    return [];
+  }
+
+  return (await db.query<QueryRow>(finalStatement)).rows;
 }
 
 function printExample(

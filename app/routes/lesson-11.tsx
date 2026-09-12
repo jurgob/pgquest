@@ -1,5 +1,39 @@
-import { DraftLessonPage } from "../sql/draft-lesson-page";
+import { examples, exercises } from "../../cli_examples/example11.sql";
+import { CourseLessonPage } from "../sql/course-lesson-page";
 
 export default function Lesson11() {
-  return <DraftLessonPage lessonId="lesson11" />;
+  return (
+    <CourseLessonPage
+      examples={examples}
+      exercises={exercises}
+      intro={
+        <p>
+          Text search starts with patterns. LIKE and ILIKE are simple tools for prefix,
+          suffix, and contains-style matching.
+        </p>
+      }
+      lessonId="lesson11"
+      whatWeLearned={[
+        {
+          concept: "LIKE",
+          description: "matches text with wildcard patterns.",
+          url: "https://www.postgresql.org/docs/current/functions-matching.html",
+        },
+        {
+          concept: "ILIKE",
+          description: "matches text while ignoring case.",
+          url: "https://www.postgresql.org/docs/current/functions-matching.html",
+        },
+        {
+          concept: "%",
+          description: "matches any sequence of characters in a pattern.",
+        },
+        {
+          concept: "LOWER",
+          description: "normalizes text before comparison.",
+          url: "https://www.postgresql.org/docs/current/functions-string.html",
+        },
+      ]}
+    />
+  );
 }

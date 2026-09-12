@@ -6,23 +6,95 @@ import {
   type SqlExample,
 } from "./types";
 
+const migration = sqlStatement(`
+CREATE TABLE accounts (
+  id SERIAL PRIMARY KEY,
+  email TEXT NOT NULL,
+  profile JSONB NOT NULL
+);
+`);
+
+const seed = sqlStatement(`
+INSERT INTO accounts (email, profile)
+VALUES
+  ('ada@example.com', '{"plan": "pro", "settings": {"email": true}, "tags": ["sql", "math"]}'),
+  ('grace@example.com', '{"plan": "free", "settings": {"email": false}, "tags": ["compiler"]}'),
+  ('linus@example.com', '{"plan": "pro", "settings": {"email": false}, "tags": ["kernel", "c"]}');
+`);
+
 export const databaseInit: SqlExample = {
   id: SQL_EXAMPLE_IDS.example12DatabaseInit,
   name: sqlExampleTitle("Lesson 12 database"),
-  description: sqlExampleDescription("Draft database for JSON in PostgreSQL."),
-  query: sqlStatement(`SELECT 1 AS ready;`),
+  description: sqlExampleDescription("Creates accounts with jsonb profiles."),
+  query: sqlStatement(`${migration}\n${seed}`),
 };
 
 export const database_inits = [databaseInit] as const;
 
 export const examples: SqlExample[] = [
   {
-    id: SQL_EXAMPLE_IDS.example12DraftQuery,
-    name: sqlExampleTitle("JSON in PostgreSQL"),
-    description: sqlExampleDescription("Draft placeholder for lesson 12."),
+    id: SQL_EXAMPLE_IDS.example12ExtractJson,
+    name: sqlExampleTitle("Extract fields"),
+    description: sqlExampleDescription("The ->> operator extracts a JSON value as text."),
     database_init: databaseInit,
-    query: sqlStatement(`SELECT 'JSON in PostgreSQL' AS topic;`),
+    query: sqlStatement(`
+SELECT email, profile ->> 'plan' AS plan
+FROM accounts
+ORDER BY email;
+`),
+  },
+  {
+    id: SQL_EXAMPLE_IDS.example12FilterJson,
+    name: sqlExampleTitle("Filter nested JSON"),
+    description: sqlExampleDescription(
+      "JSON operators can reach nested values inside a jsonb column.",
+    ),
+    database_init: databaseInit,
+    query: sqlStatement(`
+SELECT email
+FROM accounts
+WHERE profile -> 'settings' ->> 'email' = 'true';
+`),
+  },
+  {
+    id: SQL_EXAMPLE_IDS.example12ContainJson,
+    name: sqlExampleTitle("Containment"),
+    description: sqlExampleDescription(
+      "The @> operator asks whether jsonb contains another jsonb document.",
+    ),
+    database_init: databaseInit,
+    query: sqlStatement(`
+SELECT email
+FROM accounts
+WHERE profile @> '{"plan": "pro"}';
+`),
   },
 ];
 
-export const exercises: SqlExample[] = [];
+export const exercises: SqlExample[] = [
+  {
+    id: SQL_EXAMPLE_IDS.example12ExerciseFindProPlan,
+    name: sqlExampleTitle("Exercise 1"),
+    description: sqlExampleDescription("Select emails for accounts on the pro plan."),
+    database_init: databaseInit,
+    query: sqlStatement(`
+SELECT email
+FROM accounts
+WHERE profile ->> 'plan' = 'pro'
+ORDER BY email;
+`),
+  },
+  {
+    id: SQL_EXAMPLE_IDS.example12ExerciseFindEmailOptIn,
+    name: sqlExampleTitle("Exercise 2"),
+    description: sqlExampleDescription(
+      "Select emails for accounts whose JSON settings.email value is true.",
+    ),
+    database_init: databaseInit,
+    query: sqlStatement(`
+SELECT email
+FROM accounts
+WHERE profile -> 'settings' ->> 'email' = 'true';
+`),
+  },
+];
