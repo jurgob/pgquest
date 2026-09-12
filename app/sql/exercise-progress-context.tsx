@@ -22,10 +22,11 @@ export function ExerciseProgressProvider({ children }: { children: React.ReactNo
   const [progressMap, setProgressMap] = useState<ProgressMap>({});
 
   useEffect(() => {
-    setProgressMap({
-      lesson1: loadExerciseProgress("lesson1"),
-      lesson2: loadExerciseProgress("lesson2"),
-    });
+    setProgressMap(
+      Object.fromEntries(
+        lessonIds.map((lessonId) => [lessonId, loadExerciseProgress(lessonId)]),
+      ),
+    );
   }, []);
 
   return (
@@ -71,13 +72,35 @@ export function useAllExercisesComplete() {
     );
   }
 
-  return lessonIds.every((lessonId) => {
-    const exercises = allExercises.filter((exercise) => exercise.lessonId === lessonId);
-    const progress = context.progressMap[lessonId];
+  return (
+    allExercises.length > 0 &&
+    allExercises.every((exercise) =>
+      context.progressMap[exercise.lessonId]?.completed.includes(exercise.id),
+    )
+  );
+}
 
-    return (
-      exercises.length > 0 &&
-      exercises.every((exercise) => progress?.completed.includes(exercise.id))
+export function useLessonExerciseStats(lessonId: LessonId) {
+  const context = useContext(ExerciseProgressContext);
+
+  if (!context) {
+    throw new Error(
+      "useLessonExerciseStats must be used inside ExerciseProgressProvider",
     );
-  });
+  }
+
+  const exercises = allExercises.filter((exercise) => exercise.lessonId === lessonId);
+  const progress = context.progressMap[lessonId] ?? emptyProgress;
+
+  return useMemo(
+    () => ({
+      completed: exercises.filter((exercise) => progress.completed.includes(exercise.id))
+        .length,
+      isComplete:
+        exercises.length > 0 &&
+        exercises.every((exercise) => progress.completed.includes(exercise.id)),
+      total: exercises.length,
+    }),
+    [exercises, progress],
+  );
 }

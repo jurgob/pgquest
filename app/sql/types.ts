@@ -16,4 +16,22 @@ export type ExecutionOutput = {
   plan: string;
 };
 
-export type LessonId = "lesson1" | "lesson2";
+export const LESSON_IDS = [
+  "lesson1",
+  "lesson2",
+  "lesson3",
+  "lesson4",
+  "lesson5",
+  "lesson6",
+  "lesson7",
+  "lesson8",
+  "lesson9",
+  "lesson10",
+  "lesson11",
+  "lesson12",
+  "lesson13",
+  "lesson14",
+  "lesson15",
+] as const;
+
+export type LessonId = (typeof LESSON_IDS)[number];

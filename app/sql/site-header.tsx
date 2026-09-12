@@ -1,20 +1,14 @@
 import { NavLink } from "react-router";
 
-import { useExerciseProgress } from "./exercise-progress-context";
+import { useLessonExerciseStats } from "./exercise-progress-context";
 import { lessonSummaries } from "./lesson-summaries";
+import type { LessonId } from "./types";
 
 type SiteHeaderProps = {
-  activeLesson?: "lesson1" | "lesson2";
+  activeLesson?: LessonId;
 };
 
 export function SiteHeader({ activeLesson }: SiteHeaderProps) {
-  const lessonOneProgress = useExerciseProgress("lesson1");
-  const lessonTwoProgress = useExerciseProgress("lesson2");
-  const completedLessons = {
-    lesson1: lessonOneProgress.isComplete,
-    lesson2: lessonTwoProgress.isComplete,
-  };
-
   return (
     <header className="bg-[#222222] text-white">
       <div className="relative mx-auto flex w-full max-w-6xl flex-col gap-2 px-5 py-4">
@@ -46,25 +40,42 @@ export function SiteHeader({ activeLesson }: SiteHeaderProps) {
           </NavLink>
           <span>Lessons:</span>
           {lessonSummaries.map((lesson) => (
-            <NavLink
-              className={[
-                "inline-flex h-7 min-w-7 items-center justify-center rounded-sm border border-zinc-500 px-2 text-white no-underline transition hover:border-white hover:bg-white hover:text-zinc-950",
-                completedLessons[lesson.id]
-                  ? "relative border-emerald-400 bg-emerald-950 text-emerald-100 hover:border-emerald-300 hover:bg-emerald-900 hover:text-white"
-                  : "",
-                activeLesson === lesson.id ? "border-white bg-white text-zinc-950" : "",
-              ].join(" ")}
+            <LessonNavLink
+              active={activeLesson === lesson.id}
               key={lesson.id}
-              title={lesson.title}
-              to={lesson.href}
-            >
-              {lesson.number}
-              {completedLessons[lesson.id] ? <CompletionMark /> : null}
-            </NavLink>
+              lesson={lesson}
+            />
           ))}
         </nav>
       </div>
     </header>
+  );
+}
+
+function LessonNavLink({
+  active,
+  lesson,
+}: {
+  active: boolean;
+  lesson: (typeof lessonSummaries)[number];
+}) {
+  const progress = useLessonExerciseStats(lesson.id);
+
+  return (
+    <NavLink
+      className={[
+        "inline-flex h-7 min-w-7 items-center justify-center rounded-sm border border-zinc-500 px-2 text-white no-underline transition hover:border-white hover:bg-white hover:text-zinc-950",
+        progress.isComplete
+          ? "relative border-emerald-400 bg-emerald-950 text-emerald-100 hover:border-emerald-300 hover:bg-emerald-900 hover:text-white"
+          : "",
+        active ? "border-white bg-white text-zinc-950" : "",
+      ].join(" ")}
+      title={lesson.title}
+      to={lesson.href}
+    >
+      {lesson.number}
+      {progress.isComplete ? <CompletionMark /> : null}
+    </NavLink>
   );
 }
 

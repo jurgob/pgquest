@@ -2,9 +2,10 @@ import type { Route } from "./+types/home";
 import { Link, useSearchParams } from "react-router";
 import {
   useAllExercisesComplete,
-  useExerciseProgress,
+  useLessonExerciseStats,
 } from "../sql/exercise-progress-context";
 import { CompletionCelebration } from "../sql/completion-celebration";
+import { lessons } from "../sql/lesson-catalog";
 import { SiteHeader } from "../sql/site-header";
 
 export function meta(_args: Route.MetaArgs) {
@@ -14,36 +15,9 @@ export function meta(_args: Route.MetaArgs) {
   ];
 }
 
-const lessons = [
-  {
-    id: "Lesson 01",
-    title: "My first query",
-    href: "/lessons/lesson-1",
-    summary:
-      "Create a small table, seed two rows, SELECT them back, and inspect the plan Postgres uses.",
-    meta: "SELECT · EXPLAIN",
-    time: "10 min",
-  },
-  {
-    id: "Lesson 02",
-    title: "Using an index",
-    href: "/lessons/lesson-2",
-    summary:
-      "Indexes and EXPLAIN plans, comparing a sequential scan with an index scan on the same query.",
-    meta: "INDEX · EXPLAIN",
-    time: "15 min",
-  },
-] as const;
-
 export default function Home() {
-  const lessonOneProgress = useExerciseProgress("lesson1");
-  const lessonTwoProgress = useExerciseProgress("lesson2");
   const allExercisesComplete = useAllExercisesComplete();
   const [searchParams] = useSearchParams();
-  const completedLessons = {
-    lesson1: lessonOneProgress.isComplete,
-    lesson2: lessonTwoProgress.isComplete,
-  };
   const showCompletion =
     allExercisesComplete || searchParams.get("showComplete") === "true";
 
@@ -116,43 +90,58 @@ export default function Home() {
         <header className="flex flex-col gap-3 border-b border-zinc-200 pb-12 sm:flex-row sm:items-start sm:justify-between">
           <h1 className="text-5xl font-bold tracking-tight text-zinc-950">Curriculum</h1>
           <p className="text-xl font-semibold text-zinc-500">
-            2 lessons · roughly 25 minutes
+            {lessons.length} lessons · roughly 4 hours
           </p>
         </header>
 
         <section>
           {lessons.map((lesson) => (
-            <Link
-              className="grid gap-6 border-b border-zinc-200 py-10 text-zinc-950 no-underline transition hover:bg-zinc-50 md:grid-cols-[220px_minmax(0,1fr)_90px]"
-              key={lesson.id}
-              to={lesson.href}
-            >
-              <div>
-                <p className="font-mono text-sm font-semibold text-sky-700">
-                  {lesson.id}
-                </p>
-                <h2 className="mt-3 text-2xl font-bold leading-tight">{lesson.title}</h2>
-                {completedLessons[lesson.id === "Lesson 01" ? "lesson1" : "lesson2"] ? (
-                  <p className="mt-4 font-mono text-sm font-semibold text-emerald-700">
-                    ✓ Complete
-                  </p>
-                ) : null}
-              </div>
-
-              <div>
-                <p className="text-2xl font-semibold leading-10 text-zinc-700">
-                  {lesson.summary}
-                </p>
-                <p className="mt-5 font-mono text-sm text-zinc-500">{lesson.meta}</p>
-              </div>
-
-              <p className="font-mono text-sm text-zinc-500 md:text-right">
-                {lesson.time}
-              </p>
-            </Link>
+            <LessonCard key={lesson.id} lesson={lesson} />
           ))}
         </section>
       </div>
     </main>
+  );
+}
+
+function LessonCard({ lesson }: { lesson: (typeof lessons)[number] }) {
+  const progress = useLessonExerciseStats(lesson.id);
+
+  return (
+    <Link
+      className="grid gap-6 border-b border-zinc-200 py-10 text-zinc-950 no-underline transition hover:bg-zinc-50 md:grid-cols-[220px_minmax(0,1fr)_140px]"
+      to={lesson.href}
+    >
+      <div>
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="font-mono text-sm font-semibold text-sky-700">{lesson.label}</p>
+          {lesson.draft ? (
+            <span className="rounded-sm border border-amber-300 bg-amber-50 px-2 py-0.5 font-mono text-xs font-semibold uppercase text-amber-700">
+              Draft
+            </span>
+          ) : null}
+        </div>
+        <h2 className="mt-3 text-2xl font-bold leading-tight">{lesson.title}</h2>
+        {progress.isComplete ? (
+          <p className="mt-4 font-mono text-sm font-semibold text-emerald-700">
+            ✓ Complete
+          </p>
+        ) : null}
+      </div>
+
+      <div>
+        <p className="text-2xl font-semibold leading-10 text-zinc-700">
+          {lesson.summary}
+        </p>
+        <p className="mt-5 font-mono text-sm text-zinc-500">{lesson.meta}</p>
+      </div>
+
+      <div className="flex flex-col gap-2 font-mono text-sm text-zinc-500 md:text-right">
+        <p>{lesson.time}</p>
+        <p>
+          {progress.completed}/{progress.total} exercises
+        </p>
+      </div>
+    </Link>
   );
 }
