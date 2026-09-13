@@ -12,7 +12,7 @@ export default function Lesson8() {
           different tables using relationships between columns.
         </p>
       }
-      lessonId="lesson8"
+      lessonId="lesson9"
       whatWeLearned={[
         {
           concept: "JOIN",

@@ -12,7 +12,7 @@ export default function Lesson12() {
           inside them. It is useful, but it is still data inside a table.
         </p>
       }
-      lessonId="lesson12"
+      lessonId="lesson13"
       whatWeLearned={[
         {
           concept: "jsonb",

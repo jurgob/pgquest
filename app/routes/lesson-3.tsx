@@ -12,7 +12,7 @@ export default function Lesson3() {
           and DELETE, always using RETURNING so the result is visible.
         </p>
       }
-      lessonId="lesson3"
+      lessonId="lesson4"
       whatWeLearned={[
         {
           concept: "INSERT",

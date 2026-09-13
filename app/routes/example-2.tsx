@@ -17,7 +17,7 @@ import { SqlPlan, SqlResult, useLessonSqlExample } from "../sql/use-lesson-sql-e
 
 export function meta(_args: Route.MetaArgs) {
   return [
-    { title: "pgquest | Lesson 2" },
+    { title: "pgquest | Lesson 3" },
     { name: "description", content: "Compare a query plan with and without an index." },
   ];
 }
@@ -59,7 +59,7 @@ export default function ExampleTwo() {
 
   return (
     <LessonPage
-      activeLesson="lesson2"
+      activeLesson="lesson3"
       defaultQuery={exampleTwoIndexedQuery}
       exercises={exampleTwoExercises}
       sqlLoad={indexedLoad}

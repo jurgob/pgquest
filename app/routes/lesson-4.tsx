@@ -12,7 +12,7 @@ export default function Lesson4() {
           harder to store, no matter which application sends the SQL.
         </p>
       }
-      lessonId="lesson4"
+      lessonId="lesson5"
       whatWeLearned={[
         {
           concept: "PRIMARY KEY",

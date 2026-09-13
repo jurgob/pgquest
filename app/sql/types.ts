@@ -32,6 +32,7 @@ export const LESSON_IDS = [
   "lesson13",
   "lesson14",
   "lesson15",
+  "lesson16",
 ] as const;
 
 export type LessonId = (typeof LESSON_IDS)[number];

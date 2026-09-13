@@ -12,7 +12,7 @@ export default function Lesson11() {
           suffix, and contains-style matching.
         </p>
       }
-      lessonId="lesson11"
+      lessonId="lesson12"
       whatWeLearned={[
         {
           concept: "LIKE",

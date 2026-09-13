@@ -5,58 +5,62 @@ import {
 import {
   database_inits as exampleTwoDatabaseInits,
   exercises as exampleTwoExercises,
-} from "../../cli_examples/example2a.sql";
+} from "../../cli_examples/example2.sql";
 import {
   database_inits as exampleThreeDatabaseInits,
   exercises as exampleThreeExercises,
-} from "../../cli_examples/example3.sql";
+} from "../../cli_examples/example2a.sql";
 import {
   database_inits as exampleFourDatabaseInits,
   exercises as exampleFourExercises,
-} from "../../cli_examples/example4.sql";
+} from "../../cli_examples/example3.sql";
 import {
   database_inits as exampleFiveDatabaseInits,
   exercises as exampleFiveExercises,
-} from "../../cli_examples/example5.sql";
+} from "../../cli_examples/example4.sql";
 import {
   database_inits as exampleSixDatabaseInits,
   exercises as exampleSixExercises,
-} from "../../cli_examples/example6.sql";
+} from "../../cli_examples/example5.sql";
 import {
   database_inits as exampleSevenDatabaseInits,
   exercises as exampleSevenExercises,
-} from "../../cli_examples/example7.sql";
+} from "../../cli_examples/example6.sql";
 import {
   database_inits as exampleEightDatabaseInits,
   exercises as exampleEightExercises,
-} from "../../cli_examples/example8.sql";
+} from "../../cli_examples/example7.sql";
 import {
   database_inits as exampleNineDatabaseInits,
   exercises as exampleNineExercises,
-} from "../../cli_examples/example9.sql";
+} from "../../cli_examples/example8.sql";
 import {
   database_inits as exampleTenDatabaseInits,
   exercises as exampleTenExercises,
-} from "../../cli_examples/example10.sql";
+} from "../../cli_examples/example9.sql";
 import {
   database_inits as exampleElevenDatabaseInits,
   exercises as exampleElevenExercises,
-} from "../../cli_examples/example11.sql";
+} from "../../cli_examples/example10.sql";
 import {
   database_inits as exampleTwelveDatabaseInits,
   exercises as exampleTwelveExercises,
-} from "../../cli_examples/example12.sql";
+} from "../../cli_examples/example11.sql";
 import {
   database_inits as exampleThirteenDatabaseInits,
   exercises as exampleThirteenExercises,
-} from "../../cli_examples/example13.sql";
+} from "../../cli_examples/example12.sql";
 import {
   database_inits as exampleFourteenDatabaseInits,
   exercises as exampleFourteenExercises,
-} from "../../cli_examples/example14.sql";
+} from "../../cli_examples/example13.sql";
 import {
   database_inits as exampleFifteenDatabaseInits,
   exercises as exampleFifteenExercises,
+} from "../../cli_examples/example14.sql";
+import {
+  database_inits as exampleSixteenDatabaseInits,
+  exercises as exampleSixteenExercises,
 } from "../../cli_examples/example15.sql";
 import type { SqlExample } from "../../cli_examples/types";
 import { LESSON_IDS, type LessonId } from "./types";
@@ -128,6 +132,10 @@ export const allExercises: readonly LessonExercise[] = [
     ...exercise,
     lessonId: "lesson15" as const,
   })),
+  ...exampleSixteenExercises.map((exercise) => ({
+    ...exercise,
+    lessonId: "lesson16" as const,
+  })),
 ];
 
 export const allDatabaseInits: readonly SqlExample[] = [
@@ -146,6 +154,7 @@ export const allDatabaseInits: readonly SqlExample[] = [
   ...exampleThirteenDatabaseInits,
   ...exampleFourteenDatabaseInits,
   ...exampleFifteenDatabaseInits,
+  ...exampleSixteenDatabaseInits,
 ];
 
 export function getLessonExerciseStats(lessonId: LessonId, completed: readonly string[]) {

@@ -12,7 +12,7 @@ export default function Lesson9() {
           membership, references, and many-to-many connections.
         </p>
       }
-      lessonId="lesson9"
+      lessonId="lesson10"
       whatWeLearned={[
         {
           concept: "Foreign key",

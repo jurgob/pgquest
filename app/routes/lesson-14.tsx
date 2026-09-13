@@ -12,7 +12,7 @@ export default function Lesson14() {
           but with sharper tools for filters and time buckets.
         </p>
       }
-      lessonId="lesson14"
+      lessonId="lesson15"
       whatWeLearned={[
         {
           concept: "HAVING",

@@ -12,7 +12,7 @@ export default function Lesson7() {
           zero, or false, and it changes how comparisons work.
         </p>
       }
-      lessonId="lesson7"
+      lessonId="lesson8"
       whatWeLearned={[
         {
           concept: "NULL",

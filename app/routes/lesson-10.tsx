@@ -12,7 +12,7 @@ export default function Lesson10() {
           LIMIT and OFFSET when you want a page.
         </p>
       }
-      lessonId="lesson10"
+      lessonId="lesson11"
       whatWeLearned={[
         {
           concept: "ORDER BY",

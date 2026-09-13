@@ -12,7 +12,7 @@ export default function Lesson6() {
           detail: one row for the whole table, or one row per group.
         </p>
       }
-      lessonId="lesson6"
+      lessonId="lesson7"
       whatWeLearned={[
         {
           concept: "COUNT",

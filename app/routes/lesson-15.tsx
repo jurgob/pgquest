@@ -12,7 +12,7 @@ export default function Lesson15() {
           often use pgvector; this lesson uses arrays to show the core idea.
         </p>
       }
-      lessonId="lesson15"
+      lessonId="lesson16"
       whatWeLearned={[
         {
           concept: "Embedding",

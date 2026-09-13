@@ -12,7 +12,7 @@ export default function Lesson5() {
           selective the filter is and how the query is written.
         </p>
       }
-      lessonId="lesson5"
+      lessonId="lesson6"
       whatWeLearned={[
         {
           concept: "Selectivity",
