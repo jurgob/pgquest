@@ -51,7 +51,7 @@ export default function Playground() {
   }
 
   return (
-    <main className="min-h-screen bg-white text-zinc-950">
+    <main className="min-h-screen overflow-x-hidden bg-white text-zinc-950">
       <SiteHeader />
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-5 py-8">
         <section>

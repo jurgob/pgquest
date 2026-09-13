@@ -22,7 +22,7 @@ export default function Home() {
     allExercisesComplete || searchParams.get("showComplete") === "true";
 
   return (
-    <main className="min-h-screen bg-white text-zinc-950">
+    <main className="min-h-screen overflow-x-hidden bg-white text-zinc-950">
       <SiteHeader />
       <div className="mx-auto w-full max-w-6xl px-5 py-12">
         {showCompletion ? (

@@ -29,7 +29,7 @@ export function LessonPage({
   whatWeLearned?: readonly WhatWeLearnedItem[] | undefined;
 }) {
   return (
-    <main className="min-h-screen bg-white text-zinc-950">
+    <main className="min-h-screen overflow-x-hidden bg-white text-zinc-950">
       <SiteHeader activeLesson={activeLesson} />
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-5 py-8">
         <article className="flex min-w-0 flex-col gap-6">

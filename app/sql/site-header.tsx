@@ -11,17 +11,17 @@ type SiteHeaderProps = {
 export function SiteHeader({ activeLesson }: SiteHeaderProps) {
   return (
     <header className="bg-[#222222] text-white">
-      <div className="relative mx-auto flex w-full max-w-6xl flex-col gap-2 px-5 py-4">
+      <div className="relative mx-auto flex w-full max-w-6xl flex-col gap-2 px-5 py-4 pr-16 sm:pr-24">
         <NavLink className="flex w-fit items-center text-white no-underline" to="/">
           <span className="text-3xl font-bold">PgQuest</span>
         </NavLink>
         <img
           alt=""
-          className="pointer-events-none absolute right-5 top-1/2 h-20 w-20 -translate-y-1/2"
+          className="pointer-events-none absolute right-5 top-1/2 h-12 w-12 -translate-y-1/2 sm:h-20 sm:w-20"
           src="/favicon.svg"
         />
 
-        <nav className="flex items-center gap-2 text-sm text-zinc-300">
+        <nav className="flex flex-wrap items-center gap-2 text-sm text-zinc-300">
           <NavLink
             aria-label="Home"
             className="inline-flex h-7 w-7 items-center justify-center rounded-sm border border-zinc-500 text-white no-underline transition hover:border-white hover:bg-white hover:text-zinc-950"
@@ -38,7 +38,6 @@ export function SiteHeader({ activeLesson }: SiteHeaderProps) {
           >
             <PlaygroundIcon />
           </NavLink>
-          <span>Lessons:</span>
           {lessonSummaries.map((lesson) => (
             <LessonNavLink
               active={activeLesson === lesson.id}
