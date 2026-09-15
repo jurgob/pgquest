@@ -1,4 +1,4 @@
-import { examples, exercises } from "../../cli_examples/example9.sql";
+import { examples, exercises } from "../../cli_examples/relationships.sql";
 import { CourseLessonPage } from "../sql/course-lesson-page";
 
 export default function Lesson9() {
@@ -12,7 +12,7 @@ export default function Lesson9() {
           membership, references, and many-to-many connections.
         </p>
       }
-      lessonId="lesson10"
+      lessonId="relationships"
       whatWeLearned={[
         {
           concept: "Foreign key",

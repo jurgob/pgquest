@@ -16,23 +16,20 @@ export type ExecutionOutput = {
   plan: string;
 };
 
-export const LESSON_IDS = [
-  "lesson1",
-  "lesson2",
-  "lesson3",
-  "lesson4",
-  "lesson5",
-  "lesson6",
-  "lesson7",
-  "lesson8",
-  "lesson9",
-  "lesson10",
-  "lesson11",
-  "lesson12",
-  "lesson13",
-  "lesson14",
-  "lesson15",
-  "lesson16",
-] as const;
-
-export type LessonId = (typeof LESSON_IDS)[number];
+export type LessonId =
+  | "my-first-query"
+  | "schemas-tables-and-types"
+  | "introduction-to-indexes"
+  | "insert-update-delete"
+  | "constraints"
+  | "advanced-indexes"
+  | "aggregation-intro"
+  | "null"
+  | "joins"
+  | "relationships"
+  | "sorting-and-pagination"
+  | "text-search-basics"
+  | "json-in-postgresql"
+  | "transactions"
+  | "advanced-aggregation"
+  | "vectors";

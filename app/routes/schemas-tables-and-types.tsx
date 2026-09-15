@@ -1,4 +1,4 @@
-import { examples, exercises } from "../../cli_examples/example2.sql";
+import { examples, exercises } from "../../cli_examples/schemas-tables-and-types.sql";
 import { CourseLessonPage } from "../sql/course-lesson-page";
 
 export default function Lesson2() {
@@ -12,7 +12,7 @@ export default function Lesson2() {
           group tables and information_schema lets you inspect the shape of what exists.
         </p>
       }
-      lessonId="lesson2"
+      lessonId="schemas-tables-and-types"
       whatWeLearned={[
         {
           concept: "Database",

@@ -1,4 +1,4 @@
-import { examples, exercises } from "../../cli_examples/example6.sql";
+import { examples, exercises } from "../../cli_examples/aggregation-intro.sql";
 import { CourseLessonPage } from "../sql/course-lesson-page";
 
 export default function Lesson6() {
@@ -12,7 +12,7 @@ export default function Lesson6() {
           detail: one row for the whole table, or one row per group.
         </p>
       }
-      lessonId="lesson7"
+      lessonId="aggregation-intro"
       whatWeLearned={[
         {
           concept: "COUNT",

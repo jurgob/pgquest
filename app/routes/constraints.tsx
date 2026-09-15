@@ -1,4 +1,4 @@
-import { examples, exercises } from "../../cli_examples/example4.sql";
+import { examples, exercises } from "../../cli_examples/constraints.sql";
 import { CourseLessonPage } from "../sql/course-lesson-page";
 
 export default function Lesson4() {
@@ -12,7 +12,7 @@ export default function Lesson4() {
           harder to store, no matter which application sends the SQL.
         </p>
       }
-      lessonId="lesson5"
+      lessonId="constraints"
       whatWeLearned={[
         {
           concept: "PRIMARY KEY",

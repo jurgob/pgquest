@@ -1,4 +1,4 @@
-import { examples, exercises } from "../../cli_examples/example3.sql";
+import { examples, exercises } from "../../cli_examples/insert-update-delete.sql";
 import { CourseLessonPage } from "../sql/course-lesson-page";
 
 export default function Lesson3() {
@@ -12,7 +12,7 @@ export default function Lesson3() {
           and DELETE, always using RETURNING so the result is visible.
         </p>
       }
-      lessonId="lesson4"
+      lessonId="insert-update-delete"
       whatWeLearned={[
         {
           concept: "INSERT",

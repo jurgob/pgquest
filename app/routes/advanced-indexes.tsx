@@ -1,4 +1,4 @@
-import { examples, exercises } from "../../cli_examples/example5.sql";
+import { examples, exercises } from "../../cli_examples/advanced-indexes.sql";
 import { CourseLessonPage } from "../sql/course-lesson-page";
 
 export default function Lesson5() {
@@ -12,7 +12,7 @@ export default function Lesson5() {
           selective the filter is and how the query is written.
         </p>
       }
-      lessonId="lesson6"
+      lessonId="advanced-indexes"
       whatWeLearned={[
         {
           concept: "Selectivity",

@@ -1,14 +1,12 @@
 import { PGlite } from "@electric-sql/pglite";
-import { readdir } from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import type { SqlExample } from "../cli_examples/types";
+import { lessons } from "../app/sql/lesson-catalog";
 
 const root = process.cwd();
 const examplesDir = path.join(root, "cli_examples");
-const files = (await readdir(examplesDir))
-  .filter((file) => file.endsWith(".sql.ts"))
-  .sort((a, b) => a.localeCompare(b));
+const files = lessons.map((lesson) => lesson.cliExampleModule);
 
 for (const file of files) {
   const filePath = path.join(examplesDir, file);

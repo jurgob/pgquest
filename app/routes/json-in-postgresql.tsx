@@ -1,4 +1,4 @@
-import { examples, exercises } from "../../cli_examples/example12.sql";
+import { examples, exercises } from "../../cli_examples/json-in-postgresql.sql";
 import { CourseLessonPage } from "../sql/course-lesson-page";
 
 export default function Lesson12() {
@@ -12,7 +12,7 @@ export default function Lesson12() {
           inside them. It is useful, but it is still data inside a table.
         </p>
       }
-      lessonId="lesson13"
+      lessonId="json-in-postgresql"
       whatWeLearned={[
         {
           concept: "jsonb",

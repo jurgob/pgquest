@@ -1,8 +1,8 @@
-import type { Route } from "./+types/example-3";
+import type { Route } from "./+types/introduction-to-indexes";
 import {
   examples as exampleThreeExamples,
   exercises as exampleThreeExercises,
-} from "../../cli_examples/example2a.sql";
+} from "../../cli_examples/introduction-to-indexes.sql";
 import { getSqlExample, SQL_EXAMPLE_IDS } from "../../cli_examples/types";
 import {
   InlineCode,
@@ -73,7 +73,7 @@ export default function ExampleThree() {
 
   return (
     <LessonPage
-      activeLesson="lesson3"
+      activeLesson="introduction-to-indexes"
       defaultQuery={exampleThreeIndexedQuery}
       exercises={exampleThreeExercises}
       sqlLoad={indexedLoad}

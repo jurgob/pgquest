@@ -1,4 +1,4 @@
-import { examples, exercises } from "../../cli_examples/example15.sql";
+import { examples, exercises } from "../../cli_examples/vectors.sql";
 import { CourseLessonPage } from "../sql/course-lesson-page";
 
 export default function Lesson15() {
@@ -12,7 +12,7 @@ export default function Lesson15() {
           often use pgvector; this lesson uses arrays to show the core idea.
         </p>
       }
-      lessonId="lesson16"
+      lessonId="vectors"
       whatWeLearned={[
         {
           concept: "Embedding",

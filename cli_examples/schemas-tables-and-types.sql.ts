@@ -43,7 +43,7 @@ VALUES
 
 INSERT INTO analytics.page_views (path, viewed_at)
 VALUES
-  ('/lessons/lesson-1', '2026-09-10 10:00:00'),
+  ('/lessons/my-first-query', '2026-09-10 10:00:00'),
   ('/playground', '2026-09-10 10:05:00');
 `);
 

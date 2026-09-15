@@ -1,4 +1,4 @@
-import { examples, exercises } from "../../cli_examples/example8.sql";
+import { examples, exercises } from "../../cli_examples/joins.sql";
 import { CourseLessonPage } from "../sql/course-lesson-page";
 
 export default function Lesson8() {
@@ -12,7 +12,7 @@ export default function Lesson8() {
           different tables using relationships between columns.
         </p>
       }
-      lessonId="lesson9"
+      lessonId="joins"
       whatWeLearned={[
         {
           concept: "JOIN",

@@ -1,4 +1,4 @@
-import { examples, exercises } from "../../cli_examples/example7.sql";
+import { examples, exercises } from "../../cli_examples/null.sql";
 import { CourseLessonPage } from "../sql/course-lesson-page";
 
 export default function Lesson7() {
@@ -12,7 +12,7 @@ export default function Lesson7() {
           zero, or false, and it changes how comparisons work.
         </p>
       }
-      lessonId="lesson8"
+      lessonId="null"
       whatWeLearned={[
         {
           concept: "NULL",

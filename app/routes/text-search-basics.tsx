@@ -1,4 +1,4 @@
-import { examples, exercises } from "../../cli_examples/example11.sql";
+import { examples, exercises } from "../../cli_examples/text-search-basics.sql";
 import { CourseLessonPage } from "../sql/course-lesson-page";
 
 export default function Lesson11() {
@@ -12,7 +12,7 @@ export default function Lesson11() {
           suffix, and contains-style matching.
         </p>
       }
-      lessonId="lesson12"
+      lessonId="text-search-basics"
       whatWeLearned={[
         {
           concept: "LIKE",

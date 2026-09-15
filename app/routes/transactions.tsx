@@ -1,4 +1,4 @@
-import { examples, exercises } from "../../cli_examples/example13.sql";
+import { examples, exercises } from "../../cli_examples/transactions.sql";
 import { CourseLessonPage } from "../sql/course-lesson-page";
 
 export default function Lesson13() {
@@ -12,7 +12,7 @@ export default function Lesson13() {
           whole change or roll it back.
         </p>
       }
-      lessonId="lesson14"
+      lessonId="transactions"
       whatWeLearned={[
         {
           concept: "BEGIN",

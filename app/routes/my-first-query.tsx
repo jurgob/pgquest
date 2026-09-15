@@ -1,4 +1,4 @@
-import type { Route } from "./+types/lesson-1";
+import type { Route } from "./+types/my-first-query";
 import {
   databaseInit as exampleOneDatabaseInit,
   exercises as exampleOneExercises,
@@ -7,7 +7,7 @@ import {
   seed as exampleOneSeed,
   selectAll as exampleOneQuery,
   selectByEmail as exampleOneSpecificQuery,
-} from "../../cli_examples/example1.sql";
+} from "../../cli_examples/my-first-query.sql";
 import {
   InlineCode,
   LessonPage,
@@ -41,7 +41,7 @@ export default function LessonOne() {
 
   return (
     <LessonPage
-      activeLesson="lesson1"
+      activeLesson="my-first-query"
       defaultQuery={exampleOneInsertQuery}
       exercises={exampleOneExercises}
       sqlLoad={sqlLoad}

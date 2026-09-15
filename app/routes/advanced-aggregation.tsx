@@ -1,4 +1,4 @@
-import { examples, exercises } from "../../cli_examples/example14.sql";
+import { examples, exercises } from "../../cli_examples/advanced-aggregation.sql";
 import { CourseLessonPage } from "../sql/course-lesson-page";
 
 export default function Lesson14() {
@@ -12,7 +12,7 @@ export default function Lesson14() {
           but with sharper tools for filters and time buckets.
         </p>
       }
-      lessonId="lesson15"
+      lessonId="advanced-aggregation"
       whatWeLearned={[
         {
           concept: "HAVING",
