@@ -29,6 +29,7 @@ type SqlEditorProps = {
   description?: string | undefined;
   databaseInit?: string | undefined;
   headerAction?: React.ReactNode;
+  onExecution?: ((result: SqlEditorExecutionResult) => void) | undefined;
   onSuccess?: ((query: string) => void) | undefined;
   status?: string | undefined;
   query?: string | undefined;
@@ -42,6 +43,14 @@ export type SqlExecutionState =
   | { status: "loading" };
 
 type SqlOutputView = "both" | "plan" | "result";
+export type SqlEditorExecutionResult =
+  | {
+      status: "failed";
+      message: string;
+      query: string;
+      view: Exclude<SqlOutputView, "both">;
+    }
+  | { status: "succeeded"; query: string; view: Exclude<SqlOutputView, "both"> };
 
 type SqlSchema = Record<string, readonly string[]>;
 
@@ -68,6 +77,7 @@ export function SqlEditor({
   databaseInit,
   description,
   headerAction,
+  onExecution,
   onSuccess,
   status,
   query: initialQuery,
@@ -150,7 +160,15 @@ export function SqlEditor({
     setExecution(nextExecution);
 
     if (nextExecution.status === "done") {
+      onExecution?.({ query, status: "succeeded", view });
       onSuccess?.(query);
+    } else if (nextExecution.status === "error") {
+      onExecution?.({
+        message: nextExecution.message,
+        query,
+        status: "failed",
+        view,
+      });
     }
   }
 

@@ -10,6 +10,9 @@ import {
 
 import type { Route } from "./+types/root";
 import "./app.css";
+import { readServerConfig } from "./config/config.server";
+import { getPublicPosthogConfig } from "./config/posthog";
+import { PgquestPosthogProvider } from "./posthog/provider";
 import { ExerciseProgressProvider } from "./sql/exercise-progress-context";
 
 export const links: Route.LinksFunction = () => [
@@ -25,6 +28,14 @@ export const links: Route.LinksFunction = () => [
     href: "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
   },
 ];
+
+export async function loader() {
+  const config = await readServerConfig();
+
+  return {
+    posthog: getPublicPosthogConfig(config),
+  };
+}
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -44,11 +55,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function App() {
+export default function App({ loaderData }: Route.ComponentProps) {
   return (
-    <ExerciseProgressProvider>
-      <Outlet />
-    </ExerciseProgressProvider>
+    <PgquestPosthogProvider config={loaderData.posthog}>
+      <ExerciseProgressProvider>
+        <Outlet />
+      </ExerciseProgressProvider>
+    </PgquestPosthogProvider>
   );
 }
 

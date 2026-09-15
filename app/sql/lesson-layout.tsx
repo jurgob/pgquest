@@ -1,9 +1,10 @@
 import { useState } from "react";
+import posthog from "posthog-js";
 import type { SqlExample } from "../../cli_examples/types";
 import { useExerciseProgress } from "./exercise-progress-context";
 import { SiteHeader } from "./site-header";
 import type { LessonId } from "./types";
-import { SqlEditor } from "./sql-editor";
+import { SqlEditor, type SqlEditorExecutionResult } from "./sql-editor";
 
 export type WhatWeLearnedItem = {
   concept: string;
@@ -183,6 +184,17 @@ export function TryYourself({
           ) : null
         }
         key={activeExercise?.id ?? "try-yourself"}
+        onExecution={(result) => {
+          if (!activeExercise) {
+            return;
+          }
+
+          captureExerciseExecution({
+            exercise: activeExercise,
+            lessonId: storageKey,
+            result,
+          });
+        }}
         onSuccess={(query) => {
           if (!activeExercise) {
             return;
@@ -236,7 +248,14 @@ export function TryYourself({
                         ? "border-zinc-950 bg-zinc-950 text-white"
                         : "border-zinc-300 text-zinc-700",
                   ].join(" ")}
-                  onClick={() => setActiveExerciseId(exercise.id)}
+                  onClick={() => {
+                    setActiveExerciseId(exercise.id);
+                    captureExerciseSelected({
+                      exercise,
+                      index,
+                      lessonId: storageKey,
+                    });
+                  }}
                   type="button"
                 >
                   {exerciseState.completed.includes(exercise.id)
@@ -252,6 +271,42 @@ export function TryYourself({
       ) : null}
     </footer>
   );
+}
+
+function captureExerciseSelected({
+  exercise,
+  index,
+  lessonId,
+}: {
+  exercise: SqlExample;
+  index: number;
+  lessonId: LessonId;
+}) {
+  posthog.capture("pgquest_exercise_selected", {
+    exercise_id: exercise.id,
+    exercise_index: index + 1,
+    exercise_name: exercise.name,
+    lesson_id: lessonId,
+  });
+}
+
+function captureExerciseExecution({
+  exercise,
+  lessonId,
+  result,
+}: {
+  exercise: SqlExample;
+  lessonId: LessonId;
+  result: SqlEditorExecutionResult;
+}) {
+  posthog.capture("pgquest_exercise_executed", {
+    exercise_id: exercise.id,
+    exercise_name: exercise.name,
+    lesson_id: lessonId,
+    query_length: result.query.length,
+    status: result.status,
+    view: result.view,
+  });
 }
 
 function CompletionIcon() {

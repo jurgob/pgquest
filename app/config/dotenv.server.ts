@@ -6,14 +6,19 @@ export function loadDotEnvIfPresent(path = ".env") {
   }
 
   const content = readFileSync(path, "utf8");
-  for (const line of content.split(/\r?\n/)) {
-    const parsed = parseDotEnvLine(line);
-    if (!parsed || process.env[parsed.key] !== undefined) {
-      continue;
-    }
+  Object.entries(parseDotEnv(content)).forEach(([key, value]) => {
+    process.env[key] ??= value;
+  });
+}
 
-    process.env[parsed.key] = parsed.value;
-  }
+export function parseDotEnv(content: string) {
+  return Object.fromEntries(
+    content
+      .split(/\r?\n/)
+      .map((line) => parseDotEnvLine(line))
+      .filter((entry): entry is { key: string; value: string } => entry !== null)
+      .map(({ key, value }) => [key, value]),
+  );
 }
 
 function parseDotEnvLine(line: string) {

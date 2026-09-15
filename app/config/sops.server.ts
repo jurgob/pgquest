@@ -1,14 +1,12 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 
 import * as age from "age-encryption";
 import { decryptSops } from "sops-age";
 
-import {
-  type SopsConfig,
-  sopsConfigSchema,
-} from "../config_schemas/envs";
+import { type SopsConfig, sopsConfigSchema } from "../config_schemas/envs";
+import { parseDotEnv } from "./dotenv.server";
 
-export const encryptedConfigPath = "config.enc.json" as const;
+export const encryptedConfigPath = "config.enc.env" as const;
 export const decryptedEnvPath = ".env.decrypted" as const;
 
 export function readSopsConfigFromEnv(env: NodeJS.ProcessEnv): SopsConfig {
@@ -36,12 +34,16 @@ export async function decryptValue(value: string, config: SopsConfig) {
 }
 
 export async function decryptConfigEnv(config: SopsConfig) {
-  const rawConfig = JSON.parse(readFileSync(encryptedConfigPath, "utf8")) as unknown;
+  if (!existsSync(encryptedConfigPath)) {
+    return {};
+  }
+
+  const rawConfig = readFileSync(encryptedConfigPath, "utf8");
 
   if (isSopsConfig(rawConfig)) {
     const decrypted = (await decryptSops({
       path: encryptedConfigPath,
-      fileType: "json",
+      fileType: "env",
       secretKey: config.PGQUEST_SOPS_AGE_KEY,
     })) as unknown;
 
@@ -54,16 +56,17 @@ export async function decryptConfigEnv(config: SopsConfig) {
 export function applyProcessEnvOverrides(
   decryptedEnv: Record<string, string>,
   env: NodeJS.ProcessEnv,
+  allowedKeys: readonly string[],
 ) {
-  const mergedEnv = { ...decryptedEnv };
-  for (const key of Object.keys(mergedEnv)) {
-    const overrideValue = env[key];
-    if (overrideValue !== undefined) {
-      mergedEnv[key] = overrideValue;
-    }
-  }
-
-  return mergedEnv;
+  return {
+    ...decryptedEnv,
+    ...Object.fromEntries(
+      Object.entries(env).filter(
+        (entry): entry is [string, string] =>
+          allowedKeys.includes(entry[0]) && entry[1] !== undefined,
+      ),
+    ),
+  };
 }
 
 export function toDotEnv(env: Record<string, string>) {
@@ -74,19 +77,15 @@ export function toDotEnv(env: Record<string, string>) {
     .concat("\n");
 }
 
-function isSopsConfig(value: unknown): value is { sops: unknown } {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    "sops" in value
-  );
+function isSopsConfig(value: string) {
+  return value.includes("\nsops_") || value.startsWith("sops_");
 }
 
 async function decryptArmoredEnvShape(
-  value: unknown,
+  value: string,
   config: SopsConfig,
 ): Promise<Record<string, string>> {
-  const env = readEnvShape(value);
+  const env = readEnvShape(parseDotEnv(value));
   const decryptedEntries = await Promise.all(
     Object.entries(env).map(async ([key, envValue]) => {
       if (!isEncryptedValue(envValue)) {
@@ -102,7 +101,7 @@ async function decryptArmoredEnvShape(
 
 function readEnvShape(value: unknown): Record<string, string> {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    throw new Error(`${encryptedConfigPath} must decrypt to an object`);
+    throw new Error(`${encryptedConfigPath} must decrypt to env-shaped values`);
   }
 
   const env: Record<string, string> = {};

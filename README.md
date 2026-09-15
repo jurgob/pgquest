@@ -27,6 +27,20 @@ fast checks that the CLI workflow is expected to pass.
 Pushes to `main` run the GitHub Actions checks in parallel, then deploy to Fly.io.
 The repository needs a `FLY_API_TOKEN` Actions secret with a Fly deploy token.
 
+## Analytics
+
+PostHog traffic can be marked as internal by visiting the app once with the
+`pgquest_internal` query param set to `true`:
+
+```txt
+/?pgquest_internal=true
+```
+
+The internal marker is stored in browser local storage for future page views,
+exercise events, session recordings, and feedback events from that browser.
+Traffic is marked as internal by default outside production, including when
+running `pnpm dev`.
+
 ## Quality Bar
 
 Keep the code as strict as practical:
