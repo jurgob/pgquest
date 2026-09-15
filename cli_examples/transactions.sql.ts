@@ -20,7 +20,7 @@ VALUES ('Ada', 5000), ('Grace', 3000);
 `);
 
 export const databaseInit: SqlExample = {
-  id: SQL_EXAMPLE_IDS.example13DatabaseInit,
+  id: SQL_EXAMPLE_IDS.transactionsDatabaseInit,
   name: sqlExampleTitle("Lesson 13 database"),
   description: sqlExampleDescription("Creates accounts for transaction examples."),
   query: sqlStatement(`${migration}\n${seed}`),
@@ -30,7 +30,7 @@ export const database_inits = [databaseInit] as const;
 
 export const examples: SqlExample[] = [
   {
-    id: SQL_EXAMPLE_IDS.example13CommitTransfer,
+    id: SQL_EXAMPLE_IDS.transactionsCommitTransfer,
     name: sqlExampleTitle("Commit a transfer"),
     description: sqlExampleDescription(
       "COMMIT makes every statement in the transaction durable together.",
@@ -45,7 +45,7 @@ SELECT name, balance_cents FROM accounts ORDER BY name;
 `),
   },
   {
-    id: SQL_EXAMPLE_IDS.example13RollbackTransfer,
+    id: SQL_EXAMPLE_IDS.transactionsRollbackTransfer,
     name: sqlExampleTitle("Rollback a transfer"),
     description: sqlExampleDescription(
       "ROLLBACK throws away the changes made inside the transaction.",
@@ -63,7 +63,7 @@ SELECT name, balance_cents FROM accounts ORDER BY name;
 
 export const exercises: SqlExample[] = [
   {
-    id: SQL_EXAMPLE_IDS.example13ExerciseCommitBonus,
+    id: SQL_EXAMPLE_IDS.transactionsExerciseCommitBonus,
     name: sqlExampleTitle("Exercise 1"),
     description: sqlExampleDescription(
       "In a transaction, add 500 cents to both accounts, commit, then select balances.",

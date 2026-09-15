@@ -37,6 +37,7 @@ export function CourseLessonPage({
       activeLesson={lessonId}
       defaultQuery={tryExample?.query}
       exercises={exercises}
+      preloadId={tryExample?.database_init?.id}
       sqlLoad={tryExample?.database_init?.query}
       title={lesson.title}
       whatWeLearned={whatWeLearned}

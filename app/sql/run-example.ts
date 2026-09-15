@@ -35,21 +35,22 @@ export async function createSqlDatabase(sqlLoad: string, signal?: AbortSignal) {
     console.time(timer);
   }
 
-  const db = import.meta.env.SSR
-    ? new (await import("@electric-sql/pglite")).PGlite()
-    : await (async () => {
-        const { PGliteWorker } = await import("@electric-sql/pglite/worker");
-        const databaseId = crypto.randomUUID();
-        return PGliteWorker.create(
-          new Worker(new URL("./pglite-worker.ts", import.meta.url), {
-            type: "module",
-          }),
-          {
-            dataDir: `memory://pgquest-${databaseId}`,
-            id: `pgquest-${databaseId}`,
-          },
-        );
-      })();
+  const db =
+    import.meta.env.SSR || import.meta.env.MODE === "test"
+      ? new (await import("@electric-sql/pglite")).PGlite()
+      : await (async () => {
+          const { PGliteWorker } = await import("@electric-sql/pglite/worker");
+          const databaseId = crypto.randomUUID();
+          return PGliteWorker.create(
+            new Worker(new URL("./pglite-worker.ts", import.meta.url), {
+              type: "module",
+            }),
+            {
+              dataDir: `memory://pgquest-${databaseId}`,
+              id: `pgquest-${databaseId}`,
+            },
+          );
+        })();
 
   try {
     await db.exec(sqlLoad);

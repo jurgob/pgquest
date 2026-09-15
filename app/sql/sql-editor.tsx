@@ -30,7 +30,8 @@ type SqlEditorProps = {
   databaseInit?: string | undefined;
   headerAction?: React.ReactNode;
   onExecution?: ((result: SqlEditorExecutionResult) => void) | undefined;
-  onSuccess?: ((query: string) => void) | undefined;
+  onSuccess?: ((query: string, output: ExecutionOutput) => void) | undefined;
+  preloadId?: string | undefined;
   status?: string | undefined;
   query?: string | undefined;
   title?: string | undefined;
@@ -79,6 +80,7 @@ export function SqlEditor({
   headerAction,
   onExecution,
   onSuccess,
+  preloadId,
   status,
   query: initialQuery,
   title = "Interactive Playground",
@@ -91,6 +93,11 @@ export function SqlEditor({
   const databaseSql = databaseInit ?? "";
   const schema = useMemo(() => getSqlSchema(databaseSql), [databaseSql]);
   const canRun = Boolean(databaseRef.current && query.trim());
+
+  useEffect(() => {
+    setQuery(formatInitialQuery(initialQuery));
+    setExecution({ status: "idle" });
+  }, [initialQuery]);
 
   useEffect(() => {
     let isCurrent = true;
@@ -161,7 +168,7 @@ export function SqlEditor({
 
     if (nextExecution.status === "done") {
       onExecution?.({ query, status: "succeeded", view });
-      onSuccess?.(query);
+      onSuccess?.(query, nextExecution.output);
     } else if (nextExecution.status === "error") {
       onExecution?.({
         message: nextExecution.message,
@@ -187,6 +194,7 @@ export function SqlEditor({
             </div>
             {headerAction}
           </div>
+          <LoadedDatabaseStatus preloadId={preloadId} state={databaseState} />
           <p className="mt-1 text-base leading-7 text-zinc-700">
             {description ??
               "The database is already loaded. Write any query you want and run it directly in your browser."}
@@ -428,16 +436,8 @@ function CodeMirrorSqlEditor({
 }
 
 function DatabaseStatus({ state }: { state: DatabaseState }) {
-  if (state.status === "idle" || state.status === "ready") {
+  if (state.status === "idle" || state.status === "ready" || state.status === "loading") {
     return null;
-  }
-
-  if (state.status === "loading") {
-    return (
-      <OutputBlock tone="danger">
-        <SqlResultSkeleton />
-      </OutputBlock>
-    );
   }
 
   return (
@@ -446,6 +446,35 @@ function DatabaseStatus({ state }: { state: DatabaseState }) {
         {state.message}
       </pre>
     </OutputBlock>
+  );
+}
+
+function LoadedDatabaseStatus({
+  preloadId,
+  state,
+}: {
+  preloadId?: string | undefined;
+  state: DatabaseState;
+}) {
+  const indicatorClassName = match(state)
+    .with({ status: "ready" }, () => "bg-emerald-500")
+    .with({ status: "loading" }, () => "animate-pulse bg-amber-400")
+    .with({ status: "error" }, () => "bg-red-500")
+    .with({ status: "idle" }, () => "bg-zinc-300")
+    .exhaustive();
+  const databaseId = preloadId ?? "none";
+
+  return (
+    <p className="mt-2 flex items-center gap-2 font-mono text-xs font-semibold uppercase text-zinc-500">
+      <span>Loaded Database:</span>
+      <span
+        aria-hidden="true"
+        className={["inline-block h-2.5 w-2.5 rounded-full", indicatorClassName].join(
+          " ",
+        )}
+      />
+      <span className="normal-case text-zinc-700">{databaseId}</span>
+    </p>
   );
 }
 

@@ -40,7 +40,7 @@ VALUES (1, 5), (1, 4), (3, 5);
 `);
 
 export const databaseInit: SqlExample = {
-  id: SQL_EXAMPLE_IDS.example8DatabaseInit,
+  id: SQL_EXAMPLE_IDS.joinsDatabaseInit,
   name: sqlExampleTitle("Lesson 8 database"),
   description: sqlExampleDescription("Creates authors, books, and reviews."),
   query: sqlStatement(`${migration}\n${seed}`),
@@ -50,7 +50,7 @@ export const database_inits = [databaseInit] as const;
 
 export const examples: SqlExample[] = [
   {
-    id: SQL_EXAMPLE_IDS.example8InnerJoin,
+    id: SQL_EXAMPLE_IDS.joinsInnerJoin,
     name: sqlExampleTitle("Inner join"),
     description: sqlExampleDescription(
       "INNER JOIN keeps only rows where both sides match the join condition.",
@@ -64,7 +64,7 @@ ORDER BY authors.name, books.title;
 `),
   },
   {
-    id: SQL_EXAMPLE_IDS.example8LeftJoin,
+    id: SQL_EXAMPLE_IDS.joinsLeftJoin,
     name: sqlExampleTitle("Left join"),
     description: sqlExampleDescription(
       "LEFT JOIN keeps every left row, even when the right side is missing.",
@@ -78,7 +78,7 @@ ORDER BY authors.name, books.title;
 `),
   },
   {
-    id: SQL_EXAMPLE_IDS.example8JoinAggregate,
+    id: SQL_EXAMPLE_IDS.joinsJoinAggregate,
     name: sqlExampleTitle("Join and aggregate"),
     description: sqlExampleDescription(
       "Joins can feed aggregate queries, such as counting reviews per book.",
@@ -96,7 +96,7 @@ ORDER BY books.title;
 
 export const exercises: SqlExample[] = [
   {
-    id: SQL_EXAMPLE_IDS.example8ExerciseAuthorBooks,
+    id: SQL_EXAMPLE_IDS.joinsExerciseAuthorBooks,
     name: sqlExampleTitle("Exercise 1"),
     description: sqlExampleDescription(
       "Join books to authors and select title plus author name.",
@@ -110,7 +110,7 @@ ORDER BY books.title;
 `),
   },
   {
-    id: SQL_EXAMPLE_IDS.example8ExerciseBooksWithoutReviews,
+    id: SQL_EXAMPLE_IDS.joinsExerciseBooksWithoutReviews,
     name: sqlExampleTitle("Exercise 2"),
     description: sqlExampleDescription(
       "Find books that have no reviews by using LEFT JOIN and IS NULL.",

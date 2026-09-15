@@ -24,7 +24,7 @@ VALUES
 `);
 
 export const databaseInit: SqlExample = {
-  id: SQL_EXAMPLE_IDS.example7DatabaseInit,
+  id: SQL_EXAMPLE_IDS.nullDatabaseInit,
   name: sqlExampleTitle("Lesson 7 database"),
   description: sqlExampleDescription("Creates tickets with missing values."),
   query: sqlStatement(`${migration}\n${seed}`),
@@ -34,7 +34,7 @@ export const database_inits = [databaseInit] as const;
 
 export const examples: SqlExample[] = [
   {
-    id: SQL_EXAMPLE_IDS.example7FindNull,
+    id: SQL_EXAMPLE_IDS.nullFindNull,
     name: sqlExampleTitle("Find missing values"),
     description: sqlExampleDescription(
       "Use IS NULL because NULL means unknown, not equal to a value.",
@@ -47,7 +47,7 @@ WHERE assignee IS NULL;
 `),
   },
   {
-    id: SQL_EXAMPLE_IDS.example7Coalesce,
+    id: SQL_EXAMPLE_IDS.nullCoalesce,
     name: sqlExampleTitle("Replace NULL for display"),
     description: sqlExampleDescription(
       "COALESCE returns the first non-NULL value from its arguments.",
@@ -60,7 +60,7 @@ ORDER BY id;
 `),
   },
   {
-    id: SQL_EXAMPLE_IDS.example7NullComparison,
+    id: SQL_EXAMPLE_IDS.nullComparison,
     name: sqlExampleTitle("NULL is not equal"),
     description: sqlExampleDescription(
       "A comparison with NULL does not return true, so this query finds nothing.",
@@ -76,7 +76,7 @@ WHERE assignee = NULL;
 
 export const exercises: SqlExample[] = [
   {
-    id: SQL_EXAMPLE_IDS.example7ExerciseFindOpen,
+    id: SQL_EXAMPLE_IDS.nullExerciseFindOpen,
     name: sqlExampleTitle("Exercise 1"),
     description: sqlExampleDescription("Select tickets that have not been closed."),
     database_init: databaseInit,
@@ -88,7 +88,7 @@ ORDER BY id;
 `),
   },
   {
-    id: SQL_EXAMPLE_IDS.example7ExerciseCoalesceClosedAt,
+    id: SQL_EXAMPLE_IDS.nullExerciseCoalesceClosedAt,
     name: sqlExampleTitle("Exercise 2"),
     description: sqlExampleDescription(
       "Select each title and show missing closed_at values as Still open.",

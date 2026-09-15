@@ -41,7 +41,7 @@ INSERT INTO project_members (project_id, user_id) VALUES (1, 1), (1, 2), (3, 2),
 `);
 
 export const databaseInit: SqlExample = {
-  id: SQL_EXAMPLE_IDS.example9DatabaseInit,
+  id: SQL_EXAMPLE_IDS.relationshipsDatabaseInit,
   name: sqlExampleTitle("Lesson 9 database"),
   description: sqlExampleDescription("Creates teams, projects, users, and memberships."),
   query: sqlStatement(`${migration}\n${seed}`),
@@ -51,7 +51,7 @@ export const database_inits = [databaseInit] as const;
 
 export const examples: SqlExample[] = [
   {
-    id: SQL_EXAMPLE_IDS.example9OneToMany,
+    id: SQL_EXAMPLE_IDS.relationshipsOneToMany,
     name: sqlExampleTitle("One-to-many"),
     description: sqlExampleDescription(
       "One team can own many projects through projects.team_id.",
@@ -65,7 +65,7 @@ ORDER BY team, project;
 `),
   },
   {
-    id: SQL_EXAMPLE_IDS.example9ManyToMany,
+    id: SQL_EXAMPLE_IDS.relationshipsManyToMany,
     name: sqlExampleTitle("Many-to-many"),
     description: sqlExampleDescription(
       "A join table connects projects and users when both sides can have many matches.",
@@ -80,7 +80,7 @@ ORDER BY project, member;
 `),
   },
   {
-    id: SQL_EXAMPLE_IDS.example9ForeignKeyIndexes,
+    id: SQL_EXAMPLE_IDS.relationshipsForeignKeyIndexes,
     name: sqlExampleTitle("Indexes on relationships"),
     description: sqlExampleDescription(
       "Foreign-key columns are often indexed because joins and lookups use them.",
@@ -97,7 +97,7 @@ ORDER BY indexname;
 
 export const exercises: SqlExample[] = [
   {
-    id: SQL_EXAMPLE_IDS.example9ExerciseProjectMembers,
+    id: SQL_EXAMPLE_IDS.relationshipsExerciseProjectMembers,
     name: sqlExampleTitle("Exercise 1"),
     description: sqlExampleDescription("Select all members of the Warehouse project."),
     database_init: databaseInit,
@@ -111,7 +111,7 @@ ORDER BY users.name;
 `),
   },
   {
-    id: SQL_EXAMPLE_IDS.example9ExerciseMemberCount,
+    id: SQL_EXAMPLE_IDS.relationshipsExerciseMemberCount,
     name: sqlExampleTitle("Exercise 2"),
     description: sqlExampleDescription("Count members for each project."),
     database_init: databaseInit,

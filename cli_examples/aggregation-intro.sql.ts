@@ -26,7 +26,7 @@ VALUES
 `);
 
 export const databaseInit: SqlExample = {
-  id: SQL_EXAMPLE_IDS.example6DatabaseInit,
+  id: SQL_EXAMPLE_IDS.aggregationIntroDatabaseInit,
   name: sqlExampleTitle("Lesson 6 database"),
   description: sqlExampleDescription("Creates a small orders table."),
   query: sqlStatement(`${migration}\n${seed}`),
@@ -36,7 +36,7 @@ export const database_inits = [databaseInit] as const;
 
 export const examples: SqlExample[] = [
   {
-    id: SQL_EXAMPLE_IDS.example6Totals,
+    id: SQL_EXAMPLE_IDS.aggregationIntroTotals,
     name: sqlExampleTitle("Count and sum"),
     description: sqlExampleDescription(
       "Aggregate functions collapse many rows into one summary row.",
@@ -48,7 +48,7 @@ FROM orders;
 `),
   },
   {
-    id: SQL_EXAMPLE_IDS.example6GroupBy,
+    id: SQL_EXAMPLE_IDS.aggregationIntroGroupBy,
     name: sqlExampleTitle("Group by city"),
     description: sqlExampleDescription(
       "GROUP BY returns one summary row for each distinct city.",
@@ -62,7 +62,7 @@ ORDER BY city;
 `),
   },
   {
-    id: SQL_EXAMPLE_IDS.example6Having,
+    id: SQL_EXAMPLE_IDS.aggregationIntroHaving,
     name: sqlExampleTitle("Filter groups"),
     description: sqlExampleDescription(
       "HAVING filters grouped rows after the aggregate has been computed.",
@@ -80,7 +80,7 @@ ORDER BY status;
 
 export const exercises: SqlExample[] = [
   {
-    id: SQL_EXAMPLE_IDS.example6ExerciseCountPaid,
+    id: SQL_EXAMPLE_IDS.aggregationIntroExerciseCountPaid,
     name: sqlExampleTitle("Exercise 1"),
     description: sqlExampleDescription("Count only the orders whose status is paid."),
     database_init: databaseInit,
@@ -91,7 +91,7 @@ WHERE status = 'paid';
 `),
   },
   {
-    id: SQL_EXAMPLE_IDS.example6ExerciseGroupByStatus,
+    id: SQL_EXAMPLE_IDS.aggregationIntroExerciseGroupByStatus,
     name: sqlExampleTitle("Exercise 2"),
     description: sqlExampleDescription(
       "Group orders by status and return the total revenue for each status.",

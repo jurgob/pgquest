@@ -26,7 +26,7 @@ VALUES
 `);
 
 export const databaseInit: SqlExample = {
-  id: SQL_EXAMPLE_IDS.example14DatabaseInit,
+  id: SQL_EXAMPLE_IDS.advancedAggregationDatabaseInit,
   name: sqlExampleTitle("Lesson 14 database"),
   description: sqlExampleDescription("Creates payments for advanced aggregation."),
   query: sqlStatement(`${migration}\n${seed}`),
@@ -36,7 +36,7 @@ export const database_inits = [databaseInit] as const;
 
 export const examples: SqlExample[] = [
   {
-    id: SQL_EXAMPLE_IDS.example14Having,
+    id: SQL_EXAMPLE_IDS.advancedAggregationHaving,
     name: sqlExampleTitle("HAVING"),
     description: sqlExampleDescription(
       "HAVING filters groups, while WHERE filters rows before grouping.",
@@ -51,7 +51,7 @@ ORDER BY status;
 `),
   },
   {
-    id: SQL_EXAMPLE_IDS.example14Filter,
+    id: SQL_EXAMPLE_IDS.advancedAggregationFilter,
     name: sqlExampleTitle("FILTER"),
     description: sqlExampleDescription(
       "FILTER lets different aggregates count different subsets in one query.",
@@ -65,7 +65,7 @@ FROM payments;
 `),
   },
   {
-    id: SQL_EXAMPLE_IDS.example14DateTrunc,
+    id: SQL_EXAMPLE_IDS.advancedAggregationDateTrunc,
     name: sqlExampleTitle("Group by time"),
     description: sqlExampleDescription(
       "date_trunc turns timestamps into buckets such as day, month, or year.",
@@ -83,7 +83,7 @@ ORDER BY day;
 
 export const exercises: SqlExample[] = [
   {
-    id: SQL_EXAMPLE_IDS.example14ExerciseDailyRevenue,
+    id: SQL_EXAMPLE_IDS.advancedAggregationExerciseDailyRevenue,
     name: sqlExampleTitle("Exercise 1"),
     description: sqlExampleDescription("Return paid revenue grouped by day."),
     database_init: databaseInit,
@@ -96,7 +96,7 @@ ORDER BY day;
 `),
   },
   {
-    id: SQL_EXAMPLE_IDS.example14ExercisePaidFilter,
+    id: SQL_EXAMPLE_IDS.advancedAggregationExercisePaidFilter,
     name: sqlExampleTitle("Exercise 2"),
     description: sqlExampleDescription(
       "Return total rows and paid rows using COUNT with FILTER.",

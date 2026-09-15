@@ -44,6 +44,7 @@ export default function LessonOne() {
       activeLesson="my-first-query"
       defaultQuery={exampleOneInsertQuery}
       exercises={exampleOneExercises}
+      preloadId={exampleOneDatabaseInit.id}
       sqlLoad={sqlLoad}
       title="My first query"
       whatWeLearned={[

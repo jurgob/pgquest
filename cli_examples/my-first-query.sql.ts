@@ -40,14 +40,14 @@ RETURNING *;
 `);
 
 const migrationInit: SqlExample = {
-  id: SQL_EXAMPLE_IDS.example1MigrationInit,
+  id: SQL_EXAMPLE_IDS.myFirstQueryMigrationInit,
   name: sqlExampleTitle("Example 1 schema"),
   description: sqlExampleDescription("Creates the User table."),
   query: migration,
 };
 
 export const databaseInit: SqlExample = {
-  id: SQL_EXAMPLE_IDS.example1DatabaseInit,
+  id: SQL_EXAMPLE_IDS.myFirstQueryDatabaseInit,
   name: sqlExampleTitle("Example 1 database"),
   description: sqlExampleDescription("Creates and seeds the User table."),
   query: sqlStatement(`${migration}\n${seed}`),
@@ -57,34 +57,34 @@ export const database_inits = [migrationInit, databaseInit] as const;
 
 export const examples: SqlExample[] = [
   {
-    id: SQL_EXAMPLE_IDS.example1Migration,
+    id: SQL_EXAMPLE_IDS.myFirstQueryMigration,
     name: sqlExampleTitle("Migration"),
     description: sqlExampleDescription("Create the User table."),
     query: migration,
   },
   {
-    id: SQL_EXAMPLE_IDS.example1Seed,
+    id: SQL_EXAMPLE_IDS.myFirstQuerySeed,
     name: sqlExampleTitle("Seed"),
     description: sqlExampleDescription("Populate the User table with initial rows."),
     database_init: migrationInit,
     query: seed,
   },
   {
-    id: SQL_EXAMPLE_IDS.example1BasicSelect,
+    id: SQL_EXAMPLE_IDS.myFirstQueryBasicSelect,
     name: sqlExampleTitle("My first query"),
     description: sqlExampleDescription("Read every user from the table."),
     database_init: databaseInit,
     query: selectAll,
   },
   {
-    id: SQL_EXAMPLE_IDS.example1SpecificSelect,
+    id: SQL_EXAMPLE_IDS.myFirstQuerySpecificSelect,
     name: sqlExampleTitle("Let's select a specific user by email"),
     description: sqlExampleDescription("Find Ada Lovelace by email."),
     database_init: databaseInit,
     query: selectByEmail,
   },
   {
-    id: SQL_EXAMPLE_IDS.example1Insert,
+    id: SQL_EXAMPLE_IDS.myFirstQueryInsert,
     name: sqlExampleTitle("Insert a new user"),
     description: sqlExampleDescription("Insert Linus Torvalds and return the new row."),
     database_init: databaseInit,
@@ -94,7 +94,7 @@ export const examples: SqlExample[] = [
 
 export const exercises: SqlExample[] = [
   {
-    id: SQL_EXAMPLE_IDS.example1ExerciseInsertEdger,
+    id: SQL_EXAMPLE_IDS.myFirstQueryExerciseInsertEdger,
     name: sqlExampleTitle("Exercise 1"),
     description: sqlExampleDescription(
       "Add the user Edger W. Dijkstra with email edger@cs.com, and return the inserted row from the INSERT.",
@@ -107,7 +107,7 @@ RETURNING *;
 `),
   },
   {
-    id: SQL_EXAMPLE_IDS.example1ExerciseInsertBarbara,
+    id: SQL_EXAMPLE_IDS.myFirstQueryExerciseInsertBarbara,
     name: sqlExampleTitle("Exercise 2"),
     description: sqlExampleDescription(
       "Add the user Barbara Liskov with email barbara@mit.edu, also returning the inserted row.",
@@ -120,7 +120,7 @@ RETURNING *;
 `),
   },
   {
-    id: SQL_EXAMPLE_IDS.example1ExerciseSelectGrace,
+    id: SQL_EXAMPLE_IDS.myFirstQueryExerciseSelectGrace,
     name: sqlExampleTitle("Exercise 3"),
     description: sqlExampleDescription(
       "Select only the user whose email is grace@example.com.",

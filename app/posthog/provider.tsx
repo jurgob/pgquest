@@ -62,7 +62,7 @@ export function PgquestPosthogProvider({
       posthog.capture("pgquest_feedback_prompt_shown", {
         path: location.pathname,
       });
-      setFeedbackState({ status: "open", value: "" });
+      setFeedbackState({ status: "ready" });
     }, 60_000);
 
     return () => window.clearTimeout(timeoutId);
@@ -78,6 +78,7 @@ export function PgquestPosthogProvider({
           });
           setFeedbackState({ status: "hidden" });
         }}
+        onOpen={() => setFeedbackState({ status: "open", value: "" })}
         onSubmit={(feedback) => {
           posthog.capture("pgquest_feedback_submitted", {
             feedback,
@@ -121,14 +122,17 @@ function isInternalTrafficQueryParamSet() {
   );
 }
 
-type FeedbackState = { status: "hidden" } | { status: "open"; value: string };
+type FeedbackState =
+  { status: "hidden" } | { status: "ready" } | { status: "open"; value: string };
 
 function FeedbackPrompt({
   onClose,
+  onOpen,
   onSubmit,
   state,
 }: {
   onClose: () => void;
+  onOpen: () => void;
   onSubmit: (feedback: string) => void;
   state: FeedbackState;
 }) {
@@ -138,8 +142,26 @@ function FeedbackPrompt({
     setValue(state.status === "open" ? state.value : "");
   }, [state]);
 
-  if (state.status !== "open") {
+  if (state.status === "hidden") {
     return null;
+  }
+
+  if (state.status === "ready") {
+    return (
+      <button
+        className="fixed bottom-4 right-4 z-50 flex h-11 items-center gap-2 border border-zinc-300 bg-white px-4 font-mono text-sm font-semibold text-zinc-900 shadow-lg transition hover:border-zinc-950 hover:bg-zinc-50"
+        onClick={onOpen}
+        type="button"
+      >
+        <span
+          aria-hidden="true"
+          className="flex h-5 w-5 items-center justify-center rounded-full border border-zinc-400 text-xs"
+        >
+          ?
+        </span>
+        Give feedback
+      </button>
+    );
   }
 
   return (

@@ -24,7 +24,7 @@ VALUES
 `);
 
 export const databaseInit: SqlExample = {
-  id: SQL_EXAMPLE_IDS.example15DatabaseInit,
+  id: SQL_EXAMPLE_IDS.vectorsDatabaseInit,
   name: sqlExampleTitle("Lesson 15 database"),
   description: sqlExampleDescription("Creates documents with small vector embeddings."),
   query: sqlStatement(`${migration}\n${seed}`),
@@ -34,7 +34,7 @@ export const database_inits = [databaseInit] as const;
 
 export const examples: SqlExample[] = [
   {
-    id: SQL_EXAMPLE_IDS.example15NearestVector,
+    id: SQL_EXAMPLE_IDS.vectorsNearestVector,
     name: sqlExampleTitle("Nearest vector"),
     description: sqlExampleDescription(
       "This uses arrays to show the same idea: nearest embeddings sort first.",
@@ -51,7 +51,7 @@ LIMIT 2;
 `),
   },
   {
-    id: SQL_EXAMPLE_IDS.example15DistanceScore,
+    id: SQL_EXAMPLE_IDS.vectorsDistanceScore,
     name: sqlExampleTitle("Show distance"),
     description: sqlExampleDescription(
       "The smaller the distance score, the more similar the document is to the query vector.",
@@ -71,7 +71,7 @@ ORDER BY distance;
 
 export const exercises: SqlExample[] = [
   {
-    id: SQL_EXAMPLE_IDS.example15ExerciseFindSqlVector,
+    id: SQL_EXAMPLE_IDS.vectorsExerciseFindSqlVector,
     name: sqlExampleTitle("Exercise 1"),
     description: sqlExampleDescription(
       "Find the closest document to ARRAY[0.95, 0.10, 0.20].",
@@ -88,7 +88,7 @@ LIMIT 1;
 `),
   },
   {
-    id: SQL_EXAMPLE_IDS.example15ExerciseFindIndexVector,
+    id: SQL_EXAMPLE_IDS.vectorsExerciseFindIndexVector,
     name: sqlExampleTitle("Exercise 2"),
     description: sqlExampleDescription(
       "Return the two closest documents to ARRAY[0.70, 0.25, 0.25].",

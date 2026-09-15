@@ -24,7 +24,7 @@ VALUES
 `);
 
 export const databaseInit: SqlExample = {
-  id: SQL_EXAMPLE_IDS.example11DatabaseInit,
+  id: SQL_EXAMPLE_IDS.textSearchBasicsDatabaseInit,
   name: sqlExampleTitle("Lesson 11 database"),
   description: sqlExampleDescription("Creates searchable articles."),
   query: sqlStatement(`${migration}\n${seed}`),
@@ -34,7 +34,7 @@ export const database_inits = [databaseInit] as const;
 
 export const examples: SqlExample[] = [
   {
-    id: SQL_EXAMPLE_IDS.example11LikePrefix,
+    id: SQL_EXAMPLE_IDS.textSearchBasicsLikePrefix,
     name: sqlExampleTitle("Prefix search"),
     description: sqlExampleDescription(
       "LIKE uses % as a wildcard. This pattern matches titles starting with SQL.",
@@ -47,7 +47,7 @@ WHERE title LIKE 'SQL%';
 `),
   },
   {
-    id: SQL_EXAMPLE_IDS.example11IlikeContains,
+    id: SQL_EXAMPLE_IDS.textSearchBasicsIlikeContains,
     name: sqlExampleTitle("Case-insensitive search"),
     description: sqlExampleDescription("ILIKE works like LIKE, but ignores letter case."),
     database_init: databaseInit,
@@ -58,7 +58,7 @@ WHERE title ILIKE '%postgres%';
 `),
   },
   {
-    id: SQL_EXAMPLE_IDS.example11LowerSearch,
+    id: SQL_EXAMPLE_IDS.textSearchBasicsLowerSearch,
     name: sqlExampleTitle("Normalize then search"),
     description: sqlExampleDescription(
       "LOWER can make a regular LIKE comparison case-insensitive.",
@@ -74,7 +74,7 @@ WHERE LOWER(body) LIKE '%search%';
 
 export const exercises: SqlExample[] = [
   {
-    id: SQL_EXAMPLE_IDS.example11ExerciseFindPostgres,
+    id: SQL_EXAMPLE_IDS.textSearchBasicsExerciseFindPostgres,
     name: sqlExampleTitle("Exercise 1"),
     description: sqlExampleDescription("Find articles whose title mentions Postgres."),
     database_init: databaseInit,
@@ -85,7 +85,7 @@ WHERE title ILIKE '%postgres%';
 `),
   },
   {
-    id: SQL_EXAMPLE_IDS.example11ExerciseFindGuide,
+    id: SQL_EXAMPLE_IDS.textSearchBasicsExerciseFindGuide,
     name: sqlExampleTitle("Exercise 2"),
     description: sqlExampleDescription("Find articles whose title ends with guide."),
     database_init: databaseInit,

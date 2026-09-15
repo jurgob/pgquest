@@ -46,14 +46,14 @@ CREATE INDEX users_email_idx ON users (email);
 `);
 
 const migrationInit: SqlExample = {
-  id: SQL_EXAMPLE_IDS.example2MigrationInit,
+  id: SQL_EXAMPLE_IDS.introductionToIndexesMigrationInit,
   name: sqlExampleTitle("Example 2 schema"),
   description: sqlExampleDescription("Creates the users table without an index."),
   query: migration,
 };
 
 const databaseInit: SqlExample = {
-  id: SQL_EXAMPLE_IDS.example2DatabaseInit,
+  id: SQL_EXAMPLE_IDS.introductionToIndexesDatabaseInit,
   name: sqlExampleTitle("Example 2 database"),
   description: sqlExampleDescription(
     "Creates and seeds the users table without an index.",
@@ -62,7 +62,7 @@ const databaseInit: SqlExample = {
 };
 
 const indexedDatabaseInit: SqlExample = {
-  id: SQL_EXAMPLE_IDS.example2IndexedDatabaseInit,
+  id: SQL_EXAMPLE_IDS.introductionToIndexesIndexedDatabaseInit,
   name: sqlExampleTitle("Example 2 indexed database"),
   description: sqlExampleDescription("Creates, indexes, and seeds the users table."),
   query: sqlStatement(`${indexedMigration}\n${seed}`),
@@ -72,26 +72,26 @@ export const database_inits = [migrationInit, databaseInit, indexedDatabaseInit]
 
 export const examples: SqlExample[] = [
   {
-    id: SQL_EXAMPLE_IDS.example2Migration,
+    id: SQL_EXAMPLE_IDS.introductionToIndexesMigration,
     name: sqlExampleTitle("Migration"),
     description: sqlExampleDescription("Create the users table without an index."),
     query: migration,
   },
   {
-    id: SQL_EXAMPLE_IDS.example2Seed,
+    id: SQL_EXAMPLE_IDS.introductionToIndexesSeed,
     name: sqlExampleTitle("Seed"),
     description: sqlExampleDescription("Populate the users table with generated rows."),
     database_init: migrationInit,
     query: seed,
   },
   {
-    id: SQL_EXAMPLE_IDS.example2IndexedMigration,
+    id: SQL_EXAMPLE_IDS.introductionToIndexesIndexedMigration,
     name: sqlExampleTitle("Migration with an index"),
     description: sqlExampleDescription("Create the users table and add an email index."),
     query: indexedMigration,
   },
   {
-    id: SQL_EXAMPLE_IDS.example2SequentialScan,
+    id: SQL_EXAMPLE_IDS.introductionToIndexesSequentialScan,
     name: sqlExampleTitle("An introduction to indexes"),
     description: sqlExampleDescription(
       "Look up one email in a larger users table without a supporting index.",
@@ -100,7 +100,7 @@ export const examples: SqlExample[] = [
     query: sequentialQuery,
   },
   {
-    id: SQL_EXAMPLE_IDS.example2IndexScan,
+    id: SQL_EXAMPLE_IDS.introductionToIndexesIndexScan,
     name: sqlExampleTitle("Email lookup with an index"),
     description: sqlExampleDescription(
       "Run the same email lookup after adding an index on users.email.",
@@ -112,12 +112,25 @@ export const examples: SqlExample[] = [
 
 export const exercises: SqlExample[] = [
   {
-    id: SQL_EXAMPLE_IDS.example2ExerciseFindUser2048,
+    id: SQL_EXAMPLE_IDS.introductionToIndexesExerciseFindUser2048,
     name: sqlExampleTitle("Exercise 1"),
     description: sqlExampleDescription(
       "Select the user whose email is user2048@example.com from the indexed users table.",
     ),
     database_init: indexedDatabaseInit,
+    query: sqlStatement(`
+SELECT id, name, email, city
+FROM users
+WHERE email = 'user2048@example.com';
+`),
+  },
+  {
+    id: SQL_EXAMPLE_IDS.introductionToIndexesExerciseFindUser2048WithoutIndex,
+    name: sqlExampleTitle("Exercise 2"),
+    description: sqlExampleDescription(
+      "Select the same user, but this time from the users table without the email index.",
+    ),
+    database_init: databaseInit,
     query: sqlStatement(`
 SELECT id, name, email, city
 FROM users

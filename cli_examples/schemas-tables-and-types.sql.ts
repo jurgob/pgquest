@@ -48,7 +48,7 @@ VALUES
 `);
 
 export const databaseInit: SqlExample = {
-  id: SQL_EXAMPLE_IDS.example2SchemaDatabaseInit,
+  id: SQL_EXAMPLE_IDS.schemasTablesAndTypesDatabaseInit,
   name: sqlExampleTitle("Lesson 2 database"),
   description: sqlExampleDescription(
     "Creates library and analytics schemas with a few tables.",
@@ -60,7 +60,7 @@ export const database_inits = [databaseInit] as const;
 
 export const examples: SqlExample[] = [
   {
-    id: SQL_EXAMPLE_IDS.example2ListSchemas,
+    id: SQL_EXAMPLE_IDS.schemasTablesAndTypesListSchemas,
     name: sqlExampleTitle("List schemas"),
     description: sqlExampleDescription(
       "A schema groups database objects such as tables inside one database.",
@@ -74,7 +74,7 @@ ORDER BY schema_name;
 `),
   },
   {
-    id: SQL_EXAMPLE_IDS.example2ListTables,
+    id: SQL_EXAMPLE_IDS.schemasTablesAndTypesListTables,
     name: sqlExampleTitle("List tables"),
     description: sqlExampleDescription(
       "information_schema.tables shows the tables visible in each schema.",
@@ -89,7 +89,7 @@ ORDER BY table_schema, table_name;
 `),
   },
   {
-    id: SQL_EXAMPLE_IDS.example2InspectColumns,
+    id: SQL_EXAMPLE_IDS.schemasTablesAndTypesInspectColumns,
     name: sqlExampleTitle("Inspect table shape"),
     description: sqlExampleDescription(
       "information_schema.columns shows each column name, type, and nullability.",
@@ -107,7 +107,7 @@ ORDER BY ordinal_position;
 
 export const exercises: SqlExample[] = [
   {
-    id: SQL_EXAMPLE_IDS.example2ExerciseListLibraryTables,
+    id: SQL_EXAMPLE_IDS.schemasTablesAndTypesExerciseListLibraryTables,
     name: sqlExampleTitle("Exercise 1"),
     description: sqlExampleDescription("List every table in the library schema."),
     database_init: databaseInit,
@@ -120,7 +120,7 @@ ORDER BY table_name;
 `),
   },
   {
-    id: SQL_EXAMPLE_IDS.example2ExerciseInspectPageViews,
+    id: SQL_EXAMPLE_IDS.schemasTablesAndTypesExerciseInspectPageViews,
     name: sqlExampleTitle("Exercise 2"),
     description: sqlExampleDescription(
       "Inspect the columns of the analytics.page_views table.",

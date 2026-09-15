@@ -38,7 +38,7 @@ ANALYZE orders;
 `);
 
 export const databaseInit: SqlExample = {
-  id: SQL_EXAMPLE_IDS.example5DatabaseInit,
+  id: SQL_EXAMPLE_IDS.advancedIndexesDatabaseInit,
   name: sqlExampleTitle("Lesson 5 database"),
   description: sqlExampleDescription("Creates orders with several index shapes."),
   query: sqlStatement(`${migration}\n${seed}`),
@@ -48,7 +48,7 @@ export const database_inits = [databaseInit] as const;
 
 export const examples: SqlExample[] = [
   {
-    id: SQL_EXAMPLE_IDS.example5LowSelectivity,
+    id: SQL_EXAMPLE_IDS.advancedIndexesLowSelectivity,
     name: sqlExampleTitle("Low selectivity"),
     description: sqlExampleDescription(
       "An index on status exists, but paid matches most rows, so a scan can still be cheaper.",
@@ -61,7 +61,7 @@ WHERE status = 'paid';
 `),
   },
   {
-    id: SQL_EXAMPLE_IDS.example5CompositeIndex,
+    id: SQL_EXAMPLE_IDS.advancedIndexesCompositeIndex,
     name: sqlExampleTitle("Composite index"),
     description: sqlExampleDescription(
       "This query matches the status, created_at index shape: filter first, then order.",
@@ -76,7 +76,7 @@ LIMIT 5;
 `),
   },
   {
-    id: SQL_EXAMPLE_IDS.example5PartialIndex,
+    id: SQL_EXAMPLE_IDS.advancedIndexesPartialIndex,
     name: sqlExampleTitle("Partial index"),
     description: sqlExampleDescription(
       "A partial index stores only failed orders, which keeps a rare lookup small.",
@@ -93,7 +93,7 @@ WHERE status = 'failed'
 
 export const exercises: SqlExample[] = [
   {
-    id: SQL_EXAMPLE_IDS.example5ExerciseRecentPaidOrders,
+    id: SQL_EXAMPLE_IDS.advancedIndexesExerciseRecentPaidOrders,
     name: sqlExampleTitle("Exercise 1"),
     description: sqlExampleDescription(
       "Select the 3 newest paid orders using status, ORDER BY created_at DESC, and LIMIT.",
@@ -108,7 +108,7 @@ LIMIT 3;
 `),
   },
   {
-    id: SQL_EXAMPLE_IDS.example5ExerciseFailedOrder,
+    id: SQL_EXAMPLE_IDS.advancedIndexesExerciseFailedOrder,
     name: sqlExampleTitle("Exercise 2"),
     description: sqlExampleDescription(
       "Select failed order ORD-12000 using both status and order_number.",

@@ -31,26 +31,26 @@ export function meta(_args: Route.MetaArgs) {
 export default function ExampleThree() {
   const sequentialExample = getSqlExample(
     exampleThreeExamples,
-    SQL_EXAMPLE_IDS.example2SequentialScan,
+    SQL_EXAMPLE_IDS.introductionToIndexesSequentialScan,
   );
   const indexedExample = getSqlExample(
     exampleThreeExamples,
-    SQL_EXAMPLE_IDS.example2IndexScan,
+    SQL_EXAMPLE_IDS.introductionToIndexesIndexScan,
   );
   const sequentialLoad = sequentialExample.database_init?.query ?? "";
   const indexedLoad = indexedExample.database_init?.query ?? "";
   const exampleThreeMigration = getSqlExample(
     exampleThreeExamples,
-    SQL_EXAMPLE_IDS.example2Migration,
+    SQL_EXAMPLE_IDS.introductionToIndexesMigration,
   ).query;
   const exampleThreeSeed = getSqlExample(
     exampleThreeExamples,
-    SQL_EXAMPLE_IDS.example2Seed,
+    SQL_EXAMPLE_IDS.introductionToIndexesSeed,
   ).query;
   const exampleThreeQuery = sequentialExample.query;
   const exampleThreeIndexedMigration = getSqlExample(
     exampleThreeExamples,
-    SQL_EXAMPLE_IDS.example2IndexedMigration,
+    SQL_EXAMPLE_IDS.introductionToIndexesIndexedMigration,
   ).query;
   const exampleThreeIndexedSeed = exampleThreeSeed;
   const exampleThreeIndexedQuery = indexedExample.query;
@@ -76,6 +76,7 @@ export default function ExampleThree() {
       activeLesson="introduction-to-indexes"
       defaultQuery={exampleThreeIndexedQuery}
       exercises={exampleThreeExercises}
+      preloadId={indexedExample.database_init?.id}
       sqlLoad={indexedLoad}
       title="An introduction to indexes"
       whatWeLearned={[

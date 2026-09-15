@@ -151,8 +151,9 @@ export default function Playground() {
 
         <SqlEditor
           databaseInit={loadedExample?.query}
-          query=""
           key={loadedExample?.id ?? "empty"}
+          preloadId={loadedExample?.id}
+          query=""
         />
       </div>
     </main>

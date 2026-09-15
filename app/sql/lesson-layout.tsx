@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import posthog from "posthog-js";
 import type { SqlExample } from "../../cli_examples/types";
+import { exerciseCheck } from "./exercise-checker";
+import { getOrComputeExerciseExpectedOutput } from "./exercise-expected-output-cache";
 import { useExerciseProgress } from "./exercise-progress-context";
 import { SiteHeader } from "./site-header";
 import type { LessonId } from "./types";
@@ -17,6 +19,7 @@ export function LessonPage({
   children,
   defaultQuery,
   exercises,
+  preloadId,
   sqlLoad,
   title,
   whatWeLearned,
@@ -25,6 +28,7 @@ export function LessonPage({
   children: React.ReactNode;
   defaultQuery?: string | undefined;
   exercises?: readonly SqlExample[] | undefined;
+  preloadId?: string | undefined;
   sqlLoad?: string | undefined;
   title: string;
   whatWeLearned?: readonly WhatWeLearnedItem[] | undefined;
@@ -39,6 +43,7 @@ export function LessonPage({
           <TryYourself
             defaultQuery={defaultQuery}
             exercises={exercises}
+            preloadId={preloadId}
             sqlLoad={sqlLoad}
             storageKey={activeLesson}
           />
@@ -136,23 +141,33 @@ export function InlineCode({
 export function TryYourself({
   defaultQuery,
   exercises,
+  preloadId,
   sqlLoad,
   storageKey,
 }: {
   defaultQuery?: string | undefined;
   exercises?: readonly SqlExample[] | undefined;
+  preloadId?: string | undefined;
   sqlLoad?: string | undefined;
   storageKey: LessonId;
 }) {
   const [activeExerciseId, setActiveExerciseId] = useState<string | undefined>();
+  const [checkMessage, setCheckMessage] = useState<CheckMessage | undefined>();
   const { progress: exerciseState, save: saveExerciseProgress } =
     useExerciseProgress(storageKey);
+
+  useEffect(() => {
+    setCheckMessage(undefined);
+  }, [activeExerciseId]);
 
   if (!sqlLoad || !defaultQuery) {
     return null;
   }
 
   const activeExercise = exercises?.find((exercise) => exercise.id === activeExerciseId);
+  const activeDatabasePreload = activeExercise?.database_init?.query ?? sqlLoad;
+  const activePreloadId = activeExercise?.database_init?.id ?? preloadId;
+
   const editorQuery = activeExercise
     ? (exerciseState.queries[activeExercise.id] ?? "")
     : defaultQuery;
@@ -171,7 +186,7 @@ export function TryYourself({
       <SqlEditor
         className="border-0 bg-transparent p-0"
         description={exerciseDescription}
-        databaseInit={sqlLoad}
+        databaseInit={activeDatabasePreload}
         headerAction={
           activeExercise ? (
             <button
@@ -183,9 +198,12 @@ export function TryYourself({
             </button>
           ) : null
         }
-        key={activeExercise?.id ?? "try-yourself"}
         onExecution={(result) => {
           if (!activeExercise) {
+            return;
+          }
+
+          if (result.status === "succeeded") {
             return;
           }
 
@@ -200,17 +218,99 @@ export function TryYourself({
             return;
           }
 
-          saveExerciseProgress({
-            completed: exerciseState.completed.includes(activeExercise.id)
-              ? exerciseState.completed
-              : [...exerciseState.completed, activeExercise.id],
-            queries: { ...exerciseState.queries, [activeExercise.id]: query },
+          setCheckMessage({ message: "Checking answer...", tone: "neutral" });
+
+          void getOrComputeExerciseExpectedOutput({
+            databasePreload: activeDatabasePreload,
+            exerciseCode: activeExercise.query,
+            exerciseId: activeExercise.id,
+            lessonId: storageKey,
+          }).then((expectedOutputResult) => {
+            if (expectedOutputResult.isErr()) {
+              const message = expectedOutputResult.error;
+
+              setCheckMessage({ message, tone: "error" });
+              captureExerciseExecution({
+                exercise: activeExercise,
+                lessonId: storageKey,
+                result: {
+                  message,
+                  query,
+                  status: "failed",
+                  view: "result",
+                },
+              });
+              return;
+            }
+
+            void exerciseCheck({
+              databasePreload: activeDatabasePreload,
+              expectedOutput: expectedOutputResult.value,
+              userCode: query,
+            }).then((checkResult) => {
+              checkResult.match(
+                (check) => {
+                  captureExerciseExecution({
+                    exercise: activeExercise,
+                    lessonId: storageKey,
+                    result:
+                      check.status === "correct"
+                        ? { query, status: "succeeded", view: "result" }
+                        : {
+                            message:
+                              check.reason === "result-mismatch"
+                                ? "Exercise result mismatch."
+                                : "Exercise explain plan mismatch.",
+                            query,
+                            status: "failed",
+                            view: "result",
+                          },
+                  });
+
+                  if (check.status === "incorrect") {
+                    setCheckMessage({
+                      message:
+                        check.reason === "result-mismatch"
+                          ? "The query ran, but the result does not match the expected answer."
+                          : "The result matches, but the query plan does not match the expected answer.",
+                      tone: "error",
+                    });
+                    return;
+                  }
+
+                  setCheckMessage({ message: "Correct.", tone: "success" });
+                  saveExerciseProgress({
+                    completed: exerciseState.completed.includes(activeExercise.id)
+                      ? exerciseState.completed
+                      : [...exerciseState.completed, activeExercise.id],
+                    queries: { ...exerciseState.queries, [activeExercise.id]: query },
+                  });
+                },
+                (message) => {
+                  setCheckMessage({ message, tone: "error" });
+                  captureExerciseExecution({
+                    exercise: activeExercise,
+                    lessonId: storageKey,
+                    result: {
+                      message,
+                      query,
+                      status: "failed",
+                      view: "result",
+                    },
+                  });
+                },
+              );
+            });
           });
         }}
+        preloadId={activePreloadId}
         query={editorQuery}
         status={activeExercise ? "In progress" : undefined}
         title={activeExercise?.name ?? "Try Yourself"}
       />
+      {activeExercise && checkMessage ? (
+        <ExerciseCheckMessage message={checkMessage} />
+      ) : null}
       {exercises?.length ? (
         <section className="mt-8 border-t border-zinc-200 pt-6">
           <div className="flex items-baseline gap-4">
@@ -250,6 +350,12 @@ export function TryYourself({
                   ].join(" ")}
                   onClick={() => {
                     setActiveExerciseId(exercise.id);
+                    void getOrComputeExerciseExpectedOutput({
+                      databasePreload: exercise.database_init?.query ?? sqlLoad,
+                      exerciseCode: exercise.query,
+                      exerciseId: exercise.id,
+                      lessonId: storageKey,
+                    });
                     captureExerciseSelected({
                       exercise,
                       index,
@@ -270,6 +376,38 @@ export function TryYourself({
         </section>
       ) : null}
     </footer>
+  );
+}
+
+type CheckMessage = {
+  message: string;
+  tone: "error" | "neutral" | "success";
+};
+
+function ExerciseCheckMessage({ message }: { message: CheckMessage }) {
+  const isError = message.tone === "error";
+
+  return (
+    <p
+      className={[
+        "mt-4 flex items-center gap-2 font-mono text-sm",
+        isError
+          ? "font-semibold text-red-700"
+          : message.tone === "success"
+            ? "text-emerald-700"
+            : "text-zinc-600",
+      ].join(" ")}
+    >
+      {isError ? (
+        <span
+          aria-hidden="true"
+          className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-red-100 text-xs text-red-700"
+        >
+          !
+        </span>
+      ) : null}
+      <span>{message.message}</span>
+    </p>
   );
 }
 

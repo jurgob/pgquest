@@ -24,7 +24,7 @@ VALUES
 `);
 
 export const databaseInit: SqlExample = {
-  id: SQL_EXAMPLE_IDS.example3DatabaseInit,
+  id: SQL_EXAMPLE_IDS.insertUpdateDeleteDatabaseInit,
   name: sqlExampleTitle("Lesson 3 database"),
   description: sqlExampleDescription("Creates and seeds users for write examples."),
   query: sqlStatement(`${migration}\n${seed}`),
@@ -34,7 +34,7 @@ export const database_inits = [databaseInit] as const;
 
 export const examples: SqlExample[] = [
   {
-    id: SQL_EXAMPLE_IDS.example3InsertReturning,
+    id: SQL_EXAMPLE_IDS.insertUpdateDeleteInsertReturning,
     name: sqlExampleTitle("Insert a row"),
     description: sqlExampleDescription(
       "INSERT adds a row. RETURNING shows the row PostgreSQL stored.",
@@ -47,7 +47,7 @@ RETURNING *;
 `),
   },
   {
-    id: SQL_EXAMPLE_IDS.example3UpdateReturning,
+    id: SQL_EXAMPLE_IDS.insertUpdateDeleteUpdateReturning,
     name: sqlExampleTitle("Update a row"),
     description: sqlExampleDescription(
       "UPDATE changes matching rows. The WHERE clause keeps the change focused.",
@@ -61,7 +61,7 @@ RETURNING *;
 `),
   },
   {
-    id: SQL_EXAMPLE_IDS.example3DeleteReturning,
+    id: SQL_EXAMPLE_IDS.insertUpdateDeleteDeleteReturning,
     name: sqlExampleTitle("Delete a row"),
     description: sqlExampleDescription(
       "DELETE removes matching rows. RETURNING is useful when you want to inspect what was removed.",
@@ -77,7 +77,7 @@ RETURNING *;
 
 export const exercises: SqlExample[] = [
   {
-    id: SQL_EXAMPLE_IDS.example3ExerciseInsert,
+    id: SQL_EXAMPLE_IDS.insertUpdateDeleteExerciseInsert,
     name: sqlExampleTitle("Exercise 1"),
     description: sqlExampleDescription(
       "Insert Katherine Johnson with email katherine@nasa.gov and return the inserted row.",
@@ -90,7 +90,7 @@ RETURNING *;
 `),
   },
   {
-    id: SQL_EXAMPLE_IDS.example3ExerciseUpdate,
+    id: SQL_EXAMPLE_IDS.insertUpdateDeleteExerciseUpdate,
     name: sqlExampleTitle("Exercise 2"),
     description: sqlExampleDescription(
       "Set Ada Lovelace to inactive and return the updated row.",

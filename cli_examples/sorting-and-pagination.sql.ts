@@ -29,7 +29,7 @@ ANALYZE events;
 `);
 
 export const databaseInit: SqlExample = {
-  id: SQL_EXAMPLE_IDS.example10DatabaseInit,
+  id: SQL_EXAMPLE_IDS.sortingAndPaginationDatabaseInit,
   name: sqlExampleTitle("Lesson 10 database"),
   description: sqlExampleDescription("Creates events with an index on start time."),
   query: sqlStatement(`${migration}\n${seed}`),
@@ -39,7 +39,7 @@ export const database_inits = [databaseInit] as const;
 
 export const examples: SqlExample[] = [
   {
-    id: SQL_EXAMPLE_IDS.example10OrderedEvents,
+    id: SQL_EXAMPLE_IDS.sortingAndPaginationOrderedEvents,
     name: sqlExampleTitle("Sort rows"),
     description: sqlExampleDescription(
       "ORDER BY makes result order explicit instead of trusting table storage order.",
@@ -52,7 +52,7 @@ ORDER BY starts_at DESC;
 `),
   },
   {
-    id: SQL_EXAMPLE_IDS.example10PageEvents,
+    id: SQL_EXAMPLE_IDS.sortingAndPaginationPageEvents,
     name: sqlExampleTitle("Limit and offset"),
     description: sqlExampleDescription(
       "LIMIT and OFFSET can fetch one page from a larger ordered result.",
@@ -66,7 +66,7 @@ LIMIT 2 OFFSET 2;
 `),
   },
   {
-    id: SQL_EXAMPLE_IDS.example10IndexBackedOrder,
+    id: SQL_EXAMPLE_IDS.sortingAndPaginationIndexBackedOrder,
     name: sqlExampleTitle("Sort with an index"),
     description: sqlExampleDescription(
       "An index with the same order can let PostgreSQL avoid a separate sort step.",
@@ -83,7 +83,7 @@ LIMIT 1;
 
 export const exercises: SqlExample[] = [
   {
-    id: SQL_EXAMPLE_IDS.example10ExerciseNewestThree,
+    id: SQL_EXAMPLE_IDS.sortingAndPaginationExerciseNewestThree,
     name: sqlExampleTitle("Exercise 1"),
     description: sqlExampleDescription("Select the three newest events."),
     database_init: databaseInit,
@@ -95,7 +95,7 @@ LIMIT 3;
 `),
   },
   {
-    id: SQL_EXAMPLE_IDS.example10ExerciseSecondPage,
+    id: SQL_EXAMPLE_IDS.sortingAndPaginationExerciseSecondPage,
     name: sqlExampleTitle("Exercise 2"),
     description: sqlExampleDescription(
       "Select the second page of two oldest events using LIMIT and OFFSET.",
