@@ -1,12 +1,6 @@
-import {
-  SQL_EXAMPLE_IDS,
-  sqlExampleDescription,
-  sqlExampleTitle,
-  sqlStatement,
-  type SqlExample,
-} from "./types";
+import { SQL_EXAMPLE_IDS, type SqlExample } from "./types";
 
-const migration = sqlStatement(`
+const migration = `
 CREATE TABLE authors (
   id SERIAL PRIMARY KEY,
   name TEXT NOT NULL
@@ -23,9 +17,9 @@ CREATE TABLE reviews (
   book_id INTEGER NOT NULL REFERENCES books (id),
   rating INTEGER NOT NULL
 );
-`);
+`;
 
-const seed = sqlStatement(`
+const seed = `
 INSERT INTO authors (name)
 VALUES ('Ursula Le Guin'), ('Octavia Butler'), ('Ted Chiang');
 
@@ -37,13 +31,13 @@ VALUES
 
 INSERT INTO reviews (book_id, rating)
 VALUES (1, 5), (1, 4), (3, 5);
-`);
+`;
 
 export const databaseInit: SqlExample = {
   id: SQL_EXAMPLE_IDS.joinsDatabaseInit,
-  name: sqlExampleTitle("Lesson 8 database"),
-  description: sqlExampleDescription("Creates authors, books, and reviews."),
-  query: sqlStatement(`${migration}\n${seed}`),
+  name: "Lesson 8 database",
+  description: "Creates authors, books, and reviews.",
+  query: `${migration}\n${seed}`,
 };
 
 export const database_inits = [databaseInit] as const;
@@ -51,77 +45,67 @@ export const database_inits = [databaseInit] as const;
 export const examples: SqlExample[] = [
   {
     id: SQL_EXAMPLE_IDS.joinsInnerJoin,
-    name: sqlExampleTitle("Inner join"),
-    description: sqlExampleDescription(
-      "INNER JOIN keeps only rows where both sides match the join condition.",
-    ),
+    name: "Inner join",
+    description: "INNER JOIN keeps only rows where both sides match the join condition.",
     database_init: databaseInit,
-    query: sqlStatement(`
+    query: `
 SELECT authors.name, books.title
 FROM authors
 JOIN books ON books.author_id = authors.id
 ORDER BY authors.name, books.title;
-`),
+`,
   },
   {
     id: SQL_EXAMPLE_IDS.joinsLeftJoin,
-    name: sqlExampleTitle("Left join"),
-    description: sqlExampleDescription(
-      "LEFT JOIN keeps every left row, even when the right side is missing.",
-    ),
+    name: "Left join",
+    description: "LEFT JOIN keeps every left row, even when the right side is missing.",
     database_init: databaseInit,
-    query: sqlStatement(`
+    query: `
 SELECT authors.name, books.title
 FROM authors
 LEFT JOIN books ON books.author_id = authors.id
 ORDER BY authors.name, books.title;
-`),
+`,
   },
   {
     id: SQL_EXAMPLE_IDS.joinsJoinAggregate,
-    name: sqlExampleTitle("Join and aggregate"),
-    description: sqlExampleDescription(
-      "Joins can feed aggregate queries, such as counting reviews per book.",
-    ),
+    name: "Join and aggregate",
+    description: "Joins can feed aggregate queries, such as counting reviews per book.",
     database_init: databaseInit,
-    query: sqlStatement(`
+    query: `
 SELECT books.title, COUNT(reviews.id) AS reviews
 FROM books
 LEFT JOIN reviews ON reviews.book_id = books.id
 GROUP BY books.title
 ORDER BY books.title;
-`),
+`,
   },
 ];
 
 export const exercises: SqlExample[] = [
   {
     id: SQL_EXAMPLE_IDS.joinsExerciseAuthorBooks,
-    name: sqlExampleTitle("Exercise 1"),
-    description: sqlExampleDescription(
-      "Join books to authors and select title plus author name.",
-    ),
+    name: "Exercise 1",
+    description: "Join books to authors and select title plus author name.",
     database_init: databaseInit,
-    query: sqlStatement(`
+    query: `
 SELECT books.title, authors.name AS author
 FROM books
 JOIN authors ON authors.id = books.author_id
 ORDER BY books.title;
-`),
+`,
   },
   {
     id: SQL_EXAMPLE_IDS.joinsExerciseBooksWithoutReviews,
-    name: sqlExampleTitle("Exercise 2"),
-    description: sqlExampleDescription(
-      "Find books that have no reviews by using LEFT JOIN and IS NULL.",
-    ),
+    name: "Exercise 2",
+    description: "Find books that have no reviews by using LEFT JOIN and IS NULL.",
     database_init: databaseInit,
-    query: sqlStatement(`
+    query: `
 SELECT books.title
 FROM books
 LEFT JOIN reviews ON reviews.book_id = books.id
 WHERE reviews.id IS NULL
 ORDER BY books.title;
-`),
+`,
   },
 ];

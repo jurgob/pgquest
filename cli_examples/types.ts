@@ -2,25 +2,10 @@ type Brand<Value, Name extends string> = Value & {
   readonly __brand: Name;
 };
 
-export type SqlStatement = Brand<string, "SqlStatement">;
-export type SqlExampleTitle = Brand<string, "SqlExampleTitle">;
-export type SqlExampleDescription = Brand<string, "SqlExampleDescription">;
 export type SqlExampleId = Brand<string, "SqlExampleId">;
 
 function brand<Value extends string, Name extends string>(value: Value) {
   return value as Brand<Value, Name>;
-}
-
-export function sqlStatement(value: string): SqlStatement {
-  return brand<string, "SqlStatement">(value);
-}
-
-export function sqlExampleTitle(value: string): SqlExampleTitle {
-  return brand<string, "SqlExampleTitle">(value);
-}
-
-export function sqlExampleDescription(value: string): SqlExampleDescription {
-  return brand<string, "SqlExampleDescription">(value);
 }
 
 const sqlExampleId = <Value extends string>(value: Value) =>
@@ -40,7 +25,20 @@ export const SQL_EXAMPLE_IDS = {
   schemasTablesAndTypesDatabaseInit: sqlExampleId(
     "schemas-tables-and-types.database-init",
   ),
-  schemasTablesAndTypesListSchemas: sqlExampleId("schemas-tables-and-types.list-schemas"),
+  schemasTablesAndTypesListSchemasEmpty: sqlExampleId(
+    "schemas-tables-and-types.list-schemas-empty",
+  ),
+  schemasTablesAndTypesMigration: sqlExampleId("schemas-tables-and-types.migration"),
+  schemasTablesAndTypesMigrationAppliedTwiceInit: sqlExampleId(
+    "schemas-tables-and-types.migration-applied-twice-init",
+  ),
+  schemasTablesAndTypesListSchemasAfterMigration: sqlExampleId(
+    "schemas-tables-and-types.list-schemas-after-migration",
+  ),
+  schemasTablesAndTypesSearchPath: sqlExampleId("schemas-tables-and-types.search-path"),
+  schemasTablesAndTypesCrossSchemaJoin: sqlExampleId(
+    "schemas-tables-and-types.cross-schema-join",
+  ),
   schemasTablesAndTypesListTables: sqlExampleId("schemas-tables-and-types.list-tables"),
   schemasTablesAndTypesInspectColumns: sqlExampleId(
     "schemas-tables-and-types.inspect-columns",
@@ -48,8 +46,8 @@ export const SQL_EXAMPLE_IDS = {
   schemasTablesAndTypesExerciseListLibraryTables: sqlExampleId(
     "schemas-tables-and-types.list-library-tables",
   ),
-  schemasTablesAndTypesExerciseInspectPageViews: sqlExampleId(
-    "schemas-tables-and-types.inspect-page-views",
+  schemasTablesAndTypesExerciseInspectLoans: sqlExampleId(
+    "schemas-tables-and-types.inspect-loans",
   ),
   introductionToIndexesMigrationInit: sqlExampleId(
     "introduction-to-indexes.migration-init",
@@ -174,11 +172,11 @@ export const SQL_EXAMPLE_IDS = {
 } as const;
 
 export type SqlExample = {
-  name: SqlExampleTitle;
+  name: string;
   id: SqlExampleId;
-  description: SqlExampleDescription;
+  description: string;
   database_init?: SqlExample;
-  query: SqlStatement;
+  query: string;
 };
 
 export function getSqlExample(
