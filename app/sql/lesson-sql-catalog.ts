@@ -70,6 +70,10 @@ export type LessonExercise = SqlExample & {
   lessonId: LessonId;
 };
 
+export type LessonDatabaseInit = SqlExample & {
+  lessonId: LessonId;
+};
+
 export const lessonIds: readonly LessonId[] = lessons.map((lesson) => lesson.id);
 
 const lessonSqlById = {
@@ -152,8 +156,11 @@ export const allExercises: readonly LessonExercise[] = lessons.flatMap((lesson) 
   })),
 );
 
-export const allDatabaseInits: readonly SqlExample[] = lessons.flatMap(
-  (lesson) => lessonSqlById[lesson.id].databaseInits,
+export const allDatabaseInits: readonly LessonDatabaseInit[] = lessons.flatMap((lesson) =>
+  lessonSqlById[lesson.id].databaseInits.map((databaseInit) => ({
+    ...databaseInit,
+    lessonId: lesson.id,
+  })),
 );
 
 export function getLessonExerciseStats(lessonId: LessonId, completed: readonly string[]) {

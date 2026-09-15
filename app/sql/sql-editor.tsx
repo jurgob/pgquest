@@ -383,6 +383,11 @@ function CodeMirrorSqlEditor({
           ".cm-tooltip-autocomplete": {
             backgroundColor: "#ffffff",
             color: "#18181b",
+            maxHeight: "16rem",
+            overflow: "hidden",
+          },
+          ".cm-tooltip-autocomplete ul": {
+            maxHeight: "16rem",
           },
           ".cm-tooltip-autocomplete ul li": {
             color: "#18181b",

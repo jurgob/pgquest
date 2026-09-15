@@ -80,6 +80,18 @@ export function useAllExercisesComplete() {
   );
 }
 
+export function useExerciseProgressMap() {
+  const context = useContext(ExerciseProgressContext);
+
+  if (!context) {
+    throw new Error(
+      "useExerciseProgressMap must be used inside ExerciseProgressProvider",
+    );
+  }
+
+  return context.progressMap;
+}
+
 export function useLessonExerciseStats(lessonId: LessonId) {
   const context = useContext(ExerciseProgressContext);
 
