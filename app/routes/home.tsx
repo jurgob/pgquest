@@ -6,6 +6,7 @@ import {
 } from "../sql/exercise-progress-context";
 import { CompletionCelebration } from "../sql/completion-celebration";
 import { lessons } from "../sql/lesson-catalog";
+import { DraftBadge } from "../sql/lesson-layout";
 import { SiteHeader } from "../sql/site-header";
 
 export function meta(_args: Route.MetaArgs) {
@@ -115,11 +116,7 @@ function LessonCard({ lesson }: { lesson: (typeof lessons)[number] }) {
       <div>
         <div className="flex flex-wrap items-center gap-2">
           <p className="font-mono text-sm font-semibold text-sky-700">{lesson.label}</p>
-          {lesson.draft ? (
-            <span className="rounded-sm border border-amber-300 bg-amber-50 px-2 py-0.5 font-mono text-xs font-semibold uppercase text-amber-700">
-              Draft
-            </span>
-          ) : null}
+          {lesson.draft ? <DraftBadge /> : null}
         </div>
         <h2 className="mt-3 text-2xl font-bold leading-tight">{lesson.title}</h2>
         {progress.isComplete ? (

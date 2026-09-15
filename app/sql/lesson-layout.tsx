@@ -3,6 +3,7 @@ import posthog from "posthog-js";
 import type { SqlExample } from "../../cli_examples/types";
 import { ExerciseCheckMessage, useExerciseSubmission } from "./exercise-submission";
 import { getOrComputeExerciseExpectedOutput } from "./exercise-expected-output-cache";
+import { lessons } from "./lesson-catalog";
 import { SiteHeader } from "./site-header";
 import type { LessonId } from "./types";
 import { SqlEditor } from "./sql-editor";
@@ -32,12 +33,17 @@ export function LessonPage({
   title: string;
   whatWeLearned?: readonly WhatWeLearnedItem[] | undefined;
 }) {
+  const lesson = lessons.find((candidate) => candidate.id === activeLesson);
+
   return (
     <main className="min-h-screen overflow-x-hidden bg-white text-zinc-950">
       <SiteHeader activeLesson={activeLesson} />
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-5 py-8">
         <article className="flex min-w-0 flex-col gap-6">
-          <Title>{title}</Title>
+          <div className="flex flex-wrap items-center gap-3">
+            <Title>{title}</Title>
+            {lesson?.draft ? <DraftBadge /> : null}
+          </div>
           <div className="flex min-w-0 flex-col gap-6">{children}</div>
           <TryYourself
             defaultQuery={defaultQuery}
@@ -102,6 +108,14 @@ export function LessonSection({ children }: { children: React.ReactNode }) {
 
 export function Title({ children }: { children: React.ReactNode }) {
   return <h1 className="text-3xl font-bold text-zinc-950">{children}</h1>;
+}
+
+export function DraftBadge() {
+  return (
+    <span className="rounded-sm border border-amber-300 bg-amber-50 px-2 py-0.5 font-mono text-xs font-semibold uppercase text-amber-700">
+      Draft
+    </span>
+  );
 }
 
 export function Title2({ children }: { children: React.ReactNode }) {
