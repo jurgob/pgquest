@@ -1,17 +1,11 @@
 import { examples, exercises } from "../../cli_examples/text-search-basics.sql";
-import { CourseLessonPage } from "../sql/course-lesson-page";
+import { CourseLessonPage, ExampleBlock } from "../sql/course-lesson-page";
+import { Paragraphs } from "../sql/lesson-layout";
 
 export default function Lesson11() {
   return (
     <CourseLessonPage
-      examples={examples}
       exercises={exercises}
-      intro={
-        <p>
-          Text search starts with patterns. LIKE and ILIKE are simple tools for prefix,
-          suffix, and contains-style matching.
-        </p>
-      }
       lessonId="text-search-basics"
       whatWeLearned={[
         {
@@ -34,6 +28,16 @@ export default function Lesson11() {
           url: "https://www.postgresql.org/docs/current/functions-string.html",
         },
       ]}
-    />
+    >
+      <Paragraphs>
+        <p>
+          Text search starts with patterns. LIKE and ILIKE are simple tools for prefix,
+          suffix, and contains-style matching.
+        </p>
+      </Paragraphs>
+      {examples.map((example) => (
+        <ExampleBlock example={example} key={example.id} />
+      ))}
+    </CourseLessonPage>
   );
 }

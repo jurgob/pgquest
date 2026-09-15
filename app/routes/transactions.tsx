@@ -1,17 +1,11 @@
 import { examples, exercises } from "../../cli_examples/transactions.sql";
-import { CourseLessonPage } from "../sql/course-lesson-page";
+import { CourseLessonPage, ExampleBlock } from "../sql/course-lesson-page";
+import { Paragraphs } from "../sql/lesson-layout";
 
 export default function Lesson13() {
   return (
     <CourseLessonPage
-      examples={examples}
       exercises={exercises}
-      intro={
-        <p>
-          A transaction groups statements into one unit of work. You either commit the
-          whole change or roll it back.
-        </p>
-      }
       lessonId="transactions"
       whatWeLearned={[
         {
@@ -34,6 +28,16 @@ export default function Lesson13() {
           description: "means related changes succeed or fail as a unit.",
         },
       ]}
-    />
+    >
+      <Paragraphs>
+        <p>
+          A transaction groups statements into one unit of work. You either commit the
+          whole change or roll it back.
+        </p>
+      </Paragraphs>
+      {examples.map((example) => (
+        <ExampleBlock example={example} key={example.id} />
+      ))}
+    </CourseLessonPage>
   );
 }

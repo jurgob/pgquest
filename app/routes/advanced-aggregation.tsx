@@ -1,17 +1,11 @@
 import { examples, exercises } from "../../cli_examples/advanced-aggregation.sql";
-import { CourseLessonPage } from "../sql/course-lesson-page";
+import { CourseLessonPage, ExampleBlock } from "../sql/course-lesson-page";
+import { Paragraphs } from "../sql/lesson-layout";
 
 export default function Lesson14() {
   return (
     <CourseLessonPage
-      examples={examples}
       exercises={exercises}
-      intro={
-        <p>
-          Advanced aggregation is still the same idea: shape many rows into fewer rows,
-          but with sharper tools for filters and time buckets.
-        </p>
-      }
       lessonId="advanced-aggregation"
       whatWeLearned={[
         {
@@ -30,6 +24,16 @@ export default function Lesson14() {
           url: "https://www.postgresql.org/docs/current/functions-datetime.html",
         },
       ]}
-    />
+    >
+      <Paragraphs>
+        <p>
+          Advanced aggregation is still the same idea: shape many rows into fewer rows,
+          but with sharper tools for filters and time buckets.
+        </p>
+      </Paragraphs>
+      {examples.map((example) => (
+        <ExampleBlock example={example} key={example.id} />
+      ))}
+    </CourseLessonPage>
   );
 }

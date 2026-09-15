@@ -1,17 +1,11 @@
 import { examples, exercises } from "../../cli_examples/vectors.sql";
-import { CourseLessonPage } from "../sql/course-lesson-page";
+import { CourseLessonPage, ExampleBlock } from "../sql/course-lesson-page";
+import { Paragraphs } from "../sql/lesson-layout";
 
 export default function Lesson15() {
   return (
     <CourseLessonPage
-      examples={examples}
       exercises={exercises}
-      intro={
-        <p>
-          Vector search stores meaning as numbers and ranks rows by distance. Real apps
-          often use pgvector; this lesson uses arrays to show the core idea.
-        </p>
-      }
       lessonId="vectors"
       whatWeLearned={[
         {
@@ -32,6 +26,16 @@ export default function Lesson15() {
           url: "https://github.com/pgvector/pgvector",
         },
       ]}
-    />
+    >
+      <Paragraphs>
+        <p>
+          Vector search stores meaning as numbers and ranks rows by distance. Real apps
+          often use pgvector; this lesson uses arrays to show the core idea.
+        </p>
+      </Paragraphs>
+      {examples.map((example) => (
+        <ExampleBlock example={example} key={example.id} />
+      ))}
+    </CourseLessonPage>
   );
 }

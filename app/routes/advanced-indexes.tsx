@@ -1,17 +1,11 @@
 import { examples, exercises } from "../../cli_examples/advanced-indexes.sql";
-import { CourseLessonPage } from "../sql/course-lesson-page";
+import { CourseLessonPage, ExampleBlock } from "../sql/course-lesson-page";
+import { Paragraphs } from "../sql/lesson-layout";
 
 export default function Lesson5() {
   return (
     <CourseLessonPage
-      examples={examples}
       exercises={exercises}
-      intro={
-        <p>
-          After the first index, the next lesson is shape. Useful indexes depend on how
-          selective the filter is and how the query is written.
-        </p>
-      }
       lessonId="advanced-indexes"
       whatWeLearned={[
         {
@@ -35,6 +29,16 @@ export default function Lesson5() {
           url: "https://www.postgresql.org/docs/current/using-explain.html",
         },
       ]}
-    />
+    >
+      <Paragraphs>
+        <p>
+          After the first index, the next lesson is shape. Useful indexes depend on how
+          selective the filter is and how the query is written.
+        </p>
+      </Paragraphs>
+      {examples.map((example) => (
+        <ExampleBlock example={example} key={example.id} />
+      ))}
+    </CourseLessonPage>
   );
 }

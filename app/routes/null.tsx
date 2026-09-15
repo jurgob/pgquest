@@ -1,17 +1,11 @@
 import { examples, exercises } from "../../cli_examples/null.sql";
-import { CourseLessonPage } from "../sql/course-lesson-page";
+import { CourseLessonPage, ExampleBlock } from "../sql/course-lesson-page";
+import { Paragraphs } from "../sql/lesson-layout";
 
 export default function Lesson7() {
   return (
     <CourseLessonPage
-      examples={examples}
       exercises={exercises}
-      intro={
-        <p>
-          NULL means missing or unknown. That makes it different from an empty string,
-          zero, or false, and it changes how comparisons work.
-        </p>
-      }
       lessonId="null"
       whatWeLearned={[
         {
@@ -30,6 +24,16 @@ export default function Lesson7() {
           url: "https://www.postgresql.org/docs/current/functions-conditional.html",
         },
       ]}
-    />
+    >
+      <Paragraphs>
+        <p>
+          NULL means missing or unknown. That makes it different from an empty string,
+          zero, or false, and it changes how comparisons work.
+        </p>
+      </Paragraphs>
+      {examples.map((example) => (
+        <ExampleBlock example={example} key={example.id} />
+      ))}
+    </CourseLessonPage>
   );
 }

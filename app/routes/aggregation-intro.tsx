@@ -1,17 +1,11 @@
 import { examples, exercises } from "../../cli_examples/aggregation-intro.sql";
-import { CourseLessonPage } from "../sql/course-lesson-page";
+import { CourseLessonPage, ExampleBlock } from "../sql/course-lesson-page";
+import { Paragraphs } from "../sql/lesson-layout";
 
 export default function Lesson6() {
   return (
     <CourseLessonPage
-      examples={examples}
       exercises={exercises}
-      intro={
-        <p>
-          Aggregates reduce many rows into summaries. GROUP BY decides the level of
-          detail: one row for the whole table, or one row per group.
-        </p>
-      }
       lessonId="aggregation-intro"
       whatWeLearned={[
         {
@@ -35,6 +29,16 @@ export default function Lesson6() {
           url: "https://www.postgresql.org/docs/current/sql-select.html#SQL-HAVING",
         },
       ]}
-    />
+    >
+      <Paragraphs>
+        <p>
+          Aggregates reduce many rows into summaries. GROUP BY decides the level of
+          detail: one row for the whole table, or one row per group.
+        </p>
+      </Paragraphs>
+      {examples.map((example) => (
+        <ExampleBlock example={example} key={example.id} />
+      ))}
+    </CourseLessonPage>
   );
 }

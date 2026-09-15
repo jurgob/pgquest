@@ -3,7 +3,6 @@ import { lessons } from "./lesson-catalog";
 import {
   LessonPage,
   Paragraph,
-  Paragraphs,
   Section,
   Title2,
   type WhatWeLearnedItem,
@@ -13,20 +12,18 @@ import type { LessonId } from "./types";
 import { SqlPlan, SqlResult, useLessonSqlExample } from "./use-lesson-sql-example";
 
 export function CourseLessonPage({
-  examples,
+  children,
   exercises,
-  intro,
   lessonId,
   whatWeLearned,
 }: {
-  examples: readonly SqlExample[];
+  children: React.ReactNode;
   exercises: readonly SqlExample[];
-  intro: React.ReactNode;
   lessonId: LessonId;
   whatWeLearned: readonly WhatWeLearnedItem[];
 }) {
   const lesson = lessons.find((candidate) => candidate.id === lessonId);
-  const tryExample = exercises[0] ?? examples[0];
+  const tryExample = exercises[0];
 
   if (!lesson) {
     throw new Error(`Missing lesson: ${lessonId}`);
@@ -42,15 +39,12 @@ export function CourseLessonPage({
       title={lesson.title}
       whatWeLearned={whatWeLearned}
     >
-      <Paragraphs>{intro}</Paragraphs>
-      {examples.map((example) => (
-        <CourseExampleBlock example={example} key={example.id} />
-      ))}
+      {children}
     </LessonPage>
   );
 }
 
-function CourseExampleBlock({ example }: { example: SqlExample }) {
+export function ExampleBlock({ example }: { example: SqlExample }) {
   const execution = useLessonSqlExample({
     query: example.query,
     sqlLoad: example.database_init?.query ?? "",

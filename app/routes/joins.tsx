@@ -1,17 +1,11 @@
 import { examples, exercises } from "../../cli_examples/joins.sql";
-import { CourseLessonPage } from "../sql/course-lesson-page";
+import { CourseLessonPage, ExampleBlock } from "../sql/course-lesson-page";
+import { Paragraphs } from "../sql/lesson-layout";
 
 export default function Lesson8() {
   return (
     <CourseLessonPage
-      examples={examples}
       exercises={exercises}
-      intro={
-        <p>
-          JOIN is the move that makes relational databases click: you combine rows from
-          different tables using relationships between columns.
-        </p>
-      }
       lessonId="joins"
       whatWeLearned={[
         {
@@ -34,6 +28,16 @@ export default function Lesson8() {
           description: "tells PostgreSQL how rows from both sides match.",
         },
       ]}
-    />
+    >
+      <Paragraphs>
+        <p>
+          JOIN is the move that makes relational databases click: you combine rows from
+          different tables using relationships between columns.
+        </p>
+      </Paragraphs>
+      {examples.map((example) => (
+        <ExampleBlock example={example} key={example.id} />
+      ))}
+    </CourseLessonPage>
   );
 }

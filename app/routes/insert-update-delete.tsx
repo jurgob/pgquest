@@ -1,17 +1,11 @@
 import { examples, exercises } from "../../cli_examples/insert-update-delete.sql";
-import { CourseLessonPage } from "../sql/course-lesson-page";
+import { CourseLessonPage, ExampleBlock } from "../sql/course-lesson-page";
+import { Paragraphs } from "../sql/lesson-layout";
 
 export default function Lesson3() {
   return (
     <CourseLessonPage
-      examples={examples}
       exercises={exercises}
-      intro={
-        <p>
-          Reading rows is only half of SQL. This lesson changes data with INSERT, UPDATE,
-          and DELETE, always using RETURNING so the result is visible.
-        </p>
-      }
       lessonId="insert-update-delete"
       whatWeLearned={[
         {
@@ -35,6 +29,16 @@ export default function Lesson3() {
           url: "https://www.postgresql.org/docs/current/dml-returning.html",
         },
       ]}
-    />
+    >
+      <Paragraphs>
+        <p>
+          Reading rows is only half of SQL. This lesson changes data with INSERT, UPDATE,
+          and DELETE, always using RETURNING so the result is visible.
+        </p>
+      </Paragraphs>
+      {examples.map((example) => (
+        <ExampleBlock example={example} key={example.id} />
+      ))}
+    </CourseLessonPage>
   );
 }

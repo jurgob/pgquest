@@ -1,17 +1,11 @@
 import { examples, exercises } from "../../cli_examples/constraints.sql";
-import { CourseLessonPage } from "../sql/course-lesson-page";
+import { CourseLessonPage, ExampleBlock } from "../sql/course-lesson-page";
+import { Paragraphs } from "../sql/lesson-layout";
 
 export default function Lesson4() {
   return (
     <CourseLessonPage
-      examples={examples}
       exercises={exercises}
-      intro={
-        <p>
-          Constraints move basic data rules into PostgreSQL. They make invalid states
-          harder to store, no matter which application sends the SQL.
-        </p>
-      }
       lessonId="constraints"
       whatWeLearned={[
         {
@@ -35,6 +29,16 @@ export default function Lesson4() {
           url: "https://www.postgresql.org/docs/current/catalog-pg-constraint.html",
         },
       ]}
-    />
+    >
+      <Paragraphs>
+        <p>
+          Constraints move basic data rules into PostgreSQL. They make invalid states
+          harder to store, no matter which application sends the SQL.
+        </p>
+      </Paragraphs>
+      {examples.map((example) => (
+        <ExampleBlock example={example} key={example.id} />
+      ))}
+    </CourseLessonPage>
   );
 }
