@@ -31,7 +31,7 @@ export function LessonPage({
   return (
     <main className="min-h-screen overflow-x-hidden bg-white text-zinc-950">
       <SiteHeader activeLesson={activeLesson} />
-      <div className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-5 py-8">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-5 py-8">
         <article className="flex min-w-0 flex-col gap-6">
           <Title>{title}</Title>
           <div className="flex min-w-0 flex-col gap-6">{children}</div>
@@ -109,6 +109,27 @@ export function Paragraph({ children }: { children: React.ReactNode }) {
 
 export function Paragraphs({ children }: { children: React.ReactNode }) {
   return <div className="mt-3 text-base leading-7 text-zinc-800">{children}</div>;
+}
+
+export function InlineCode({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string | undefined;
+}) {
+  return (
+    <code
+      className={[
+        "rounded-sm border border-zinc-200 bg-zinc-100 px-1 py-0.5 font-mono text-sm font-medium text-zinc-950",
+        className,
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
+      {children}
+    </code>
+  );
 }
 
 export function TryYourself({

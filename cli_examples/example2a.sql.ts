@@ -40,7 +40,8 @@ WHERE email = 'user9000@example.com';
 const indexedMigration = sqlStatement(`
 ${migration}
 
--- Add an index so PostgreSQL can find rows by email without scanning the whole table.
+-- Add an index so PostgreSQL can find rows by email
+-- without scanning the whole table.
 CREATE INDEX users_email_idx ON users (email);
 `);
 
@@ -91,7 +92,7 @@ export const examples: SqlExample[] = [
   },
   {
     id: SQL_EXAMPLE_IDS.example2SequentialScan,
-    name: sqlExampleTitle("Email lookup without an index"),
+    name: sqlExampleTitle("An introduction to indexes"),
     description: sqlExampleDescription(
       "Look up one email in a larger users table without a supporting index.",
     ),

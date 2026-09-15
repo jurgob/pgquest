@@ -21,7 +21,7 @@ import {
 import { tags } from "@lezer/highlight";
 
 import { createSqlDatabase, runSqlQueryOnDatabase } from "./run-example";
-import { isSqlKeyword, sqlHighlight } from "./sql-highlight";
+import { explainHighlight, isSqlKeyword, sqlHighlight } from "./sql-highlight";
 import type { ExecutionOutput, QueryRow } from "./types";
 
 type SqlEditorProps = {
@@ -483,14 +483,16 @@ export function CodeWindow({ code }: { code: string }) {
 
 export function CodeViewer({
   code,
-  syntax: _syntax = "sql",
+  syntax = "sql",
 }: {
   code: string;
   syntax?: "explain" | "sql";
 }) {
   return (
     <pre className="mt-3 min-w-0 overflow-auto rounded-md bg-[#22251f] px-5 py-4 font-mono text-sm leading-6 text-zinc-100">
-      <code>{sqlHighlight(code.trim())}</code>
+      <code>
+        {syntax === "explain" ? explainHighlight(code.trim()) : sqlHighlight(code.trim())}
+      </code>
     </pre>
   );
 }

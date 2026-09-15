@@ -9,10 +9,10 @@ export type LessonCatalogItem = {
   summary: string;
   meta: string;
   time: string;
-  draft: boolean;
+  draft?: boolean | undefined;
 };
 
-export const lessons = [
+export const lessons: readonly LessonCatalogItem[] = [
   {
     id: "lesson1",
     label: "Lesson 01",
@@ -23,7 +23,6 @@ export const lessons = [
       "Create a small table, seed two rows, SELECT them back, and inspect the plan Postgres uses.",
     meta: "SELECT · EXPLAIN",
     time: "10 min",
-    draft: false,
   },
   {
     id: "lesson2",
@@ -41,13 +40,12 @@ export const lessons = [
     id: "lesson3",
     label: "Lesson 03",
     number: "3",
-    title: "Using an index",
+    title: "An introduction to indexes",
     href: "/lessons/lesson-3",
     summary:
       "Indexes and EXPLAIN plans, comparing a sequential scan with an index scan on the same query.",
     meta: "INDEX · EXPLAIN",
     time: "15 min",
-    draft: true,
   },
   {
     id: "lesson4",

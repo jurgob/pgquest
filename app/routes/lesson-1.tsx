@@ -9,6 +9,7 @@ import {
   selectByEmail as exampleOneSpecificQuery,
 } from "../../cli_examples/example1.sql";
 import {
+  InlineCode,
   LessonPage,
   LessonSection,
   Paragraph,
@@ -163,12 +164,10 @@ export default function LessonOne() {
       <Section>
         <Title2>Explanation</Title2>
         <Paragraph>
-          Add <code className="font-mono text-sm">EXPLAIN</code> before a query to ask
-          PostgreSQL how it plans to run it. Plain{" "}
-          <code className="font-mono text-sm">EXPLAIN</code> does not execute the query;
-          it only builds the plan.{" "}
-          <code className="font-mono text-sm">EXPLAIN ANALYZE</code> is the version that
-          actually runs the query and reports real timings.
+          Add <InlineCode>EXPLAIN</InlineCode> before a query to ask PostgreSQL how it
+          plans to run it. Plain <InlineCode>EXPLAIN</InlineCode> does not execute the
+          query; it only builds the plan. <InlineCode>EXPLAIN ANALYZE</InlineCode> is the
+          version that actually runs the query and reports real timings.
         </Paragraph>
         <CodeViewer code={"EXPLAIN " + exampleOneQuery.trim()} />
         <SqlPlan execution={exampleOne} />
@@ -176,25 +175,24 @@ export default function LessonOne() {
           <p>Read the plan from left to right:</p>
           <ul className="mt-2 list-disc space-y-2 pl-5">
             <li>
-              <code className="font-mono text-sm">Seq Scan</code> means sequential scan:
-              PostgreSQL plans to read the table from beginning to end.
+              <InlineCode>Seq Scan</InlineCode> means sequential scan: PostgreSQL plans to
+              read the table from beginning to end.
             </li>
             <li>
-              <code className="font-mono text-sm">on "User"</code> names the table being
-              scanned.
+              <InlineCode>on "User"</InlineCode> names the table being scanned.
             </li>
             <li>
-              <code className="font-mono text-sm">0.00</code> is the startup cost,{" "}
-              <code className="font-mono text-sm">1.02</code> is the total cost. These
-              numbers are internal planner units, not milliseconds.
+              <InlineCode>0.00</InlineCode> is the startup cost,{" "}
+              <InlineCode>1.02</InlineCode> is the total cost. These numbers are internal
+              planner units, not milliseconds.
             </li>
             <li>
-              <code className="font-mono text-sm">rows=2</code> is PostgreSQL's estimated
-              number of rows this step will return.
+              <InlineCode>rows=2</InlineCode> is PostgreSQL's estimated number of rows
+              this step will return.
             </li>
             <li>
-              <code className="font-mono text-sm">width=34</code> is the estimated average
-              row size in bytes.
+              <InlineCode>width=34</InlineCode> is the estimated average row size in
+              bytes.
             </li>
           </ul>
         </div>
@@ -205,12 +203,12 @@ export default function LessonOne() {
         <Paragraphs>
           <p>
             In the PostgreSQL documentation, you might not find much use of terms such as
-            <code className="mx-1 font-mono text-sm">seed</code> and
-            <code className="mx-1 font-mono text-sm">migration</code>. These are mostly
+            <InlineCode className="mx-1">seed</InlineCode> and
+            <InlineCode className="mx-1">migration</InlineCode>. These are mostly
             conventions introduced by application frameworks and database tooling rather
             than fundamental PostgreSQL concepts. The term
-            <code className="mx-1 font-mono text-sm">query</code>, on the other hand, is
-            used extensively by PostgreSQL.
+            <InlineCode className="mx-1">query</InlineCode>, on the other hand, is used
+            extensively by PostgreSQL.
           </p>
           <p>
             PostgreSQL and SQL have strong foundations in the relational model. One of its
@@ -229,10 +227,10 @@ export default function LessonOne() {
             As a developer, you can roughly think of a SQL statement as a small program
             expressed as text and sent to PostgreSQL for parsing, planning, and execution.
             This is somewhat analogous to passing JavaScript source code to
-            <code className="mx-1 font-mono text-sm">eval()</code> or
-            <code className="mx-1 font-mono text-sm">node -e</code>. SQL is declarative,
-            though: you generally describe the result or change you want rather than the
-            exact sequence of operations used to produce it.
+            <InlineCode className="mx-1">eval()</InlineCode> or
+            <InlineCode className="mx-1">node -e</InlineCode>. SQL is declarative, though:
+            you generally describe the result or change you want rather than the exact
+            sequence of operations used to produce it.
           </p>
           <p>
             You can roughly think of a relation as the mathematical concept underlying a
@@ -245,7 +243,7 @@ export default function LessonOne() {
           <Title2>Reading a relation</Title2>
           <Paragraph>
             This statement produces a result containing rows from the
-            <code className="mx-1 font-mono text-sm">"User"</code> table:
+            <InlineCode className="mx-1">"User"</InlineCode> table:
           </Paragraph>
           <CodeViewer code={exampleOneQuery} />
         </Section>
@@ -254,9 +252,9 @@ export default function LessonOne() {
           <Title2>Changing a relation</Title2>
           <Paragraph>
             This statement changes the stored
-            <code className="mx-1 font-mono text-sm">"User"</code> table by adding a row.
-            <code className="mx-1 font-mono text-sm">RETURNING</code> additionally
-            produces a result containing the inserted row:
+            <InlineCode className="mx-1">"User"</InlineCode> table by adding a row.
+            <InlineCode className="mx-1">RETURNING</InlineCode> additionally produces a
+            result containing the inserted row:
           </Paragraph>
           <CodeViewer code={exampleOneInsertQuery} />
         </Section>
@@ -264,7 +262,7 @@ export default function LessonOne() {
         <Section>
           <Paragraph>
             Conceptually, you might imagine the table state before and after the
-            <code className="mx-1 font-mono text-sm">INSERT</code>:
+            <InlineCode className="mx-1">INSERT</InlineCode>:
           </Paragraph>
           <div className="mt-3 grid gap-4 md:grid-cols-2">
             <pre className="overflow-auto rounded-md bg-[#22251f] px-5 py-4 font-mono text-sm leading-6 text-zinc-100">
@@ -287,9 +285,8 @@ export default function LessonOne() {
             <p>
               This is a useful mathematical mental model, but PostgreSQL does not
               literally construct and store an entirely new table every time an
-              <code className="mx-1 font-mono text-sm">INSERT</code> occurs. PostgreSQL
-              has its own physical storage and MVCC mechanisms for implementing these
-              changes.
+              <InlineCode className="mx-1">INSERT</InlineCode> occurs. PostgreSQL has its
+              own physical storage and MVCC mechanisms for implementing these changes.
             </p>
           </Paragraphs>
         </Section>
@@ -322,15 +319,13 @@ export default function LessonOne() {
             <p>Compared to the first plan, two things changed:</p>
             <ul className="mt-2 list-disc space-y-2 pl-5">
               <li>
-                PostgreSQL still uses a{" "}
-                <code className="font-mono text-sm">Seq Scan</code>, so it still reads the
-                whole table from beginning to end.
+                PostgreSQL still uses a <InlineCode>Seq Scan</InlineCode>, so it still
+                reads the whole table from beginning to end.
               </li>
               <li>
-                The plan now has a <code className="font-mono text-sm">Filter</code> step
-                for the <code className="font-mono text-sm">WHERE email = ...</code>{" "}
-                condition, so rows that do not match Ada's email are discarded after they
-                are read.
+                The plan now has a <InlineCode>Filter</InlineCode> step for the{" "}
+                <InlineCode>WHERE email = ...</InlineCode> condition, so rows that do not
+                match Ada's email are discarded after they are read.
               </li>
             </ul>
           </div>
@@ -346,12 +341,12 @@ export default function LessonOne() {
               them.
             </p>
             <p>
-              <code className="font-mono text-sm">INSERT</code> adds a new row to a table
-              that already exists.
+              <InlineCode>INSERT</InlineCode> adds a new row to a table that already
+              exists.
             </p>
             <p>
-              <code className="font-mono text-sm">RETURNING</code> sends the inserted row
-              back as the query result.
+              <InlineCode>RETURNING</InlineCode> sends the inserted row back as the query
+              result.
             </p>
           </Paragraphs>
         </div>
@@ -368,15 +363,13 @@ export default function LessonOne() {
           <CodeViewer code={"EXPLAIN " + exampleOneInsertQuery.trim()} />
           <div className="mt-3 text-base leading-7 text-zinc-700">
             <p>
-              The plan starts with{" "}
-              <code className="font-mono text-sm">Insert on "User"</code> because
-              PostgreSQL is writing into the{" "}
-              <code className="font-mono text-sm">"User"</code> table.
+              The plan starts with <InlineCode>Insert on "User"</InlineCode> because
+              PostgreSQL is writing into the <InlineCode>"User"</InlineCode> table.
             </p>
             <p>
-              The <code className="font-mono text-sm">Result</code> step creates the
-              single row from the literal values in the query; PostgreSQL does not need to
-              scan another table first.
+              The <InlineCode>Result</InlineCode> step creates the single row from the
+              literal values in the query; PostgreSQL does not need to scan another table
+              first.
             </p>
           </div>
           <SqlPlan execution={exampleOneInsert} />

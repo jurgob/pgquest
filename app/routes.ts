@@ -4,7 +4,7 @@ export default [
   index("routes/home.tsx"),
   route("lessons/lesson-1", "routes/lesson-1.tsx"),
   route("lessons/lesson-2", "routes/lesson-2.tsx"),
-  route("lessons/lesson-3", "routes/example-2.tsx"),
+  route("lessons/lesson-3", "routes/example-3.tsx"),
   route("lessons/lesson-4", "routes/lesson-3.tsx"),
   route("lessons/lesson-5", "routes/lesson-4.tsx"),
   route("lessons/lesson-6", "routes/lesson-5.tsx"),

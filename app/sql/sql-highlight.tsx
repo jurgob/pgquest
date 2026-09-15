@@ -171,6 +171,53 @@ export function sqlHighlight(
   ));
 }
 
+const explainTokenPattern =
+  /(Seq Scan|Index Scan|Bitmap Heap Scan|Bitmap Index Scan|cost=\d+(?:\.\d+)?\.\.\d+(?:\.\d+)?|rows=\d+|width=\d+|Filter:|Index Cond:|'[^']*'::[A-Za-z_][A-Za-z0-9_]*)/g;
+
+export function explainHighlight(explain: string): ReactNode[] {
+  return explain.split(explainTokenPattern).map((part, index) => {
+    if (!part) {
+      return null;
+    }
+
+    const className = getExplainTokenClassName(part);
+
+    if (!className) {
+      return part;
+    }
+
+    return (
+      <span className={className} key={`${index}-${part}`}>
+        {part}
+      </span>
+    );
+  });
+}
+
+function getExplainTokenClassName(value: string) {
+  if (/^(?:Seq Scan|Index Scan|Bitmap Heap Scan|Bitmap Index Scan)$/.test(value)) {
+    return "font-semibold text-sky-200";
+  }
+
+  if (/^cost=/.test(value)) {
+    return "rounded-sm bg-emerald-950 px-1 py-0.5 font-semibold text-emerald-100";
+  }
+
+  if (/^(?:rows|width)=/.test(value)) {
+    return "text-yellow-200";
+  }
+
+  if (/^(?:Filter|Index Cond):$/.test(value)) {
+    return "font-semibold text-zinc-200";
+  }
+
+  if (/^'/.test(value)) {
+    return "text-lime-300";
+  }
+
+  return undefined;
+}
+
 type SqlToken = { kind: SqlTokenKind; value: string };
 
 function tokenizeSql(sql: string): SqlToken[] {
