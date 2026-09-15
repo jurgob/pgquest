@@ -8,10 +8,13 @@ import {
   type LessonExercise,
 } from "../sql/lesson-sql-catalog";
 import { lessons } from "../sql/lesson-catalog";
+import { ExerciseCheckMessage, useExerciseSubmission } from "../sql/exercise-submission";
 import { useExerciseProgressMap } from "../sql/exercise-progress-context";
 import { SiteHeader } from "../sql/site-header";
 import { SqlEditor } from "../sql/sql-editor";
 import type { LessonId } from "../sql/types";
+
+const defaultDatabaseInit = allDatabaseInits[0];
 
 export function meta(_args: Route.MetaArgs) {
   return [
@@ -23,15 +26,26 @@ export function meta(_args: Route.MetaArgs) {
 export default function Playground() {
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(defaultDatabaseInit?.name ?? "");
   const [showDatabases, setShowDatabases] = useState(true);
   const [showExercises, setShowExercises] = useState(true);
-  const [selectedId, setSelectedId] = useState("");
-  const [loadedId, setLoadedId] = useState("");
+  const [selectedId, setSelectedId] = useState(defaultDatabaseInit?.id ?? "");
+  const [loadedId, setLoadedId] = useState(defaultDatabaseInit?.id ?? "");
   const progressMap = useExerciseProgressMap();
   const pickerItems = useMemo(() => buildPickerItems(progressMap), [progressMap]);
   const selectedItem = pickerItems.find((item) => item.id === selectedId);
   const loadedItem = pickerItems.find((item) => item.id === loadedId);
+  const activeExercise =
+    loadedItem?.kind === "exercise" ? loadedItem.exercise : undefined;
+  const { checkMessage, exerciseState, handleExecution, handleSuccess } =
+    useExerciseSubmission({
+      databasePreload: loadedItem?.databaseInit ?? "",
+      exercise: activeExercise,
+      lessonId: loadedItem?.lessonId ?? defaultDatabaseInit?.lessonId ?? lessons[0]!.id,
+    });
+  const editorQuery = activeExercise
+    ? (exerciseState.queries[activeExercise.id] ?? "")
+    : (loadedItem?.query ?? "");
   const filteredItems = useMemo(
     () =>
       filterItems(pickerItems, search).filter(
@@ -59,25 +73,17 @@ export default function Playground() {
     setSelectedId(item.id);
     setSearch(item.name);
     setIsPickerOpen(false);
+    setIsLoading(true);
+    window.setTimeout(() => {
+      setLoadedId(item.id);
+      setIsLoading(false);
+    }, 250);
   }
 
   function removeSelection() {
     setSelectedId("");
     setSearch("");
     setIsPickerOpen(false);
-  }
-
-  function loadSelectedExample() {
-    if (!selectedItem) {
-      return;
-    }
-
-    setIsLoading(true);
-    window.setTimeout(() => {
-      setLoadedId(selectedItem.id);
-      setIsLoading(false);
-      setIsPickerOpen(false);
-    }, 250);
   }
 
   return (
@@ -104,43 +110,30 @@ export default function Playground() {
             </div>
           </div>
 
-          <div className="mt-3 flex flex-col gap-3 lg:flex-row">
-            <div className="min-w-0 flex-1">
-              <div className="flex min-h-11 w-full items-center border border-zinc-300 px-2 transition focus-within:border-sky-700 focus-within:ring-2 focus-within:ring-sky-100">
-                <input
-                  autoComplete="off"
-                  className="h-9 min-w-0 flex-1 border-0 bg-transparent px-1 text-base text-zinc-950 outline-none"
-                  id="example"
-                  onChange={(event) => {
-                    setSearch(event.target.value);
-                    setIsPickerOpen(true);
-                  }}
-                  onFocus={() => setIsPickerOpen(true)}
-                  placeholder="Search databases and exercises..."
-                  value={search}
-                />
-                {selectedItem ? (
-                  <button
-                    aria-label="Remove selected item"
-                    className="flex h-7 w-7 items-center justify-center text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-950"
-                    onClick={removeSelection}
-                    type="button"
-                  >
-                    x
-                  </button>
-                ) : null}
-              </div>
-            </div>
-
-            <button
-              className="flex h-11 items-center justify-center gap-2 bg-zinc-950 px-5 font-mono text-sm font-semibold text-white transition enabled:hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-zinc-300 disabled:text-zinc-600 lg:w-28"
-              disabled={!selectedItem || isLoading}
-              onClick={loadSelectedExample}
-              type="button"
-            >
-              {isLoading ? <LoadingIcon /> : null}
-              Load
-            </button>
+          <div className="mt-3 flex min-h-11 w-full items-center border border-zinc-300 px-2 transition focus-within:border-sky-700 focus-within:ring-2 focus-within:ring-sky-100">
+            <input
+              autoComplete="off"
+              className="h-9 min-w-0 flex-1 border-0 bg-transparent px-1 text-base text-zinc-950 outline-none"
+              id="example"
+              onChange={(event) => {
+                setSearch(event.target.value);
+                setIsPickerOpen(true);
+              }}
+              onFocus={() => setIsPickerOpen(true)}
+              placeholder="Search databases and exercises..."
+              value={search}
+            />
+            {isLoading ? <LoadingIcon /> : null}
+            {!isLoading && selectedItem ? (
+              <button
+                aria-label="Remove selected item"
+                className="flex h-7 w-7 items-center justify-center text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-950"
+                onClick={removeSelection}
+                type="button"
+              >
+                x
+              </button>
+            ) : null}
           </div>
 
           {loadedItem ? (
@@ -168,10 +161,18 @@ export default function Playground() {
 
         <SqlEditor
           databaseInit={loadedItem?.databaseInit}
+          description={loadedItem?.description}
           key={loadedItem?.id ?? "empty"}
+          onExecution={handleExecution}
+          onSuccess={handleSuccess}
           preloadId={loadedItem?.preloadId}
-          query={loadedItem?.query ?? ""}
+          query={editorQuery}
+          status={activeExercise ? "In progress" : undefined}
+          title={loadedItem?.name ?? "Interactive Playground"}
         />
+        {activeExercise && checkMessage ? (
+          <ExerciseCheckMessage message={checkMessage} />
+        ) : null}
       </div>
     </main>
   );
@@ -315,6 +316,7 @@ function PickerDialog({
 type PlaygroundPickerItem = {
   databaseInit: string;
   description: string;
+  exercise?: LessonExercise | undefined;
   id: string;
   isSolved?: boolean | undefined;
   kind: "database" | "exercise";
@@ -324,6 +326,19 @@ type PlaygroundPickerItem = {
   name: string;
   preloadId: string;
   query: string;
+};
+
+const emptyDatabaseItem: PlaygroundPickerItem = {
+  databaseInit: "-- empty database, nothing preloaded\n",
+  description: "Start with a blank database, nothing preloaded.",
+  id: "empty-database",
+  kind: "database",
+  lessonId: lessons[0]!.id,
+  lessonLabel: "—",
+  lessonTitle: "Empty database",
+  name: "Empty database",
+  preloadId: "empty",
+  query: "",
 };
 
 function buildPickerItems(progressMap: ReturnType<typeof useExerciseProgressMap>) {
@@ -344,7 +359,7 @@ function buildPickerItems(progressMap: ReturnType<typeof useExerciseProgressMap>
     buildExerciseItem(exercise, toLessonInfo(exercise.lessonId), progressMap),
   );
 
-  return [...databaseItems, ...exerciseItems];
+  return [emptyDatabaseItem, ...databaseItems, ...exerciseItems];
 }
 
 function buildDatabaseItem(
@@ -374,6 +389,7 @@ function buildExerciseItem(
   return {
     databaseInit: preload?.query ?? "",
     description: exercise.description,
+    exercise,
     id: exercise.id,
     isSolved: progressMap[exercise.lessonId]?.completed.includes(exercise.id) ?? false,
     kind: "exercise",
