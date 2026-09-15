@@ -16,6 +16,10 @@
     "lint:fix": "eslint . --fix",
     "start": "react-router-serve ./build/server/index.js",
     "ship": "./scripts/ship.sh",
+    "sops:config:decrypt": "vite-node --config ./vite.cli.config.ts ./scripts/sops-config-decrypt.ts",
+    "sops:decrypt": "vite-node --config ./vite.cli.config.ts ./scripts/sops-decrypt.ts",
+    "sops:encrypt": "vite-node --config ./vite.cli.config.ts ./scripts/sops-encrypt.ts",
+    "sops:keygen": "vite-node --config ./vite.cli.config.ts ./scripts/sops-keygen.ts",
     "test": "vitest run --config ./vitest.config.ts",
     "typecheck": "react-router typegen && tsc"
   },
@@ -31,12 +35,15 @@
     "@lezer/highlight": "^1.2.3",
     "@react-router/node": "^8",
     "@react-router/serve": "^8",
+    "age-encryption": "^0.3.1",
     "isbot": "^5.1.36",
     "neverthrow": "^8.2.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-router": "^8",
-    "ts-pattern": "^5.9.0"
+    "sops-age": "^4.0.2",
+    "ts-pattern": "^5.9.0",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

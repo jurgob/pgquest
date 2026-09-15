@@ -1,5 +1,6 @@
 .DS_Store
 .env
+.env.decrypted
 /node_modules/
 /.pnpm-store/
 /.turbo/
