@@ -15,8 +15,15 @@ WORKDIR /app
 RUN corepack enable pnpm && pnpm build
 
 FROM node:24.10-alpine
-COPY ./package.json ./pnpm-lock.yaml /app/
+COPY ./package.json ./pnpm-lock.yaml ./vite.cli.config.ts ./tsconfig.json /app/
 COPY --from=production-dependencies-env /app/node_modules /app/node_modules
 COPY --from=build-env /app/build /app/build
+# pnpm start runs config:check via vite-node against source, not the bundled
+# build, so its import graph (app/config, app/config_schemas, scripts) needs
+# to exist here too.
+COPY ./app/config /app/app/config
+COPY ./app/config_schemas /app/app/config_schemas
+COPY ./scripts /app/scripts
 WORKDIR /app
-CMD ["corepack", "pnpm", "start"]
+RUN corepack enable pnpm
+CMD ["pnpm", "start"]
