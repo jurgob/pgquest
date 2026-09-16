@@ -5,6 +5,9 @@ import {
   readSopsConfigFromEnv,
 } from "./sops.server";
 import {
+  type HealthcheckEnv,
+  healthcheckEnvKeys,
+  healthcheckEnvSchema,
   type PosthogEnv,
   posthogEnvKeys,
   posthogEnvSchema,
@@ -14,6 +17,9 @@ export type ServerConfig = {
   posthog: {
     projectApiKey: string;
     apiHost: string;
+  };
+  healthcheck: {
+    pingUrl: string | undefined;
   };
 };
 
@@ -29,19 +35,25 @@ async function readServerConfigUncached(): Promise<ServerConfig> {
 
   const sopsConfig = readSopsConfigFromEnv(process.env);
   const decryptedEnv = await decryptConfigEnv(sopsConfig);
-  const env = applyProcessEnvOverrides(decryptedEnv, process.env, posthogEnvKeys);
+  const allowedKeys = [...posthogEnvKeys, ...healthcheckEnvKeys];
+  const env = applyProcessEnvOverrides(decryptedEnv, process.env, allowedKeys);
   const posthogEnv = posthogEnvSchema.parse(env);
+  const healthcheckEnv = healthcheckEnvSchema.parse(env);
 
-  return buildServerConfig(posthogEnv);
+  return buildServerConfig(posthogEnv, healthcheckEnv);
 }
 
-function buildServerConfig(env: PosthogEnv): ServerConfig {
-  const posthog: ServerConfig["posthog"] = {
-    projectApiKey: env.PGQUEST_POSTHOG_PROJECT_API_KEY,
-    apiHost: env.PGQUEST_POSTHOG_API_HOST,
-  };
-
+function buildServerConfig(
+  posthogEnv: PosthogEnv,
+  healthcheckEnv: HealthcheckEnv,
+): ServerConfig {
   return {
-    posthog,
+    posthog: {
+      projectApiKey: posthogEnv.PGQUEST_POSTHOG_PROJECT_API_KEY,
+      apiHost: posthogEnv.PGQUEST_POSTHOG_API_HOST,
+    },
+    healthcheck: {
+      pingUrl: healthcheckEnv.PGQUEST_HEALTHCHECK_PING_URL,
+    },
   };
 }

@@ -1,5 +1,7 @@
 # pgquest
 
+![healthchecks.io](https://healthchecks.io/badge/8b4ca320-faf5-4584-a7fa-a7d3b8/xSjYR-Ky-2.svg)
+
 Web-based PostgreSQL playground built around PGlite. The current first step is a
 small CLI that runs SQL examples from `cli_examples/`.
 

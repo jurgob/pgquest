@@ -8,8 +8,10 @@ import {
   toDotEnv,
 } from "../app/config/sops.server";
 import { loadDotEnvIfPresent } from "../app/config/dotenv.server";
-import { posthogEnvKeys } from "../app/config_schemas/envs";
+import { healthcheckEnvKeys, posthogEnvKeys } from "../app/config_schemas/envs";
 import { captureCliErrors, runCli } from "./config-cli";
+
+const allowedKeys = [...posthogEnvKeys, ...healthcheckEnvKeys];
 
 await runCli(() =>
   captureCliErrors(async () => {
@@ -17,7 +19,7 @@ await runCli(() =>
 
     const config = readSopsConfigFromEnv(process.env);
     const decryptedEnv = await decryptConfigEnv(config);
-    const mergedEnv = applyProcessEnvOverrides(decryptedEnv, process.env, posthogEnvKeys);
+    const mergedEnv = applyProcessEnvOverrides(decryptedEnv, process.env, allowedKeys);
     const dotEnv = toDotEnv(mergedEnv);
 
     writeFileSync(decryptedEnvPath, dotEnv);

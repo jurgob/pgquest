@@ -27,3 +27,11 @@ export const posthogEnvSchema = z.object({
 });
 
 export type PosthogEnv = z.infer<typeof posthogEnvSchema>;
+
+export const healthcheckEnvKeys = ["PGQUEST_HEALTHCHECK_PING_URL"] as const;
+
+export const healthcheckEnvSchema = z.object({
+  PGQUEST_HEALTHCHECK_PING_URL: z.url().optional(),
+});
+
+export type HealthcheckEnv = z.infer<typeof healthcheckEnvSchema>;
