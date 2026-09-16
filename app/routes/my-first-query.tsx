@@ -17,7 +17,7 @@ import {
   Section,
   Title2,
 } from "../sql/lesson-layout";
-import { CodeViewer } from "../sql/sql-editor";
+import { SqlCodeViewer } from "../sql/sql-editor";
 import { SqlPlan, SqlResult, useLessonSqlExample } from "../sql/use-lesson-sql-example";
 
 export function meta(_args: Route.MetaArgs) {
@@ -139,7 +139,7 @@ export default function LessonOne() {
           It is SQL usually run during deployment or setup; CREATE TABLE creates the
           table.
         </Paragraph>
-        <CodeViewer code={exampleOneMigration} />
+        <SqlCodeViewer code={exampleOneMigration} />
       </Section>
 
       <Section>
@@ -148,7 +148,7 @@ export default function LessonOne() {
           A seed inserts initial or example data after the schema exists. It is also SQL,
           but it runs after migrations so there is a table to insert into.
         </Paragraph>
-        <CodeViewer code={exampleOneSeed} />
+        <SqlCodeViewer code={exampleOneSeed} />
       </Section>
 
       <Section>
@@ -157,7 +157,7 @@ export default function LessonOne() {
           Once the table and rows exist, this SELECT reads every user back without a
           filter.
         </Paragraph>
-        <CodeViewer code={exampleOneQuery} />
+        <SqlCodeViewer code={exampleOneQuery} />
       </Section>
 
       <SqlResult execution={exampleOne} />
@@ -170,7 +170,7 @@ export default function LessonOne() {
           query; it only builds the plan. <InlineCode>EXPLAIN ANALYZE</InlineCode> is the
           version that actually runs the query and reports real timings.
         </Paragraph>
-        <CodeViewer code={"EXPLAIN " + exampleOneQuery.trim()} />
+        <SqlCodeViewer code={"EXPLAIN " + exampleOneQuery.trim()} />
         <SqlPlan execution={exampleOne} />
         <div className="mt-3 text-base leading-7 text-zinc-700">
           <p>Read the plan from left to right:</p>
@@ -257,7 +257,7 @@ export default function LessonOne() {
             This statement produces a result containing rows from the
             <InlineCode className="mx-1">"User"</InlineCode> table:
           </Paragraph>
-          <CodeViewer code={exampleOneQuery} />
+          <SqlCodeViewer code={exampleOneQuery} />
         </Section>
 
         <Section>
@@ -268,7 +268,7 @@ export default function LessonOne() {
             <InlineCode className="mx-1">RETURNING</InlineCode> additionally produces a
             result containing the inserted row:
           </Paragraph>
-          <CodeViewer code={exampleOneInsertQuery} />
+          <SqlCodeViewer code={exampleOneInsertQuery} />
         </Section>
 
         <Section>
@@ -320,12 +320,12 @@ export default function LessonOne() {
             This SELECT looks for one user whose email matches the value in the WHERE
             clause.
           </Paragraph>
-          <CodeViewer code={exampleOneSpecificQuery} />
+          <SqlCodeViewer code={exampleOneSpecificQuery} />
         </Section>
         <SqlResult execution={exampleOneSpecific} />
         <Section>
           <Title2>Explanation</Title2>
-          <CodeViewer code={"EXPLAIN " + exampleOneSpecificQuery.trim()} />
+          <SqlCodeViewer code={"EXPLAIN " + exampleOneSpecificQuery.trim()} />
           <SqlPlan execution={exampleOneSpecific} />
           <div className="mt-3 text-base leading-7 text-zinc-700">
             <p>Compared to the first plan, two things changed:</p>
@@ -367,12 +367,12 @@ export default function LessonOne() {
           <Paragraph>
             This INSERT creates a new user and returns the row PostgreSQL added.
           </Paragraph>
-          <CodeViewer code={exampleOneInsertQuery} />
+          <SqlCodeViewer code={exampleOneInsertQuery} />
         </Section>
         <SqlResult execution={exampleOneInsert} />
         <Section>
           <Title2>Explanation</Title2>
-          <CodeViewer code={"EXPLAIN " + exampleOneInsertQuery.trim()} />
+          <SqlCodeViewer code={"EXPLAIN " + exampleOneInsertQuery.trim()} />
           <div className="mt-3 text-base leading-7 text-zinc-700">
             <p>
               The plan starts with <InlineCode>Insert on "User"</InlineCode> because

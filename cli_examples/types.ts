@@ -181,6 +181,7 @@ export const SQL_EXAMPLE_IDS = {
   vectorsDistanceScore: sqlExampleId("vectors.distance-score"),
   vectorsExerciseFindSqlVector: sqlExampleId("vectors.find-sql-vector"),
   vectorsExerciseFindIndexVector: sqlExampleId("vectors.find-index-vector"),
+  emptyDatabase: sqlExampleId("empty-database.database-init"),
 } as const;
 
 export type SqlExample = {

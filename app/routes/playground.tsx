@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import type { Route } from "./+types/playground";
+import { databaseInit as emptyDatabaseInit } from "../../cli_examples/empty-database.sql";
 import {
   allDatabaseInits,
   allExercises,
@@ -329,15 +330,15 @@ type PlaygroundPickerItem = {
 };
 
 const emptyDatabaseItem: PlaygroundPickerItem = {
-  databaseInit: "-- empty database, nothing preloaded\n",
-  description: "Start with a blank database, nothing preloaded.",
-  id: "empty-database",
+  databaseInit: emptyDatabaseInit.query,
+  description: emptyDatabaseInit.description,
+  id: emptyDatabaseInit.id,
   kind: "database",
   lessonId: lessons[0]!.id,
   lessonLabel: "—",
-  lessonTitle: "Empty database",
-  name: "Empty database",
-  preloadId: "empty",
+  lessonTitle: emptyDatabaseInit.name,
+  name: emptyDatabaseInit.name,
+  preloadId: emptyDatabaseInit.id,
   query: "",
 };
 

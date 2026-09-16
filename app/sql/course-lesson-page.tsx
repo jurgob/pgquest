@@ -7,7 +7,7 @@ import {
   Title2,
   type WhatWeLearnedItem,
 } from "./lesson-layout";
-import { CodeViewer } from "./sql-editor";
+import { SqlCodeViewer } from "./sql-editor";
 import type { LessonId } from "./types";
 import { SqlPlan, SqlResult, useLessonSqlExample } from "./use-lesson-sql-example";
 
@@ -55,7 +55,7 @@ export function ExampleBlock({ example }: { example: SqlExample }) {
       <Title2>{example.name}</Title2>
       <Paragraph>{example.description}</Paragraph>
       <div className="mt-4">
-        <CodeViewer code={example.query} />
+        <SqlCodeViewer code={example.query} databaseInitId={example.database_init?.id} />
       </div>
       <div className="mt-4">
         <SqlResult execution={execution} />

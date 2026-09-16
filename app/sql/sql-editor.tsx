@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router";
 import { match } from "ts-pattern";
 import type { PGliteInterface } from "@electric-sql/pglite";
 import {
@@ -467,8 +468,6 @@ function LoadedDatabaseStatus({
     .with({ status: "error" }, () => "bg-red-500")
     .with({ status: "idle" }, () => "bg-zinc-300")
     .exhaustive();
-  const databaseId = preloadId ?? "none";
-
   return (
     <p className="mt-2 flex items-center gap-2 font-mono text-xs font-semibold uppercase text-zinc-500">
       <span>Loaded Database:</span>
@@ -478,7 +477,16 @@ function LoadedDatabaseStatus({
           " ",
         )}
       />
-      <span className="normal-case text-zinc-700">{databaseId}</span>
+      {preloadId ? (
+        <Link
+          className="normal-case text-sky-700 underline decoration-sky-300 underline-offset-2 hover:text-sky-900"
+          to={`/dbviewer/${preloadId}`}
+        >
+          {preloadId}
+        </Link>
+      ) : (
+        <span className="normal-case text-zinc-700">none</span>
+      )}
     </p>
   );
 }
@@ -530,21 +538,48 @@ function ClearIcon() {
 }
 
 export function CodeWindow({ code }: { code: string }) {
-  return <CodeViewer code={code} />;
+  return <SqlCodeViewer code={code} />;
 }
 
-export function CodeViewer({
+export function SqlCodeViewer({
   code,
-  syntax = "sql",
+  databaseInitId,
 }: {
   code: string;
-  syntax?: "explain" | "sql";
+  databaseInitId?: string | undefined;
 }) {
+  if (!databaseInitId) {
+    return (
+      <pre className="mt-3 min-w-0 overflow-auto rounded-md bg-[#22251f] px-5 py-4 font-mono text-sm leading-6 text-zinc-100">
+        <code>{sqlHighlight(code.trim())}</code>
+      </pre>
+    );
+  }
+
+  return (
+    <div className="mt-3 min-w-0 overflow-hidden rounded-md">
+      <div className="w-fit pt-3 inline-flex">
+        <span className="inline-flex items-center gap-2 rounded-t-sm bg-[#1b1d19] px-3 py-1.5 font-mono text-xs font-semibold uppercase tracking-wide text-zinc-400">
+          <span>Loaded Database:</span>
+          <Link
+            className="normal-case text-sky-400 underline decoration-sky-700 underline-offset-2 hover:text-sky-300"
+            to={`/dbviewer/${databaseInitId}`}
+          >
+            {databaseInitId}
+          </Link>
+        </span>
+      </div>
+      <pre className="overflow-auto bg-[#22251f] px-5 py-4 font-mono text-sm leading-6 text-zinc-100">
+        <code>{sqlHighlight(code.trim())}</code>
+      </pre>
+    </div>
+  );
+}
+
+export function SqlExplainViewer({ code }: { code: string }) {
   return (
     <pre className="mt-3 min-w-0 overflow-auto rounded-md bg-[#22251f] px-5 py-4 font-mono text-sm leading-6 text-zinc-100">
-      <code>
-        {syntax === "explain" ? explainHighlight(code.trim()) : sqlHighlight(code.trim())}
-      </code>
+      <code>{explainHighlight(code.trim())}</code>
     </pre>
   );
 }

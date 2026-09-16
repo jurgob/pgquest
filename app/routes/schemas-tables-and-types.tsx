@@ -22,7 +22,7 @@ import {
   Section,
   Title2,
 } from "../sql/lesson-layout";
-import { CodeViewer } from "../sql/sql-editor";
+import { SqlCodeViewer } from "../sql/sql-editor";
 import { SqlResult, useLessonSqlExample } from "../sql/use-lesson-sql-example";
 
 export default function Lesson2() {
@@ -171,7 +171,7 @@ export default function Lesson2() {
           information_schema lets you discover what schemas already exist.
         </Paragraph>
         <div className="mt-4">
-          <CodeViewer code={listSchemasQuery} />
+          <SqlCodeViewer code={listSchemasQuery} />
         </div>
         <div className="mt-4">
           <SqlResult execution={listSchemasEmpty} />
@@ -194,7 +194,7 @@ export default function Lesson2() {
           <InlineCode>schema_name.table_name</InlineCode>, to say which schema we mean.
         </Paragraph>
         <div className="mt-4">
-          <CodeViewer code={migration} />
+          <SqlCodeViewer code={migration} />
         </div>
         <Paragraph>
           <InlineCode>IF NOT EXISTS</InlineCode> makes this migration idempotent: running
@@ -210,7 +210,7 @@ export default function Lesson2() {
           nothing broke. Same query as before, now against a migrated database.
         </Paragraph>
         <div className="mt-4">
-          <CodeViewer code={listSchemasQuery} />
+          <SqlCodeViewer code={listSchemasQuery} />
         </div>
         <div className="mt-4">
           <SqlResult execution={listSchemasAfterMigration} />
@@ -227,7 +227,7 @@ export default function Lesson2() {
           <InlineCode>lending.loans</InlineCode> without spelling it out.
         </Paragraph>
         <div className="mt-4">
-          <CodeViewer code={searchPathQuery} />
+          <SqlCodeViewer code={searchPathQuery} databaseInitId={databaseInit.id} />
         </div>
         <div className="mt-4">
           <SqlResult execution={searchPath} />
@@ -249,7 +249,7 @@ export default function Lesson2() {
           loan is for.
         </Paragraph>
         <div className="mt-4">
-          <CodeViewer code={crossSchemaJoinQuery} />
+          <SqlCodeViewer code={crossSchemaJoinQuery} databaseInitId={databaseInit.id} />
         </div>
         <div className="mt-4">
           <SqlResult execution={crossSchemaJoin} />
@@ -267,7 +267,7 @@ export default function Lesson2() {
           information_schema.tables shows the tables visible in each schema.
         </Paragraph>
         <div className="mt-4">
-          <CodeViewer code={listTablesQuery} />
+          <SqlCodeViewer code={listTablesQuery} databaseInitId={databaseInit.id} />
         </div>
         <div className="mt-4">
           <SqlResult execution={listTables} />
@@ -280,7 +280,7 @@ export default function Lesson2() {
           information_schema.columns shows each column name, type, and nullability.
         </Paragraph>
         <div className="mt-4">
-          <CodeViewer code={inspectColumnsQuery} />
+          <SqlCodeViewer code={inspectColumnsQuery} databaseInitId={databaseInit.id} />
         </div>
         <div className="mt-4">
           <SqlResult execution={inspectColumns} />
@@ -334,7 +334,10 @@ export default function Lesson2() {
           that.
         </Paragraph>
         <div className="mt-4">
-          <CodeViewer code={informationSchemaOverviewQuery} />
+          <SqlCodeViewer
+            code={informationSchemaOverviewQuery}
+            databaseInitId={databaseInit.id}
+          />
         </div>
         <div className="mt-4">
           <SqlResult execution={informationSchemaOverview} />
@@ -348,7 +351,10 @@ export default function Lesson2() {
           just Postgres.
         </Paragraph>
         <div className="mt-4">
-          <CodeViewer code={primaryKeyViaInformationSchemaQuery} />
+          <SqlCodeViewer
+            code={primaryKeyViaInformationSchemaQuery}
+            databaseInitId={databaseInit.id}
+          />
         </div>
         <div className="mt-4">
           <SqlResult execution={primaryKeyViaInformationSchema} />
@@ -362,7 +368,10 @@ export default function Lesson2() {
           is built on top of. Not portable, but simpler and faster.
         </Paragraph>
         <div className="mt-4">
-          <CodeViewer code={primaryKeyViaPgConstraintQuery} />
+          <SqlCodeViewer
+            code={primaryKeyViaPgConstraintQuery}
+            databaseInitId={databaseInit.id}
+          />
         </div>
         <div className="mt-4">
           <SqlResult execution={primaryKeyViaPgConstraint} />
@@ -376,7 +385,10 @@ export default function Lesson2() {
           useful when you care about the index itself.
         </Paragraph>
         <div className="mt-4">
-          <CodeViewer code={primaryKeyViaPgIndexQuery} />
+          <SqlCodeViewer
+            code={primaryKeyViaPgIndexQuery}
+            databaseInitId={databaseInit.id}
+          />
         </div>
         <div className="mt-4">
           <SqlResult execution={primaryKeyViaPgIndex} />

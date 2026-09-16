@@ -12,7 +12,7 @@ import {
   Section,
   Title2,
 } from "../sql/lesson-layout";
-import { CodeViewer } from "../sql/sql-editor";
+import { SqlCodeViewer } from "../sql/sql-editor";
 import { SqlPlan, SqlResult, useLessonSqlExample } from "../sql/use-lesson-sql-example";
 
 const writeQuery = `
@@ -113,13 +113,13 @@ export default function ExampleThree() {
             <h3 className="mb-2 font-mono text-sm font-semibold uppercase tracking-wide text-zinc-500">
               Without Index
             </h3>
-            <CodeViewer code={exampleThreeMigration} />
+            <SqlCodeViewer code={exampleThreeMigration} />
           </div>
           <div className="min-w-0">
             <h3 className="mb-2 font-mono text-sm font-semibold uppercase tracking-wide text-zinc-500">
               With Index
             </h3>
-            <CodeViewer code={exampleThreeIndexedMigration} />
+            <SqlCodeViewer code={exampleThreeIndexedMigration} />
           </div>
         </div>
       </Section>
@@ -130,13 +130,13 @@ export default function ExampleThree() {
           Both databases use the same seed data, then analyze the table so the planner has
           statistics.
         </Paragraph>
-        <CodeViewer code={exampleThreeIndexedSeed} />
+        <SqlCodeViewer code={exampleThreeIndexedSeed} />
       </Section>
 
       <Section>
         <Title2>Query</Title2>
         <Paragraph>This is the same email lookup query on both databases.</Paragraph>
-        <CodeViewer code={exampleThreeIndexedQuery} />
+        <SqlCodeViewer code={exampleThreeIndexedQuery} />
       </Section>
 
       <Section>
@@ -148,7 +148,7 @@ export default function ExampleThree() {
       <Section>
         <Title2>Explain</Title2>
         <Paragraph>The result is the same, but the plan is different.</Paragraph>
-        <CodeViewer code={"EXPLAIN " + exampleThreeIndexedQuery.trim()} />
+        <SqlCodeViewer code={"EXPLAIN " + exampleThreeIndexedQuery.trim()} />
         <div className="mt-4 flex flex-col gap-5">
           <div className="min-w-0">
             <h3 className="mb-2 font-mono text-sm font-semibold uppercase tracking-wide text-zinc-500">
@@ -209,7 +209,7 @@ export default function ExampleThree() {
               correct.
             </p>
             <div className="mt-3">
-              <CodeViewer code={writeQuery} />
+              <SqlCodeViewer code={writeQuery} />
             </div>
           </div>
           <div className="mt-6">
@@ -218,7 +218,7 @@ export default function ExampleThree() {
               The index still helps PostgreSQL find the row, but the write now has extra
               work after the row is found: the email index entry must be updated too.
             </p>
-            <CodeViewer code={"EXPLAIN " + writeQuery} />
+            <SqlCodeViewer code={"EXPLAIN " + writeQuery} />
             <div className="mt-4 flex flex-col gap-5">
               <div className="min-w-0">
                 <h4 className="mb-2 font-mono text-sm font-semibold uppercase tracking-wide text-zinc-500">

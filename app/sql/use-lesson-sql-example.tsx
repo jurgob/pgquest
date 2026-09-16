@@ -2,7 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 
 import { runSqlQuery } from "./run-example";
 import type { ExecutionOutput, SqlExecutionInput } from "./types";
-import { CodeViewer, OutputBlock, ResultTable, SqlResultSkeleton } from "./sql-editor";
+import {
+  OutputBlock,
+  ResultTable,
+  SqlExplainViewer,
+  SqlResultSkeleton,
+} from "./sql-editor";
 
 export type LessonSqlState =
   | { status: "loading" }
@@ -69,7 +74,7 @@ export function SqlPlan({ execution }: { execution: LessonSqlState }) {
   if (execution.status === "loading") {
     return (
       <OutputBlock tone="plan">
-        <CodeViewer code={"Loading plan..."} syntax="explain" />
+        <SqlExplainViewer code={"Loading plan..."} />
       </OutputBlock>
     );
   }
@@ -86,7 +91,7 @@ export function SqlPlan({ execution }: { execution: LessonSqlState }) {
 
   return (
     <OutputBlock tone="plan">
-      <CodeViewer code={execution.output.plan} syntax="explain" />
+      <SqlExplainViewer code={execution.output.plan} />
     </OutputBlock>
   );
 }
