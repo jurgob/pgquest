@@ -43,7 +43,6 @@ export const lessons: readonly LessonCatalogItem[] = [
       "Explore schemas, list tables, inspect columns, and understand database shape.",
     meta: "SCHEMA · TABLES · TYPES",
     time: "15 min",
-    draft: true,
   },
   {
     id: "introduction-to-indexes",

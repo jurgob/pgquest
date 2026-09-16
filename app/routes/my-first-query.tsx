@@ -200,7 +200,9 @@ export default function LessonOne() {
       </Section>
 
       <LessonSection>
-        <Title2>Postgres Terminology</Title2>
+        <Title2 id="everything-is-a-relation">
+          Postgres Terminology, Everything is a relation
+        </Title2>
         <Paragraphs>
           <p>
             In the PostgreSQL documentation, you might not find much use of terms such as
@@ -237,6 +239,15 @@ export default function LessonOne() {
             You can roughly think of a relation as the mathematical concept underlying a
             table or query result. A relation consists of tuples, which roughly correspond
             to rows in SQL.
+          </p>
+          <p>
+            In Postgres this is more than a mathematical analogy: relation is also the
+            literal name for anything the system tracks in its own catalog,{" "}
+            <InlineCode>pg_class</InlineCode>, with an identity of its own. Tables are
+            relations, but so are indexes, sequences, and views &mdash; each just gets a
+            different <InlineCode>relkind</InlineCode>. That is why a sequence, even
+            though it is not a table you <InlineCode>INSERT</InlineCode> into, can still
+            be read with <InlineCode>SELECT *</InlineCode> like one: it is a relation too.
           </p>
         </Paragraphs>
 

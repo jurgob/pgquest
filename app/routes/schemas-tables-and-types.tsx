@@ -1,11 +1,16 @@
+import { Link } from "react-router";
 import {
   crossSchemaJoinQuery,
   databaseInit,
   exercises,
+  informationSchemaOverviewQuery,
   inspectColumnsQuery,
   listSchemasQuery,
   listTablesQuery,
   migration,
+  primaryKeyViaInformationSchemaQuery,
+  primaryKeyViaPgConstraintQuery,
+  primaryKeyViaPgIndexQuery,
   searchPathQuery,
 } from "../../cli_examples/schemas-tables-and-types.sql";
 import {
@@ -40,6 +45,22 @@ export default function Lesson2() {
   });
   const inspectColumns = useLessonSqlExample({
     query: inspectColumnsQuery,
+    sqlLoad: databaseInit.query,
+  });
+  const informationSchemaOverview = useLessonSqlExample({
+    query: informationSchemaOverviewQuery,
+    sqlLoad: databaseInit.query,
+  });
+  const primaryKeyViaInformationSchema = useLessonSqlExample({
+    query: primaryKeyViaInformationSchemaQuery,
+    sqlLoad: databaseInit.query,
+  });
+  const primaryKeyViaPgConstraint = useLessonSqlExample({
+    query: primaryKeyViaPgConstraintQuery,
+    sqlLoad: databaseInit.query,
+  });
+  const primaryKeyViaPgIndex = useLessonSqlExample({
+    query: primaryKeyViaPgIndexQuery,
     sqlLoad: databaseInit.query,
   });
 
@@ -81,6 +102,54 @@ export default function Lesson2() {
           description:
             "controls which schema Postgres searches first for unqualified names. SET search_path changes it for the session.",
           url: "https://www.postgresql.org/docs/current/ddl-schemas.html#DDL-SCHEMAS-PATH",
+        },
+        {
+          concept: "PRIMARY KEY",
+          description:
+            "identifies the column(s) that uniquely and non-null identify each row.",
+          url: "https://www.postgresql.org/docs/current/ddl-constraints.html#DDL-CONSTRAINTS-PRIMARY-KEYS",
+        },
+        {
+          concept: "Sequence",
+          description:
+            "is its own database object that generates an ordered series of unique numbers, independent of any table.",
+          url: "https://www.postgresql.org/docs/current/sql-createsequence.html",
+        },
+        {
+          concept: "SERIAL",
+          description:
+            "is shorthand for an integer column backed by a sequence-generated default. It isn't a real type of its own.",
+          url: "https://www.postgresql.org/docs/current/datatype-numeric.html#DATATYPE-SERIAL",
+        },
+        {
+          concept: "nextval",
+          description:
+            "advances a sequence and returns its next value. It's what a SERIAL column's default calls.",
+          url: "https://www.postgresql.org/docs/current/functions-sequence.html",
+        },
+        {
+          concept: "column_default",
+          description:
+            "is the information_schema.columns field holding a column's literal default expression, such as a SERIAL column's nextval(...) call.",
+          url: "https://www.postgresql.org/docs/current/infoschema-columns.html",
+        },
+        {
+          concept: "regclass",
+          description:
+            "is an OID alias type: a reference to a table, sequence, or other relation by identity rather than by name, displayed as whatever name currently resolves to it.",
+          url: "https://www.postgresql.org/docs/current/datatype-oid.html",
+        },
+        {
+          concept: "pg_index",
+          description:
+            "is the Postgres catalog behind every index, including the unique index that backs a primary key.",
+          url: "https://www.postgresql.org/docs/current/catalog-pg-index.html",
+        },
+        {
+          concept: "pg_constraint",
+          description:
+            "is the Postgres catalog that information_schema's constraint views are built from.",
+          url: "https://www.postgresql.org/docs/current/catalog-pg-constraint.html",
         },
       ]}
     >
@@ -215,6 +284,102 @@ export default function Lesson2() {
         </div>
         <div className="mt-4">
           <SqlResult execution={inspectColumns} />
+        </div>
+      </LessonSection>
+
+      <LessonSection>
+        <Title2>Putting it together</Title2>
+        <Paragraph>
+          You don&apos;t need to read the migration to know the shape of these tables.
+          Joining <InlineCode>information_schema.tables</InlineCode> and{" "}
+          <InlineCode>information_schema.columns</InlineCode> reconstructs every column,
+          type, and nullability across both schemas, straight from what Postgres itself
+          tracks.
+        </Paragraph>
+        <Paragraph>
+          Watch the <InlineCode>column_default</InlineCode> column below: it holds the
+          literal default expression Postgres runs whenever a column is left out of an{" "}
+          <InlineCode>INSERT</InlineCode>. For an <InlineCode>id</InlineCode> column
+          it&apos;ll read something like{" "}
+          <InlineCode>nextval(&apos;lending.loans_id_seq&apos;::regclass)</InlineCode> —
+          that&apos;s what <InlineCode>SERIAL</InlineCode> actually is. Declaring a column{" "}
+          <InlineCode>SERIAL</InlineCode> silently creates a{" "}
+          <a
+            className="text-sky-700 underline decoration-sky-300 underline-offset-2 hover:text-sky-900"
+            href="https://www.postgresql.org/docs/current/sql-createsequence.html"
+            rel="noreferrer"
+            target="_blank"
+          >
+            sequence
+          </a>{" "}
+          (a sequence is just a{" "}
+          <Link
+            className="text-sky-700 underline decoration-sky-300 underline-offset-2 hover:text-sky-900"
+            to="/lessons/my-first-query#everything-is-a-relation"
+          >
+            relation
+          </Link>
+          ) named <InlineCode>table_column_seq</InlineCode> by convention (here,{" "}
+          <InlineCode>lending.loans_id_seq</InlineCode>) and points the column&apos;s
+          default at <InlineCode>nextval()</InlineCode> on it. The{" "}
+          <InlineCode>::regclass</InlineCode> cast is there because{" "}
+          <InlineCode>nextval()</InlineCode> takes a regclass argument — a reference to
+          the sequence by object identity (its OID), not by a plain text name — so the
+          default keeps working even if the sequence or its schema gets renamed; Postgres
+          just prints it back as whatever name currently resolves to that OID.
+        </Paragraph>
+        <Paragraph>
+          One thing is still missing: <InlineCode>information_schema.columns</InlineCode>{" "}
+          doesn&apos;t say which column is the primary key. Here are three ways to get
+          that.
+        </Paragraph>
+        <div className="mt-4">
+          <CodeViewer code={informationSchemaOverviewQuery} />
+        </div>
+        <div className="mt-4">
+          <SqlResult execution={informationSchemaOverview} />
+        </div>
+      </LessonSection>
+
+      <LessonSection>
+        <Title2>Finding primary keys: information_schema</Title2>
+        <Paragraph>
+          The portable, ANSI-SQL-standard way — works the same on any SQL database, not
+          just Postgres.
+        </Paragraph>
+        <div className="mt-4">
+          <CodeViewer code={primaryKeyViaInformationSchemaQuery} />
+        </div>
+        <div className="mt-4">
+          <SqlResult execution={primaryKeyViaInformationSchema} />
+        </div>
+      </LessonSection>
+
+      <LessonSection>
+        <Title2>Finding primary keys: pg_constraint</Title2>
+        <Paragraph>
+          Postgres&apos; own catalog, the one <InlineCode>information_schema</InlineCode>{" "}
+          is built on top of. Not portable, but simpler and faster.
+        </Paragraph>
+        <div className="mt-4">
+          <CodeViewer code={primaryKeyViaPgConstraintQuery} />
+        </div>
+        <div className="mt-4">
+          <SqlResult execution={primaryKeyViaPgConstraint} />
+        </div>
+      </LessonSection>
+
+      <LessonSection>
+        <Title2>Finding primary keys: pg_index</Title2>
+        <Paragraph>
+          A primary key is always backed by a unique index, so you can find it there too —
+          useful when you care about the index itself.
+        </Paragraph>
+        <div className="mt-4">
+          <CodeViewer code={primaryKeyViaPgIndexQuery} />
+        </div>
+        <div className="mt-4">
+          <SqlResult execution={primaryKeyViaPgIndex} />
         </div>
       </LessonSection>
     </LessonPage>

@@ -81,6 +81,53 @@ WHERE table_schema = 'library'
 ORDER BY ordinal_position;
 `;
 
+export const informationSchemaOverviewQuery = `
+SELECT
+  t.table_schema,
+  t.table_name,
+  c.column_name,
+  c.data_type,
+  c.is_nullable,
+  c.column_default
+FROM information_schema.tables t
+JOIN information_schema.columns c
+  ON c.table_schema = t.table_schema
+ AND c.table_name = t.table_name
+WHERE t.table_schema IN ('library', 'lending')
+  AND t.table_type = 'BASE TABLE'
+ORDER BY t.table_schema, t.table_name, c.ordinal_position;
+`;
+
+export const primaryKeyViaInformationSchemaQuery = `
+SELECT tc.table_schema, tc.table_name, kcu.column_name
+FROM information_schema.table_constraints tc
+JOIN information_schema.key_column_usage kcu
+  ON kcu.constraint_name = tc.constraint_name
+ AND kcu.table_schema = tc.table_schema
+WHERE tc.constraint_type = 'PRIMARY KEY'
+  AND tc.table_schema IN ('library', 'lending')
+ORDER BY tc.table_schema, tc.table_name;
+`;
+
+export const primaryKeyViaPgConstraintQuery = `
+SELECT conrelid::regclass AS table_name, pg_get_constraintdef(oid) AS definition
+FROM pg_constraint
+WHERE contype = 'p'
+  AND connamespace IN ('library'::regnamespace, 'lending'::regnamespace)
+ORDER BY conrelid::regclass::text;
+`;
+
+export const primaryKeyViaPgIndexQuery = `
+SELECT n.nspname AS table_schema, c.relname AS table_name, a.attname AS column_name
+FROM pg_index i
+JOIN pg_class c ON c.oid = i.indrelid
+JOIN pg_namespace n ON n.oid = c.relnamespace
+JOIN pg_attribute a ON a.attrelid = c.oid AND a.attnum = ANY(i.indkey)
+WHERE i.indisprimary
+  AND n.nspname IN ('library', 'lending')
+ORDER BY table_schema, table_name;
+`;
+
 export const databaseInit: SqlExample = {
   id: SQL_EXAMPLE_IDS.schemasTablesAndTypesDatabaseInit,
   name: "Lesson 2 database",
@@ -149,6 +196,41 @@ export const examples: SqlExample[] = [
       "information_schema.columns shows each column name, type, and nullability.",
     database_init: databaseInit,
     query: inspectColumnsQuery,
+  },
+  {
+    id: SQL_EXAMPLE_IDS.schemasTablesAndTypesInformationSchemaOverview,
+    name: "Putting it together",
+    description:
+      "Joining information_schema.tables and information_schema.columns " +
+      "reconstructs the shape of every table across both schemas, without reading " +
+      "the migration at all.",
+    database_init: databaseInit,
+    query: informationSchemaOverviewQuery,
+  },
+  {
+    id: SQL_EXAMPLE_IDS.schemasTablesAndTypesPrimaryKeyViaInformationSchema,
+    name: "Finding primary keys: information_schema",
+    description:
+      "The portable, ANSI-SQL-standard way: works the same on any SQL database.",
+    database_init: databaseInit,
+    query: primaryKeyViaInformationSchemaQuery,
+  },
+  {
+    id: SQL_EXAMPLE_IDS.schemasTablesAndTypesPrimaryKeyViaPgConstraint,
+    name: "Finding primary keys: pg_constraint",
+    description:
+      "Postgres' own catalog, the thing information_schema is built on top of. Not " +
+      "portable, but simpler and faster.",
+    database_init: databaseInit,
+    query: primaryKeyViaPgConstraintQuery,
+  },
+  {
+    id: SQL_EXAMPLE_IDS.schemasTablesAndTypesPrimaryKeyViaPgIndex,
+    name: "Finding primary keys: pg_index",
+    description:
+      "A primary key is always backed by a unique index, so you can find it there too.",
+    database_init: databaseInit,
+    query: primaryKeyViaPgIndexQuery,
   },
 ];
 

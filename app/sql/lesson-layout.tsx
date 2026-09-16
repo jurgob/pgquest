@@ -118,8 +118,18 @@ export function DraftBadge() {
   );
 }
 
-export function Title2({ children }: { children: React.ReactNode }) {
-  return <h2 className="text-2xl font-bold text-zinc-950">{children}</h2>;
+export function Title2({
+  children,
+  id,
+}: {
+  children: React.ReactNode;
+  id?: string | undefined;
+}) {
+  return (
+    <h2 className="text-2xl font-bold text-zinc-950" id={id}>
+      {children}
+    </h2>
+  );
 }
 
 export function Paragraph({ children }: { children: React.ReactNode }) {

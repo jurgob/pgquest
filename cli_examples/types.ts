@@ -43,6 +43,18 @@ export const SQL_EXAMPLE_IDS = {
   schemasTablesAndTypesInspectColumns: sqlExampleId(
     "schemas-tables-and-types.inspect-columns",
   ),
+  schemasTablesAndTypesInformationSchemaOverview: sqlExampleId(
+    "schemas-tables-and-types.information-schema-overview",
+  ),
+  schemasTablesAndTypesPrimaryKeyViaInformationSchema: sqlExampleId(
+    "schemas-tables-and-types.primary-key-via-information-schema",
+  ),
+  schemasTablesAndTypesPrimaryKeyViaPgConstraint: sqlExampleId(
+    "schemas-tables-and-types.primary-key-via-pg-constraint",
+  ),
+  schemasTablesAndTypesPrimaryKeyViaPgIndex: sqlExampleId(
+    "schemas-tables-and-types.primary-key-via-pg-index",
+  ),
   schemasTablesAndTypesExerciseListLibraryTables: sqlExampleId(
     "schemas-tables-and-types.list-library-tables",
   ),
