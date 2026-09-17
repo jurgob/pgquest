@@ -3,6 +3,10 @@ import {
   exercises as exampleOneExercises,
 } from "../../cli_examples/my-first-query.sql";
 import {
+  database_inits as exampleJoinIntroDatabaseInits,
+  exercises as exampleJoinIntroExercises,
+} from "../../cli_examples/introduction-to-join.sql";
+import {
   database_inits as exampleTwoDatabaseInits,
   exercises as exampleTwoExercises,
 } from "../../cli_examples/schemas-tables-and-types.sql";
@@ -80,6 +84,10 @@ const lessonSqlById = {
   "my-first-query": {
     databaseInits: exampleOneDatabaseInits,
     exercises: exampleOneExercises,
+  },
+  "introduction-to-join": {
+    databaseInits: exampleJoinIntroDatabaseInits,
+    exercises: exampleJoinIntroExercises,
   },
   "schemas-tables-and-types": {
     databaseInits: exampleTwoDatabaseInits,

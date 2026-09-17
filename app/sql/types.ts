@@ -18,6 +18,7 @@ export type ExecutionOutput = {
 
 export type LessonId =
   | "my-first-query"
+  | "introduction-to-join"
   | "schemas-tables-and-types"
   | "introduction-to-indexes"
   | "insert-update-delete"
