@@ -257,6 +257,21 @@ export const lessons: readonly LessonCatalogItem[] = [
     time: "20 min",
     draft: true,
   },
+  {
+    id: "concurrency-reservation-system",
+    label: "Lesson 18",
+    number: "18",
+    title: "Implementing a high-concurrency system with Postgres",
+    slug: "concurrency-reservation-system",
+    routeModule: "routes/concurrency-reservation-system.tsx",
+    cliExampleModule: "concurrency-reservation-system.sql.ts",
+    href: "/lessons/concurrency-reservation-system",
+    summary:
+      "Model a seat reservation system and use transactions with SELECT ... FOR UPDATE to close a real race condition.",
+    meta: "ACID · TRANSACTIONS · FOR UPDATE",
+    time: "25 min",
+    draft: true,
+  },
 ] as const satisfies readonly LessonCatalogItem[];
 
 export const lessonSummaries = lessons.map(({ id, number, title, href }) => ({

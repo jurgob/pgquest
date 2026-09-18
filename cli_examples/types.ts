@@ -191,6 +191,24 @@ export const SQL_EXAMPLE_IDS = {
   vectorsDistanceScore: sqlExampleId("vectors.distance-score"),
   vectorsExerciseFindSqlVector: sqlExampleId("vectors.find-sql-vector"),
   vectorsExerciseFindIndexVector: sqlExampleId("vectors.find-index-vector"),
+  concurrencyReservationSystemDatabaseInit: sqlExampleId(
+    "concurrency-reservation-system.database-init",
+  ),
+  concurrencyReservationSystemDatabaseInitWithHold: sqlExampleId(
+    "concurrency-reservation-system.database-init-with-hold",
+  ),
+  concurrencyReservationSystemNaiveHold: sqlExampleId(
+    "concurrency-reservation-system.naive-hold",
+  ),
+  concurrencyReservationSystemLockedHold: sqlExampleId(
+    "concurrency-reservation-system.locked-hold",
+  ),
+  concurrencyReservationSystemExerciseListAvailable: sqlExampleId(
+    "concurrency-reservation-system.list-available",
+  ),
+  concurrencyReservationSystemExerciseReserve: sqlExampleId(
+    "concurrency-reservation-system.reserve-held-seat",
+  ),
   emptyDatabase: sqlExampleId("empty-database.database-init"),
 } as const;
 

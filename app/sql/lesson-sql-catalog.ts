@@ -66,6 +66,10 @@ import {
   database_inits as exampleSixteenDatabaseInits,
   exercises as exampleSixteenExercises,
 } from "../../cli_examples/vectors.sql";
+import {
+  database_inits as exampleSeventeenDatabaseInits,
+  exercises as exampleSeventeenExercises,
+} from "../../cli_examples/concurrency-reservation-system.sql";
 import type { SqlExample } from "../../cli_examples/types";
 import { lessons } from "./lesson-catalog";
 import type { LessonId } from "./types";
@@ -148,6 +152,10 @@ const lessonSqlById = {
   vectors: {
     databaseInits: exampleSixteenDatabaseInits,
     exercises: exampleSixteenExercises,
+  },
+  "concurrency-reservation-system": {
+    databaseInits: exampleSeventeenDatabaseInits,
+    exercises: exampleSeventeenExercises,
   },
 } as const satisfies Record<
   LessonId,

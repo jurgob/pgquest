@@ -33,4 +33,5 @@ export type LessonId =
   | "json-in-postgresql"
   | "transactions"
   | "advanced-aggregation"
-  | "vectors";
+  | "vectors"
+  | "concurrency-reservation-system";

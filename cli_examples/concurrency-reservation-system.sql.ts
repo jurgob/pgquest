@@ -1,0 +1,140 @@
+import { SQL_EXAMPLE_IDS, type SqlExample } from "./types";
+
+const EVENT_ID = "33333333-3333-3333-3333-333333333333";
+const ADA_ID = "11111111-1111-1111-1111-111111111111";
+const GRACE_ID = "22222222-2222-2222-2222-222222222222";
+
+export const migration = `
+CREATE TABLE "user" (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL
+);
+
+CREATE TABLE seat (
+  id SERIAL PRIMARY KEY,
+  label TEXT NOT NULL
+);
+
+CREATE TABLE event (
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
+  name TEXT NOT NULL,
+  seat_available INTEGER NOT NULL
+);
+
+CREATE TABLE reservation (
+  event_id UUID NOT NULL REFERENCES event (id),
+  seat_id INTEGER NOT NULL REFERENCES seat (id),
+  user_id UUID NOT NULL REFERENCES "user" (id),
+  status CHAR(1) NOT NULL CHECK (status IN ('H', 'R')),
+  holding_date TIMESTAMPTZ,
+  reservation_date TIMESTAMPTZ,
+  PRIMARY KEY (event_id, seat_id)
+);
+`;
+
+export const seed = `
+INSERT INTO "user" (id, name)
+VALUES
+  ('${ADA_ID}', 'Ada'),
+  ('${GRACE_ID}', 'Grace');
+
+INSERT INTO seat (label)
+VALUES ('A1'), ('A2'), ('A3');
+
+INSERT INTO event (id, name, seat_available)
+VALUES ('${EVENT_ID}', 'Concert Night', 1);
+`;
+
+export const databaseInit: SqlExample = {
+  id: SQL_EXAMPLE_IDS.concurrencyReservationSystemDatabaseInit,
+  name: "Concurrency reservation system database",
+  description:
+    "Creates user, seat, event, and reservation. Concert Night has 1 seat left.",
+  query: `${migration}\n${seed}`,
+};
+
+const finalStateQuery = `
+SELECT
+  seat_available,
+  (SELECT count(*) FROM reservation WHERE event_id = '${EVENT_ID}') AS holds
+FROM event
+WHERE id = '${EVENT_ID}';
+`;
+
+export const naiveHoldQuery = `
+BEGIN;
+-- Plain read, no lock — the app decides "seat available" from this snapshot alone.
+SELECT seat_available FROM event WHERE id = '${EVENT_ID}';
+UPDATE event SET seat_available = seat_available - 1 WHERE id = '${EVENT_ID}';
+INSERT INTO reservation (event_id, seat_id, user_id, status, holding_date)
+VALUES ('${EVENT_ID}', 1, '${ADA_ID}', 'H', now());
+COMMIT;
+${finalStateQuery}`;
+
+export const lockedHoldQuery = `
+BEGIN;
+-- FOR UPDATE locks this row until COMMIT — another FOR UPDATE on it must wait.
+SELECT seat_available FROM event WHERE id = '${EVENT_ID}' FOR UPDATE;
+UPDATE event SET seat_available = seat_available - 1 WHERE id = '${EVENT_ID}';
+INSERT INTO reservation (event_id, seat_id, user_id, status, holding_date)
+VALUES ('${EVENT_ID}', 1, '${ADA_ID}', 'H', now());
+COMMIT;
+${finalStateQuery}`;
+
+export const databaseInitWithHold: SqlExample = {
+  id: SQL_EXAMPLE_IDS.concurrencyReservationSystemDatabaseInitWithHold,
+  name: "Concurrency reservation system database (seat 1 held)",
+  description: "Same database, but Ada already holds seat 1.",
+  query: `${databaseInit.query}\n${naiveHoldQuery}`,
+};
+
+export const database_inits = [databaseInit, databaseInitWithHold] as const;
+
+export const examples: SqlExample[] = [
+  {
+    id: SQL_EXAMPLE_IDS.concurrencyReservationSystemNaiveHold,
+    name: "Naive hold (no FOR UPDATE)",
+    description: "Reads seat_available, then decides to write — two open steps.",
+    database_init: databaseInit,
+    query: naiveHoldQuery,
+  },
+  {
+    id: SQL_EXAMPLE_IDS.concurrencyReservationSystemLockedHold,
+    name: "Safe hold (FOR UPDATE)",
+    description:
+      "Same steps, but the SELECT locks the row for the rest of the transaction.",
+    database_init: databaseInit,
+    query: lockedHoldQuery,
+  },
+];
+
+export const exercises: SqlExample[] = [
+  {
+    id: SQL_EXAMPLE_IDS.concurrencyReservationSystemExerciseListAvailable,
+    name: "Exercise 1",
+    description:
+      "List every seat for Concert Night that has no reservation row yet (available seats).",
+    database_init: databaseInit,
+    query: `
+SELECT seat.id, seat.label
+FROM seat
+LEFT JOIN reservation
+  ON reservation.seat_id = seat.id AND reservation.event_id = '${EVENT_ID}'
+WHERE reservation.seat_id IS NULL
+ORDER BY seat.id;
+`,
+  },
+  {
+    id: SQL_EXAMPLE_IDS.concurrencyReservationSystemExerciseReserve,
+    name: "Exercise 2",
+    description:
+      "Turn Ada's hold on seat 1 into a permanent reservation (status 'R') and return the row.",
+    database_init: databaseInitWithHold,
+    query: `
+UPDATE reservation
+SET status = 'R', reservation_date = now()
+WHERE event_id = '${EVENT_ID}' AND seat_id = 1 AND user_id = '${ADA_ID}' AND status = 'H'
+RETURNING *;
+`,
+  },
+];
