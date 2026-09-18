@@ -139,6 +139,20 @@ export default function ConcurrencyReservationSystem() {
             <li>Add an endpoint to "refresh" a Hold on a seat.</li>
           </ul>
         </ProblemCallout>
+        <Paragraphs>
+          <p>
+            I wrote an article about solving this same problem with Redis —{" "}
+            <a
+              className="text-sky-700 underline decoration-sky-300 underline-offset-2 hover:text-sky-900"
+              href="https://casual-programming.com/20260918_redis_for_a_high_concurrency_reservation_system/"
+              rel="noreferrer"
+              target="_blank"
+            >
+              Redis for a High-Concurrency Reservation System
+            </a>
+            .
+          </p>
+        </Paragraphs>
       </Section>
 
       <Section>
