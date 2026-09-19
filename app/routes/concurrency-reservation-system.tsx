@@ -1,6 +1,8 @@
+import { Link } from "react-router";
 import {
   databaseInit,
   databaseInitWithHold,
+  databaseInitWithoutCounter,
   displayCountQuery,
   exercises,
   insertConflictQuery,
@@ -264,24 +266,35 @@ export default function ConcurrencyReservationSystem() {
           <p>
             Four tables: <InlineCode>&quot;user&quot;</InlineCode> and{" "}
             <InlineCode>seat</InlineCode> are simple catalogs.{" "}
-            <InlineCode>event</InlineCode> tracks how many seats are still available.{" "}
-            <InlineCode>reservation</InlineCode> links one seat to one event and one user
-            — its primary key <InlineCode>(event_id, seat_id)</InlineCode> means a given
-            seat can have at most one reservation row per event.
+            <InlineCode>event</InlineCode> carries <InlineCode>seat_number</InlineCode>,
+            the total number of seats it was created with, plus a{" "}
+            <InlineCode>seat_available</InlineCode> counter meant to track how many are
+            still free. <InlineCode>reservation</InlineCode> links one seat to one event
+            and one user — its primary key <InlineCode>(event_id, seat_id)</InlineCode>{" "}
+            means a given seat can have at most one reservation row per event. Hold on to
+            that counter: it looks convenient, and it's exactly what the naive approach
+            will get wrong.
           </p>
         </Paragraphs>
         <SqlCodeViewer code={migration} />
         <Paragraph>
-          Concert Night seeds with 3 seats total and{" "}
-          <InlineCode>seat_available = 1</InlineCode> — only one seat left, which is
-          exactly the situation where a race condition matters.
+          Concert Night seeds with <InlineCode>seat_number = 3</InlineCode> total and{" "}
+          <InlineCode>seat_available = 1</InlineCode> — the counter claims only one seat
+          left, which is exactly the situation where a race condition matters.
         </Paragraph>
         <SqlCodeViewer code={seed} />
       </Section>
 
       <LessonSection>
-        <Title2>The naive way: read, then decide</Title2>
+        <Title2>The naive way: rely on the seat_available counter</Title2>
         <Paragraphs>
+          <p>
+            The naive way isn't really "read, then decide" — that's just the symptom. The
+            underlying mistake is treating <InlineCode>seat_available</InlineCode> as the
+            source of truth for whether a seat can be held. Once a mutable counter is what
+            decides the outcome, some transaction has to read it and act on it, and that's
+            where the gap opens.
+          </p>
           <p>
             <InlineCode>holdSeat</InlineCode> reads{" "}
             <InlineCode>seat_available</InlineCode>, checks in application code whether
@@ -341,6 +354,20 @@ export default function ConcurrencyReservationSystem() {
           users racing for the last seat <strong>will</strong> both get through
           eventually. This implementation is guaranteed to overbook.
         </Paragraph>
+        <Paragraphs>
+          <p>
+            You might reasonably ask why we store <InlineCode>seat_available</InlineCode>{" "}
+            at all. We could drop it from the seed entirely and compute the number on the
+            fly — <InlineCode>seat_number</InlineCode> minus a{" "}
+            <InlineCode>count(*)</InlineCode> of the reservation rows — so there's no
+            counter to keep in sync. That's perfectly correct, but recomputing it on every
+            "seats left" render and every hold attempt means an aggregate scan on the hot
+            path; under real load, running it all the time would kill performance. That
+            pressure is exactly what tempts people to cache the number back into a mutable
+            column — and the moment it becomes what decides a hold, you're right back to
+            the race above.
+          </p>
+        </Paragraphs>
       </LessonSection>
 
       <LessonSection>
@@ -381,10 +408,23 @@ export default function ConcurrencyReservationSystem() {
         <Paragraphs>
           <p>
             So what's <InlineCode>seat_available</InlineCode> for, then? Nothing
-            safety-critical — it's still handy as a fast, approximate count for a "seats
-            left" badge on the event page. Just never let it decide whether a hold
-            succeeds; the <InlineCode>INSERT</InlineCode> above already does that
-            correctly on its own.
+            safety-critical. The reservation rows and their primary key are already the
+            source of truth, so the cleanest model simply doesn't keep the counter — a
+            second migration drops the column. It's the first migration minus{" "}
+            <InlineCode>seat_available</InlineCode>, nothing else, so there's no new SQL
+            worth showing here; you can{" "}
+            <Link
+              className="text-sky-700 underline decoration-sky-300 underline-offset-2 hover:text-sky-900"
+              to={`/dbviewer/${databaseInitWithoutCounter.id}`}
+            >
+              open the counter-less schema in the DB viewer
+            </Link>{" "}
+            to see the result.
+          </p>
+          <p>
+            If you do decide to keep it, treat it only as a fast, approximate "seats left"
+            badge on the event page — and never let it decide whether a hold succeeds; the{" "}
+            <InlineCode>INSERT</InlineCode> above already does that correctly on its own.
           </p>
         </Paragraphs>
         <SqlCodeViewer code={displayCountQuery} databaseInitId={databaseInit.id} />

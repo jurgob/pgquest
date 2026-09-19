@@ -197,6 +197,9 @@ export const SQL_EXAMPLE_IDS = {
   concurrencyReservationSystemDatabaseInitWithHold: sqlExampleId(
     "concurrency-reservation-system.database-init-with-hold",
   ),
+  concurrencyReservationSystemDatabaseInitWithoutCounter: sqlExampleId(
+    "concurrency-reservation-system.database-init-without-counter",
+  ),
   concurrencyReservationSystemNaiveHold: sqlExampleId(
     "concurrency-reservation-system.naive-hold",
   ),

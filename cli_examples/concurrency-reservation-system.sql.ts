@@ -18,6 +18,7 @@ CREATE TABLE seat (
 CREATE TABLE event (
   id UUID PRIMARY KEY DEFAULT uuidv7(),
   name TEXT NOT NULL,
+  seat_number INTEGER NOT NULL,
   seat_available INTEGER NOT NULL
 );
 
@@ -41,8 +42,8 @@ VALUES
 INSERT INTO seat (label)
 VALUES ('A1'), ('A2'), ('A3');
 
-INSERT INTO event (id, name, seat_available)
-VALUES ('${EVENT_ID}', 'Concert Night', 1);
+INSERT INTO event (id, name, seat_number, seat_available)
+VALUES ('${EVENT_ID}', 'Concert Night', 3, 1);
 `;
 
 export const databaseInit: SqlExample = {
@@ -51,6 +52,21 @@ export const databaseInit: SqlExample = {
   description:
     "Creates user, seat, event, and reservation. Concert Night has 1 seat left.",
   query: `${migration}\n${seed}`,
+};
+
+// The correct model doesn't need a running counter at all: the reservation
+// rows and their primary key are the source of truth. This second migration
+// simply drops the seat_available column the naive approach leaned on.
+export const removeCounterMigration = `
+ALTER TABLE event DROP COLUMN seat_available;
+`;
+
+export const databaseInitWithoutCounter: SqlExample = {
+  id: SQL_EXAMPLE_IDS.concurrencyReservationSystemDatabaseInitWithoutCounter,
+  name: "Concurrency reservation system database (no counter column)",
+  description:
+    "The same schema after a migration drops the seat_available counter — reservation rows are the only source of truth.",
+  query: `${databaseInit.query}\n${removeCounterMigration}`,
 };
 
 const finalStateQuery = `
@@ -121,7 +137,11 @@ export const databaseInitWithHold: SqlExample = {
   query: `${databaseInit.query}\n${naiveHoldQuery}`,
 };
 
-export const database_inits = [databaseInit, databaseInitWithHold] as const;
+export const database_inits = [
+  databaseInit,
+  databaseInitWithHold,
+  databaseInitWithoutCounter,
+] as const;
 
 export const examples: SqlExample[] = [
   {
