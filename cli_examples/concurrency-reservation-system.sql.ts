@@ -4,13 +4,29 @@ const EVENT_ID = "33333333-3333-3333-3333-333333333333";
 const ADA_ID = "11111111-1111-1111-1111-111111111111";
 const GRACE_ID = "22222222-2222-2222-2222-222222222222";
 
-// The schema is built table-by-table so each approach can show only the one
-// table it changes, and the runnable migration reuses the exact same snippet.
+// A hold lives for 30 seconds. Expiry is a rule, not a delete: a hold only
+// counts while holding_date is newer than this window.
+const HOLD_TTL = "interval '30 seconds'";
+
+// ---- Schema, table by table (seats scoped to the event, no counter) ----
 const userTable = `CREATE TABLE "user" (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL
 );`;
 
+const eventTable = `CREATE TABLE event (
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
+  name TEXT NOT NULL,
+  seat_number INTEGER NOT NULL
+);`;
+
+const seatTable = `CREATE TABLE seat (
+  id SERIAL PRIMARY KEY,
+  event_id UUID NOT NULL REFERENCES event (id),
+  label TEXT NOT NULL
+);`;
+
+// One row per (event, seat). status 'H' = holding, 'R' = reserved.
 const reservationTable = `CREATE TABLE reservation (
   event_id UUID NOT NULL REFERENCES event (id),
   seat_id INTEGER NOT NULL REFERENCES seat (id),
@@ -21,244 +37,180 @@ const reservationTable = `CREATE TABLE reservation (
   PRIMARY KEY (event_id, seat_id)
 );`;
 
-// Approach 1 (naive) keeps a seat_available counter on the event.
-const eventTableWithCounter = `CREATE TABLE event (
-  id UUID PRIMARY KEY DEFAULT uuidv7(),
-  name TEXT NOT NULL,
-  seat_number INTEGER NOT NULL,
-  seat_available INTEGER NOT NULL
-);`;
-
-// Approach 2 drops the counter — the reservation primary key is the source of truth.
-export const eventTableWithoutCounter = `-- Only the event table changes; "user", seat, and reservation stay identical.
-CREATE TABLE event (
-  id UUID PRIMARY KEY DEFAULT uuidv7(),
-  name TEXT NOT NULL,
-  seat_number INTEGER NOT NULL
-);`;
-
-// Approaches 1 and 2 use a single global seat catalog shared by every event.
-const seatTableGlobal = `CREATE TABLE seat (
-  id SERIAL PRIMARY KEY,
-  label TEXT NOT NULL
-);`;
-
-// Approach 3 scopes each seat to one event, so locking a seat row blocks only
-// that event — not the same seat number in every other event.
-export const seatTablePerEvent = `-- Only the seat table changes; "user", event, and reservation stay identical.
-CREATE TABLE seat (
-  id SERIAL PRIMARY KEY,
-  event_id UUID NOT NULL REFERENCES event (id),
-  label TEXT NOT NULL
-);`;
-
 export const migration = `${userTable}
 
-${eventTableWithCounter}
+${eventTable}
 
-${seatTableGlobal}
-
-${reservationTable}
-`;
-
-const migrationWithoutCounter = `${userTable}
-
-${eventTableWithoutCounter}
-
-${seatTableGlobal}
+${seatTable}
 
 ${reservationTable}
 `;
 
-const migrationPerEventSeats = `${userTable}
-
-${eventTableWithoutCounter}
-
-${seatTablePerEvent}
-
-${reservationTable}
-`;
-
-const seedUsers = `INSERT INTO "user" (id, name)
+export const seed = `INSERT INTO "user" (id, name)
 VALUES
   ('${ADA_ID}', 'Ada'),
-  ('${GRACE_ID}', 'Grace');`;
+  ('${GRACE_ID}', 'Grace');
 
-const seedSeatsGlobal = `INSERT INTO seat (label)
-VALUES ('A1'), ('A2'), ('A3');`;
+INSERT INTO event (id, name, seat_number)
+VALUES ('${EVENT_ID}', 'Concert Night', 3);
 
-const seedSeatsPerEvent = `INSERT INTO seat (event_id, label)
+INSERT INTO seat (event_id, label)
 VALUES
   ('${EVENT_ID}', 'A1'),
   ('${EVENT_ID}', 'A2'),
-  ('${EVENT_ID}', 'A3');`;
-
-const seedEventWithCounter = `INSERT INTO event (id, name, seat_number, seat_available)
-VALUES ('${EVENT_ID}', 'Concert Night', 3, 1);`;
-
-const seedEventWithoutCounter = `INSERT INTO event (id, name, seat_number)
-VALUES ('${EVENT_ID}', 'Concert Night', 3);`;
-
-export const seed = `${seedUsers}
-
-${seedSeatsGlobal}
-
-${seedEventWithCounter}
+  ('${EVENT_ID}', 'A3');
 `;
 
-const seedWithoutCounter = `${seedUsers}
-
-${seedSeatsGlobal}
-
-${seedEventWithoutCounter}
-`;
-
-// Per-event seats reference the event, so the event has to be inserted first.
-const seedPerEvent = `${seedUsers}
-
-${seedEventWithoutCounter}
-
-${seedSeatsPerEvent}
-`;
+// Seed a hold on seat A2 (seat id 2) for a user, aged by `ageSeconds`.
+// ageSeconds >= 30 makes it already expired.
+const seedHoldOnSeatTwo = (userId: string, ageSeconds: number) =>
+  `INSERT INTO reservation (event_id, seat_id, user_id, status, holding_date)
+VALUES ('${EVENT_ID}', 2, '${userId}', 'H', now() - interval '${ageSeconds} seconds');`;
 
 export const databaseInit: SqlExample = {
   id: SQL_EXAMPLE_IDS.concurrencyReservationSystemDatabaseInit,
-  name: "Concurrency reservation system database",
+  name: "Reservation database",
   description:
-    "Creates user, seat, event, and reservation. Concert Night has 1 seat left.",
+    "user, event, per-event seat, reservation. Concert Night has seats A1-A3, none held.",
   query: `${migration}\n${seed}`,
 };
 
-export const databaseInitWithoutCounter: SqlExample = {
-  id: SQL_EXAMPLE_IDS.concurrencyReservationSystemDatabaseInitWithoutCounter,
-  name: "Concurrency reservation system database (no counter column)",
-  description:
-    "The same schema with the event's seat_available counter dropped — reservation rows are the only source of truth.",
-  query: `${migrationWithoutCounter}\n${seedWithoutCounter}`,
+export const databaseInitLiveHold: SqlExample = {
+  id: SQL_EXAMPLE_IDS.concurrencyReservationSystemDatabaseInitLiveHold,
+  name: "Reservation database (A2 held by Ada)",
+  description: "Ada holds seat A2, held just now — a live, non-expired hold.",
+  query: `${databaseInit.query}\n${seedHoldOnSeatTwo(ADA_ID, 0)}`,
 };
 
-export const databaseInitPerEventSeats: SqlExample = {
-  id: SQL_EXAMPLE_IDS.concurrencyReservationSystemDatabaseInitPerEventSeats,
-  name: "Concurrency reservation system database (seats scoped to the event)",
-  description:
-    "No counter, and each seat belongs to one event — so a FOR UPDATE lock on a seat blocks only that event.",
-  query: `${migrationPerEventSeats}\n${seedPerEvent}`,
+export const databaseInitExpiredHold: SqlExample = {
+  id: SQL_EXAMPLE_IDS.concurrencyReservationSystemDatabaseInitExpiredHold,
+  name: "Reservation database (A2 hold expired)",
+  description: "Ada's hold on A2 is 60s old — past the 30s window, so it's expired.",
+  query: `${databaseInit.query}\n${seedHoldOnSeatTwo(ADA_ID, 60)}`,
 };
 
-const finalStateQuery = `
--- Just returning something to visualize the result.
-SELECT
-  seat_available,
-  (SELECT count(*) FROM reservation WHERE event_id = '${EVENT_ID}') AS holds
-FROM event
-WHERE id = '${EVENT_ID}';
-`;
+export const databaseInitGraceHold: SqlExample = {
+  id: SQL_EXAMPLE_IDS.concurrencyReservationSystemDatabaseInitGraceHold,
+  name: "Reservation database (A2 held by Grace)",
+  description: "Grace holds seat A2, live — ready to be confirmed into a reservation.",
+  query: `${databaseInit.query}\n${seedHoldOnSeatTwo(GRACE_ID, 0)}`,
+};
 
-export const rollbackDemoQuery = `
-BEGIN;
--- Operation 1: succeeds, for now.
-UPDATE event SET seat_available = seat_available - 1 WHERE id = '${EVENT_ID}';
--- Operation 2: fails — seat 1 already has a reservation row (Ada's hold).
-INSERT INTO reservation (event_id, seat_id, user_id, status, holding_date)
-VALUES ('${EVENT_ID}', 1, '${GRACE_ID}', 'H', now());
-COMMIT;
-`;
+// ---- Operations ----
 
-export const naiveHoldQuery = `
--- The booking transaction happens between BEGIN and COMMIT.
-BEGIN;
--- Plain read, no lock — the app decides "seat available" from this snapshot alone.
-SELECT seat_available FROM event WHERE id = '${EVENT_ID}';
-UPDATE event SET seat_available = seat_available - 1 WHERE id = '${EVENT_ID}';
-INSERT INTO reservation (event_id, seat_id, user_id, status, holding_date)
-VALUES ('${EVENT_ID}', 1, '${ADA_ID}', 'H', now());
-COMMIT;
-${finalStateQuery}`;
-
-export const insertHoldQuery = `
-INSERT INTO reservation (event_id, seat_id, user_id, status, holding_date)
+// Hold: take the seat if free, or take over an EXPIRED hold — atomically.
+// One statement, so the database serializes it: no read-then-write gap.
+export const holdQuery = `INSERT INTO reservation (event_id, seat_id, user_id, status, holding_date)
 VALUES ('${EVENT_ID}', 2, '${GRACE_ID}', 'H', now())
+ON CONFLICT (event_id, seat_id) DO UPDATE
+  SET user_id = EXCLUDED.user_id, holding_date = now(), status = 'H'
+  WHERE reservation.status = 'H'
+    AND reservation.holding_date <= now() - ${HOLD_TTL}
 RETURNING *;
 `;
 
-export const insertConflictQuery = `
-INSERT INTO reservation (event_id, seat_id, user_id, status, holding_date)
-VALUES ('${EVENT_ID}', 1, '${GRACE_ID}', 'H', now())
+// Reserve (confirm H -> R): only if I still hold it and it hasn't expired.
+export const reserveQuery = `UPDATE reservation
+SET status = 'R', reservation_date = now()
+WHERE event_id = '${EVENT_ID}' AND seat_id = 2 AND user_id = '${GRACE_ID}'
+  AND status = 'H'
+  AND holding_date > now() - ${HOLD_TTL}
 RETURNING *;
 `;
 
-export const insertWithLockQuery = `
-BEGIN;
--- Exactly the insert-only approach, with one line added: lock this event's seat
--- row first so concurrent holds on it serialize instead of racing. (Seats are
--- scoped to the event now, so this blocks only this event, not seat 2 elsewhere.)
-SELECT * FROM seat WHERE id = 2 FOR UPDATE;
-INSERT INTO reservation (event_id, seat_id, user_id, status, holding_date)
-VALUES ('${EVENT_ID}', 2, '${GRACE_ID}', 'H', now())
+// Refresh a hold: push the expiry out, only while it is still mine and live.
+export const refreshQuery = `UPDATE reservation
+SET holding_date = now()
+WHERE event_id = '${EVENT_ID}' AND seat_id = 2 AND user_id = '${GRACE_ID}'
+  AND status = 'H'
+  AND holding_date > now() - ${HOLD_TTL}
 RETURNING *;
+`;
+
+// Available = no reservation row, or a hold that has already expired.
+export const listAvailableQuery = `SELECT seat.id, seat.label
+FROM seat
+LEFT JOIN reservation
+  ON reservation.event_id = seat.event_id AND reservation.seat_id = seat.id
+WHERE seat.event_id = '${EVENT_ID}'
+  AND (
+    reservation.seat_id IS NULL
+    OR (reservation.status = 'H' AND reservation.holding_date <= now() - ${HOLD_TTL})
+  )
+ORDER BY seat.id;
+`;
+
+// Per-user hold limit: count-then-insert is a real read-then-write, so lock
+// the user row first with FOR UPDATE to serialize a user's concurrent holds.
+export const holdLimitQuery = `BEGIN;
+-- Declare intent: read this user, then write based on it. Concurrent holds for
+-- the same user now take turns instead of both passing a stale count.
+SELECT id FROM "user" WHERE id = '${GRACE_ID}' FOR UPDATE;
+-- Count the user's live holds for this event.
+SELECT count(*) AS live_holds
+FROM reservation
+WHERE user_id = '${GRACE_ID}' AND event_id = '${EVENT_ID}'
+  AND status = 'H' AND holding_date > now() - ${HOLD_TTL};
+-- App: if live_holds < the limit, run the hold INSERT; otherwise reject.
 COMMIT;
 `;
-
-export const displayCountQuery = `
-SELECT seat_available FROM event WHERE id = '${EVENT_ID}';
-`;
-
-export const databaseInitWithHold: SqlExample = {
-  id: SQL_EXAMPLE_IDS.concurrencyReservationSystemDatabaseInitWithHold,
-  name: "Concurrency reservation system database (seat 1 held)",
-  description: "Same database, but Ada already holds seat 1.",
-  query: `${databaseInit.query}\n${naiveHoldQuery}`,
-};
 
 export const database_inits = [
   databaseInit,
-  databaseInitWithHold,
-  databaseInitWithoutCounter,
-  databaseInitPerEventSeats,
+  databaseInitLiveHold,
+  databaseInitExpiredHold,
+  databaseInitGraceHold,
 ] as const;
 
 export const examples: SqlExample[] = [
   {
-    id: SQL_EXAMPLE_IDS.concurrencyReservationSystemRollbackDemo,
-    name: "A failed operation rolls back the whole transaction",
-    description: "Operation 1 succeeds, operation 2 fails — both get undone.",
-    database_init: databaseInitWithHold,
-    query: rollbackDemoQuery,
-  },
-  {
-    id: SQL_EXAMPLE_IDS.concurrencyReservationSystemNaiveHold,
-    name: "Naive hold (no FOR UPDATE)",
-    description: "Reads seat_available, then decides to write — two open steps.",
+    id: SQL_EXAMPLE_IDS.concurrencyReservationSystemHold,
+    name: "Hold a free seat",
+    description: "A2 is free, so the INSERT wins and Grace holds it.",
     database_init: databaseInit,
-    query: naiveHoldQuery,
+    query: holdQuery,
   },
   {
-    id: SQL_EXAMPLE_IDS.concurrencyReservationSystemInsertHold,
-    name: "Insert hold (relies on the primary key)",
-    description: "No SELECT, no counter — just insert the hold for the known seat.",
+    id: SQL_EXAMPLE_IDS.concurrencyReservationSystemHoldRejected,
+    name: "Hold a live-held seat",
+    description: "A2 is held by Ada and not expired — the guard blocks it, 0 rows.",
+    database_init: databaseInitLiveHold,
+    query: holdQuery,
+  },
+  {
+    id: SQL_EXAMPLE_IDS.concurrencyReservationSystemHoldTakeover,
+    name: "Take over an expired hold",
+    description: "Ada's hold on A2 has expired, so Grace takes it over in one statement.",
+    database_init: databaseInitExpiredHold,
+    query: holdQuery,
+  },
+  {
+    id: SQL_EXAMPLE_IDS.concurrencyReservationSystemReserve,
+    name: "Reserve a seat you hold",
+    description: "Grace holds A2 and confirms it — the hold flips to a reservation.",
+    database_init: databaseInitGraceHold,
+    query: reserveQuery,
+  },
+  {
+    id: SQL_EXAMPLE_IDS.concurrencyReservationSystemReserveRejected,
+    name: "Reserve a seat you do not hold",
+    description: "Ada holds A2, so Grace's confirm matches nothing — 0 rows.",
+    database_init: databaseInitLiveHold,
+    query: reserveQuery,
+  },
+  {
+    id: SQL_EXAMPLE_IDS.concurrencyReservationSystemListAvailable,
+    name: "List available seats",
+    description: "A2 is live-held by Ada, so only A1 and A3 come back.",
+    database_init: databaseInitLiveHold,
+    query: listAvailableQuery,
+  },
+  {
+    id: SQL_EXAMPLE_IDS.concurrencyReservationSystemHoldLimit,
+    name: "Per-user hold limit (FOR UPDATE)",
+    description: "Lock the user row, count live holds, then decide — serialized.",
     database_init: databaseInit,
-    query: insertHoldQuery,
-  },
-  {
-    id: SQL_EXAMPLE_IDS.concurrencyReservationSystemInsertConflict,
-    name: "Insert hold on an already-held seat",
-    description: "The primary key rejects it outright — no locking needed.",
-    database_init: databaseInitWithHold,
-    query: insertConflictQuery,
-  },
-  {
-    id: SQL_EXAMPLE_IDS.concurrencyReservationSystemInsertWithLock,
-    name: "Insert hold with a FOR UPDATE lock",
-    description: "The same insert, serialized behind a per-event seat-row lock.",
-    database_init: databaseInitPerEventSeats,
-    query: insertWithLockQuery,
-  },
-  {
-    id: SQL_EXAMPLE_IDS.concurrencyReservationSystemDisplayCount,
-    name: "Quick display count",
-    description: 'Fine for a "seats left" badge — not for deciding a hold.',
-    database_init: databaseInit,
-    query: displayCountQuery,
+    query: holdLimitQuery,
   },
 ];
 
@@ -267,28 +219,16 @@ export const exercises: SqlExample[] = [
     id: SQL_EXAMPLE_IDS.concurrencyReservationSystemExerciseListAvailable,
     name: "Exercise 1",
     description:
-      "List every seat for Concert Night that has no reservation row yet (available seats).",
-    database_init: databaseInit,
-    query: `
-SELECT seat.id, seat.label
-FROM seat
-LEFT JOIN reservation
-  ON reservation.seat_id = seat.id AND reservation.event_id = '${EVENT_ID}'
-WHERE reservation.seat_id IS NULL
-ORDER BY seat.id;
-`,
+      "List the seats available for Concert Night: no reservation row, or a hold that has already expired.",
+    database_init: databaseInitExpiredHold,
+    query: listAvailableQuery,
   },
   {
-    id: SQL_EXAMPLE_IDS.concurrencyReservationSystemExerciseReserve,
+    id: SQL_EXAMPLE_IDS.concurrencyReservationSystemExerciseRefresh,
     name: "Exercise 2",
     description:
-      "Turn Ada's hold on seat 1 into a permanent reservation (status 'R') and return the row.",
-    database_init: databaseInitWithHold,
-    query: `
-UPDATE reservation
-SET status = 'R', reservation_date = now()
-WHERE event_id = '${EVENT_ID}' AND seat_id = 1 AND user_id = '${ADA_ID}' AND status = 'H'
-RETURNING *;
-`,
+      "Refresh Grace's hold on seat A2 — push holding_date to now(), but only while the hold is still hers and not expired. Return the row.",
+    database_init: databaseInitGraceHold,
+    query: refreshQuery,
   },
 ];

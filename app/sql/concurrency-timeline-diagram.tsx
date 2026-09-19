@@ -31,6 +31,7 @@ const LANE_A_Y = 60;
 const LANE_B_Y = 184;
 const GROUP_HEIGHT = 230;
 const GROUP_GAP = 30;
+const GAP_MID_Y = (LANE_A_Y + LANE_HEIGHT + LANE_B_Y) / 2;
 
 function Lane({
   hatchPatternId,
@@ -118,9 +119,8 @@ function UnblockMarker({ x }: { x: number }) {
   );
 }
 
-// A vertical band spanning both lanes, marking a window that matters for the
-// story: the stale-read window (blue) in the naive group, or the window a row
-// stays locked by A while B is blocked (violet) in the other two.
+// A vertical band spanning both lanes: the stale-read window (blue) or the
+// window a row stays locked by A while B is blocked (violet).
 function HighlightBand({ x, width, fill }: { fill: string; width: number; x: number }) {
   return (
     <rect
@@ -134,9 +134,6 @@ function HighlightBand({ x, width, fill }: { fill: string; width: number; x: num
   );
 }
 
-const GAP_MID_Y = (LANE_A_Y + LANE_HEIGHT + LANE_B_Y) / 2;
-
-// A short caption sitting in the gap between the two lanes.
 function GapLabel({
   className,
   text,
@@ -175,62 +172,9 @@ function GroupTitle({ label }: { label: string }) {
   );
 }
 
-function NaiveGroup({ patternId }: { patternId: string }) {
-  const laneASteps: Step[] = [
-    { label: "BEGIN", variant: "neutral", width: 60, x: 120 },
-    { label: "SELECT (=1)", variant: "read", width: 90, x: 188 },
-    { label: "UPDATE (→0)", variant: "neutral", width: 90, x: 286 },
-    { label: "INSERT hold", variant: "neutral", width: 90, x: 384 },
-    { label: "COMMIT", variant: "commit", width: 70, x: 482 },
-  ];
-  const laneBSteps: Step[] = [
-    { label: "BEGIN", variant: "neutral", width: 60, x: 134 },
-    { label: "SELECT (=1)", variant: "read", width: 90, x: 202 },
-    {
-      label: "waiting: row locked by A's UPDATE",
-      variant: "blocked",
-      width: 182,
-      x: 300,
-    },
-    { label: "UPDATE (→ -1)", variant: "overbook", width: 90, x: 560 },
-    { label: "INSERT hold", variant: "overbook", width: 90, x: 658 },
-    { label: "COMMIT ✓", variant: "overbook", width: 70, x: 756 },
-  ];
-  return (
-    <g>
-      <HatchDefs patternId={patternId} />
-      <GroupTitle label="USE seat_available TO CHECK (naive)" />
-      {/* Root cause: both reads see the same stale value before either writes. */}
-      <HighlightBand fill="#38bdf8" width={104} x={188} />
-      <GapLabel className="fill-sky-700 font-bold" text="both read 1 (stale)" x={240} />
-      <UnblockMarker x={482} />
-      <Lane
-        hatchPatternId={patternId}
-        label="Transaction A"
-        steps={laneASteps}
-        y={LANE_A_Y}
-      />
-      <Lane
-        hatchPatternId={patternId}
-        label="Transaction B"
-        steps={laneBSteps}
-        y={LANE_B_Y}
-      />
-      {/* The overbooking itself: B's writes commit even though A took the seat. */}
-      <OverbookedCallout centerX={693} midY={GAP_MID_Y} pointToY={LANE_B_Y - 2} />
-    </g>
-  );
-}
-
-function OverbookedCallout({
-  centerX,
-  midY,
-  pointToY,
-}: {
-  centerX: number;
-  midY: number;
-  pointToY: number;
-}) {
+// Two lines of red warning text in the gap, with an arrow down into lane B.
+function LimitBrokenCallout({ centerX }: { centerX: number }) {
+  const pointToY = LANE_B_Y - 2;
   return (
     <g>
       <text
@@ -240,9 +184,9 @@ function OverbookedCallout({
         fontSize={11}
         textAnchor="middle"
         x={centerX}
-        y={midY - 8}
+        y={GAP_MID_Y - 8}
       >
-        ⚠ both commit — OVERBOOKED
+        ⚠ both passed the check
       </text>
       <text
         className="fill-red-700"
@@ -251,16 +195,16 @@ function OverbookedCallout({
         fontSize={10}
         textAnchor="middle"
         x={centerX}
-        y={midY + 8}
+        y={GAP_MID_Y + 8}
       >
-        seat_available = −1 (oversold)
+        user now holds 2 &gt; limit 1
       </text>
       <line
         stroke="#ef4444"
         strokeWidth={1.5}
         x1={centerX}
         x2={centerX}
-        y1={midY + 18}
+        y1={GAP_MID_Y + 18}
         y2={pointToY - 5}
       />
       <polygon
@@ -271,82 +215,82 @@ function OverbookedCallout({
   );
 }
 
-function SeatLockGroup({ patternId }: { patternId: string }) {
+// Two concurrent hold requests from the SAME user, limit = 1, no lock.
+function NoLockGroup({ patternId }: { patternId: string }) {
   const laneASteps: Step[] = [
     { label: "BEGIN", variant: "neutral", width: 60, x: 120 },
-    { label: "SELECT seat FOR UPDATE", variant: "lock-read", width: 150, x: 190 },
-    { label: "INSERT hold", variant: "neutral", width: 90, x: 348 },
-    { label: "COMMIT", variant: "commit", width: 70, x: 446 },
+    { label: "SELECT count (=0)", variant: "read", width: 120, x: 190 },
+    { label: "INSERT hold A2", variant: "neutral", width: 120, x: 320 },
+    { label: "COMMIT", variant: "commit", width: 70, x: 450 },
   ];
   const laneBSteps: Step[] = [
     { label: "BEGIN", variant: "neutral", width: 60, x: 134 },
-    { label: "blocked, same seat lock", variant: "blocked", width: 244, x: 202 },
-    { label: "duplicate key error", variant: "reject", width: 220, x: 454 },
+    { label: "SELECT count (=0)", variant: "read", width: 120, x: 204 },
+    { label: "INSERT hold A3", variant: "overbook", width: 120, x: 560 },
+    { label: "COMMIT", variant: "overbook", width: 70, x: 690 },
   ];
 
   return (
     <g>
       <HatchDefs patternId={patternId} />
-      <GroupTitle label="INSERT ONLY + FOR UPDATE (same insert, serialized)" />
-      {/* The seat row stays locked by A from its FOR UPDATE until it commits;
-          B is blocked for that whole window, then hits the same primary key. */}
-      <HighlightBand fill="#8b5cf6" width={256} x={190} />
-      <GapLabel
-        className="fill-violet-700 font-bold"
-        text="seat row locked by A · B blocked until A commits"
-        x={318}
-      />
-      <UnblockMarker x={446} />
+      <GroupTitle label="PER-USER LIMIT WITHOUT FOR UPDATE" />
+      {/* Both read the count before either commits its INSERT. */}
+      <HighlightBand fill="#38bdf8" width={134} x={190} />
+      <GapLabel className="fill-sky-700 font-bold" text="both count 0 (stale)" x={257} />
       <Lane
         hatchPatternId={patternId}
-        label="Transaction A"
+        label="Hold request 1"
         steps={laneASteps}
         y={LANE_A_Y}
       />
       <Lane
         hatchPatternId={patternId}
-        label="Transaction B"
+        label="Hold request 2 (same user)"
         steps={laneBSteps}
         y={LANE_B_Y}
       />
+      <LimitBrokenCallout centerX={655} />
     </g>
   );
 }
 
-function InsertGroup({ patternId }: { patternId: string }) {
+// Same two requests, but the user row is locked first with FOR UPDATE.
+function WithLockGroup({ patternId }: { patternId: string }) {
   const laneASteps: Step[] = [
     { label: "BEGIN", variant: "neutral", width: 60, x: 120 },
-    { label: "INSERT (seat 1)", variant: "neutral", width: 160, x: 220 },
-    { label: "COMMIT", variant: "commit", width: 90, x: 420 },
+    { label: "SELECT user FOR UPDATE", variant: "lock-read", width: 150, x: 190 },
+    { label: "SELECT count (=0)", variant: "read", width: 110, x: 348 },
+    { label: "INSERT hold", variant: "neutral", width: 90, x: 466 },
+    { label: "COMMIT", variant: "commit", width: 70, x: 564 },
   ];
   const laneBSteps: Step[] = [
     { label: "BEGIN", variant: "neutral", width: 60, x: 134 },
-    { label: "blocked, same PK", variant: "blocked", width: 188, x: 232 },
-    { label: "duplicate key error", variant: "reject", width: 220, x: 428 },
+    { label: "blocked, user row locked", variant: "blocked", width: 362, x: 202 },
+    { label: "SELECT count (=1)", variant: "read", width: 110, x: 572 },
+    { label: "reject: at limit", variant: "reject", width: 170, x: 690 },
   ];
 
   return (
     <g>
       <HatchDefs patternId={patternId} />
-      <GroupTitle label="INSERT ONLY (primary key checks)" />
-      {/* A's uncommitted INSERT holds the (event_id, seat_id) key; B's INSERT
-          of the same key blocks until A commits. */}
-      <HighlightBand fill="#8b5cf6" width={200} x={220} />
+      <GroupTitle label="PER-USER LIMIT WITH FOR UPDATE" />
+      {/* The user row stays locked by A from its FOR UPDATE until it commits. */}
+      <HighlightBand fill="#8b5cf6" width={374} x={190} />
       <GapLabel
         className="fill-violet-700 font-bold"
-        text="PK locked by A · B blocked until A commits"
-        x={320}
+        text="user row locked by A · B blocked until A commits"
+        x={377}
       />
-      <UnblockMarker x={420} />
+      <UnblockMarker x={564} />
       <Lane
         hatchPatternId={patternId}
-        label="Transaction A"
+        label="Hold request 1"
         steps={laneASteps}
         y={LANE_A_Y}
       />
       <Lane
         hatchPatternId={patternId}
-        label="Transaction B"
+        label="Hold request 2 (same user)"
         steps={laneBSteps}
         y={LANE_B_Y}
       />
@@ -359,30 +303,24 @@ function GroupDivider({ y }: { y: number }) {
 }
 
 export function ConcurrencyComparisonDiagram() {
-  const naivePatternId = `hatch-naive-${useId()}`;
-  const insertPatternId = `hatch-insert-${useId()}`;
-  const seatLockPatternId = `hatch-seat-lock-${useId()}`;
+  const noLockPatternId = `hatch-nolock-${useId()}`;
+  const withLockPatternId = `hatch-withlock-${useId()}`;
   const secondGroupY = GROUP_HEIGHT + GROUP_GAP;
-  const thirdGroupY = secondGroupY * 2;
-  const totalHeight = thirdGroupY + GROUP_HEIGHT;
+  const totalHeight = secondGroupY + GROUP_HEIGHT;
 
   return (
     <svg
-      aria-label="Three timelines comparing seat holding: checking the seat_available counter (overbooks), insert only relying on the primary key, and the same insert with a FOR UPDATE lock so concurrent holds serialize"
+      aria-label="Two timelines of a per-user hold limit: without FOR UPDATE both concurrent requests read a stale count and exceed the limit; with FOR UPDATE the second request blocks, then sees the real count and is rejected"
       className="h-auto w-full"
       role="img"
       viewBox={`0 0 900 ${totalHeight}`}
     >
       <g>
-        <NaiveGroup patternId={naivePatternId} />
+        <NoLockGroup patternId={noLockPatternId} />
       </g>
       <GroupDivider y={GROUP_HEIGHT + GROUP_GAP / 2} />
       <g transform={`translate(0, ${secondGroupY})`}>
-        <InsertGroup patternId={insertPatternId} />
-      </g>
-      <GroupDivider y={secondGroupY + GROUP_HEIGHT + GROUP_GAP / 2} />
-      <g transform={`translate(0, ${thirdGroupY})`}>
-        <SeatLockGroup patternId={seatLockPatternId} />
+        <WithLockGroup patternId={withLockPatternId} />
       </g>
     </svg>
   );

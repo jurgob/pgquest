@@ -194,38 +194,39 @@ export const SQL_EXAMPLE_IDS = {
   concurrencyReservationSystemDatabaseInit: sqlExampleId(
     "concurrency-reservation-system.database-init",
   ),
-  concurrencyReservationSystemDatabaseInitWithHold: sqlExampleId(
-    "concurrency-reservation-system.database-init-with-hold",
+  concurrencyReservationSystemDatabaseInitLiveHold: sqlExampleId(
+    "concurrency-reservation-system.database-init-live-hold",
   ),
-  concurrencyReservationSystemDatabaseInitWithoutCounter: sqlExampleId(
-    "concurrency-reservation-system.database-init-without-counter",
+  concurrencyReservationSystemDatabaseInitExpiredHold: sqlExampleId(
+    "concurrency-reservation-system.database-init-expired-hold",
   ),
-  concurrencyReservationSystemDatabaseInitPerEventSeats: sqlExampleId(
-    "concurrency-reservation-system.database-init-per-event-seats",
+  concurrencyReservationSystemDatabaseInitGraceHold: sqlExampleId(
+    "concurrency-reservation-system.database-init-grace-hold",
   ),
-  concurrencyReservationSystemNaiveHold: sqlExampleId(
-    "concurrency-reservation-system.naive-hold",
+  concurrencyReservationSystemHold: sqlExampleId("concurrency-reservation-system.hold"),
+  concurrencyReservationSystemHoldRejected: sqlExampleId(
+    "concurrency-reservation-system.hold-rejected",
   ),
-  concurrencyReservationSystemRollbackDemo: sqlExampleId(
-    "concurrency-reservation-system.rollback-demo",
+  concurrencyReservationSystemHoldTakeover: sqlExampleId(
+    "concurrency-reservation-system.hold-takeover",
   ),
-  concurrencyReservationSystemInsertHold: sqlExampleId(
-    "concurrency-reservation-system.insert-hold",
+  concurrencyReservationSystemReserve: sqlExampleId(
+    "concurrency-reservation-system.reserve",
   ),
-  concurrencyReservationSystemInsertConflict: sqlExampleId(
-    "concurrency-reservation-system.insert-conflict",
+  concurrencyReservationSystemReserveRejected: sqlExampleId(
+    "concurrency-reservation-system.reserve-rejected",
   ),
-  concurrencyReservationSystemInsertWithLock: sqlExampleId(
-    "concurrency-reservation-system.insert-with-lock",
-  ),
-  concurrencyReservationSystemDisplayCount: sqlExampleId(
-    "concurrency-reservation-system.display-count",
-  ),
-  concurrencyReservationSystemExerciseListAvailable: sqlExampleId(
+  concurrencyReservationSystemListAvailable: sqlExampleId(
     "concurrency-reservation-system.list-available",
   ),
-  concurrencyReservationSystemExerciseReserve: sqlExampleId(
-    "concurrency-reservation-system.reserve-held-seat",
+  concurrencyReservationSystemHoldLimit: sqlExampleId(
+    "concurrency-reservation-system.hold-limit",
+  ),
+  concurrencyReservationSystemExerciseListAvailable: sqlExampleId(
+    "concurrency-reservation-system.exercise-list-available",
+  ),
+  concurrencyReservationSystemExerciseRefresh: sqlExampleId(
+    "concurrency-reservation-system.exercise-refresh",
   ),
   emptyDatabase: sqlExampleId("empty-database.database-init"),
 } as const;
