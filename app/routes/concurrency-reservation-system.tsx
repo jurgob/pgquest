@@ -1,9 +1,11 @@
 import { Link } from "react-router";
 import {
   databaseInit,
+  databaseInitPerEventSeats,
   databaseInitWithHold,
   databaseInitWithoutCounter,
   displayCountQuery,
+  eventTableWithoutCounter,
   exercises,
   insertConflictQuery,
   insertHoldQuery,
@@ -11,6 +13,7 @@ import {
   migration,
   naiveHoldQuery,
   rollbackDemoQuery,
+  seatTablePerEvent,
   seed,
 } from "../../cli_examples/concurrency-reservation-system.sql";
 import { ConcurrencyComparisonDiagram } from "../sql/concurrency-timeline-diagram";
@@ -61,7 +64,7 @@ export default function ConcurrencyReservationSystem() {
   });
   const insertWithLockExecution = useLessonSqlExample({
     query: insertWithLockQuery,
-    sqlLoad: databaseInit.query,
+    sqlLoad: databaseInitPerEventSeats.query,
   });
 
   return (
@@ -411,22 +414,26 @@ export default function ConcurrencyReservationSystem() {
           <p>
             So what's <InlineCode>seat_available</InlineCode> for, then? Nothing
             safety-critical. The reservation rows and their primary key are already the
-            source of truth, so the cleanest model simply doesn't keep the counter — a
-            second migration drops the column. It's the first migration minus{" "}
-            <InlineCode>seat_available</InlineCode>, nothing else, so there's no new SQL
-            worth showing here; you can{" "}
+            source of truth, so the cleanest model simply drops the counter. Only the{" "}
+            <InlineCode>event</InlineCode> table changes — every other table stays exactly
+            the same:
+          </p>
+        </Paragraphs>
+        <SqlCodeViewer code={eventTableWithoutCounter} />
+        <Paragraphs>
+          <p>
+            You can{" "}
             <Link
               className="text-sky-700 underline decoration-sky-300 underline-offset-2 hover:text-sky-900"
               to={`/dbviewer/${databaseInitWithoutCounter.id}`}
             >
               open the counter-less schema in the DB viewer
             </Link>{" "}
-            to see the result.
-          </p>
-          <p>
-            If you do decide to keep it, treat it only as a fast, approximate "seats left"
-            badge on the event page — and never let it decide whether a hold succeeds; the{" "}
-            <InlineCode>INSERT</InlineCode> above already does that correctly on its own.
+            to see the full result. And if you do decide to keep{" "}
+            <InlineCode>seat_available</InlineCode> anyway, treat it only as a fast,
+            approximate "seats left" badge — never let it decide whether a hold succeeds;
+            the <InlineCode>INSERT</InlineCode> above already does that correctly on its
+            own.
           </p>
         </Paragraphs>
         <SqlCodeViewer code={displayCountQuery} databaseInitId={databaseInit.id} />
@@ -435,11 +442,10 @@ export default function ConcurrencyReservationSystem() {
         </div>
         <Paragraphs>
           <p>
-            One more variation worth showing: the <InlineCode>INSERT</InlineCode> alone is
-            already correct, but every concurrent attempt races straight at the primary
-            key. If you'd rather concurrent holds on a seat take turns instead of racing,
-            wrap that <em>exact same insert</em> in a transaction that locks the seat row
-            first with{" "}
+            One more variation: the <InlineCode>INSERT</InlineCode> alone is already
+            correct, but every concurrent attempt races straight at the primary key. If
+            you'd rather concurrent holds on a seat take turns instead of racing, you can
+            lock the seat row first with{" "}
             <a
               className="text-sky-700 underline decoration-sky-300 underline-offset-2 hover:text-sky-900"
               href="https://www.postgresql.org/docs/current/sql-select.html#SQL-FOR-UPDATE-SHARE"
@@ -447,11 +453,35 @@ export default function ConcurrencyReservationSystem() {
               target="_blank"
             >
               <InlineCode>FOR UPDATE</InlineCode>
-            </a>
-            :
+            </a>{" "}
+            before inserting.
+          </p>
+          <p>
+            But this one needs a schema change first. In the model so far,{" "}
+            <InlineCode>seat</InlineCode> is a single global catalog shared by every event
+            — so <InlineCode>SELECT ... FROM seat WHERE id = 2 FOR UPDATE</InlineCode>{" "}
+            would lock "seat 2" for <em>every</em> event at once, blocking unrelated
+            bookings. Scope each seat to its event and the lock only ever touches that one
+            event. Again, only the <InlineCode>seat</InlineCode> table changes:
           </p>
         </Paragraphs>
-        <SqlCodeViewer code={insertWithLockQuery} databaseInitId={databaseInit.id} />
+        <SqlCodeViewer code={seatTablePerEvent} />
+        <Paragraphs>
+          <p>
+            Kept the id an <InlineCode>INTEGER</InlineCode> here — nothing else in the
+            schema or the queries has to change. A <InlineCode>UUID</InlineCode> id would
+            work too, but it only buys you something if you need to pre-allocate seats{" "}
+            <em>before</em> the event row exists, which isn't the case here.
+          </p>
+          <p>
+            Now that a seat belongs to one event, wrap that <em>exact same insert</em> in
+            a transaction that locks this event's seat row first:
+          </p>
+        </Paragraphs>
+        <SqlCodeViewer
+          code={insertWithLockQuery}
+          databaseInitId={databaseInitPerEventSeats.id}
+        />
         <div className="mt-4">
           <SqlResult execution={insertWithLockExecution} />
         </div>

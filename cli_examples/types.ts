@@ -200,6 +200,9 @@ export const SQL_EXAMPLE_IDS = {
   concurrencyReservationSystemDatabaseInitWithoutCounter: sqlExampleId(
     "concurrency-reservation-system.database-init-without-counter",
   ),
+  concurrencyReservationSystemDatabaseInitPerEventSeats: sqlExampleId(
+    "concurrency-reservation-system.database-init-per-event-seats",
+  ),
   concurrencyReservationSystemNaiveHold: sqlExampleId(
     "concurrency-reservation-system.naive-hold",
   ),

@@ -4,25 +4,14 @@ const EVENT_ID = "33333333-3333-3333-3333-333333333333";
 const ADA_ID = "11111111-1111-1111-1111-111111111111";
 const GRACE_ID = "22222222-2222-2222-2222-222222222222";
 
-export const migration = `
-CREATE TABLE "user" (
+// The schema is built table-by-table so each approach can show only the one
+// table it changes, and the runnable migration reuses the exact same snippet.
+const userTable = `CREATE TABLE "user" (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL
-);
+);`;
 
-CREATE TABLE seat (
-  id SERIAL PRIMARY KEY,
-  label TEXT NOT NULL
-);
-
-CREATE TABLE event (
-  id UUID PRIMARY KEY DEFAULT uuidv7(),
-  name TEXT NOT NULL,
-  seat_number INTEGER NOT NULL,
-  seat_available INTEGER NOT NULL
-);
-
-CREATE TABLE reservation (
+const reservationTable = `CREATE TABLE reservation (
   event_id UUID NOT NULL REFERENCES event (id),
   seat_id INTEGER NOT NULL REFERENCES seat (id),
   user_id UUID NOT NULL REFERENCES "user" (id),
@@ -30,20 +19,106 @@ CREATE TABLE reservation (
   holding_date TIMESTAMPTZ,
   reservation_date TIMESTAMPTZ,
   PRIMARY KEY (event_id, seat_id)
-);
+);`;
+
+// Approach 1 (naive) keeps a seat_available counter on the event.
+const eventTableWithCounter = `CREATE TABLE event (
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
+  name TEXT NOT NULL,
+  seat_number INTEGER NOT NULL,
+  seat_available INTEGER NOT NULL
+);`;
+
+// Approach 2 drops the counter — the reservation primary key is the source of truth.
+export const eventTableWithoutCounter = `-- Only the event table changes; "user", seat, and reservation stay identical.
+CREATE TABLE event (
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
+  name TEXT NOT NULL,
+  seat_number INTEGER NOT NULL
+);`;
+
+// Approaches 1 and 2 use a single global seat catalog shared by every event.
+const seatTableGlobal = `CREATE TABLE seat (
+  id SERIAL PRIMARY KEY,
+  label TEXT NOT NULL
+);`;
+
+// Approach 3 scopes each seat to one event, so locking a seat row blocks only
+// that event — not the same seat number in every other event.
+export const seatTablePerEvent = `-- Only the seat table changes; "user", event, and reservation stay identical.
+CREATE TABLE seat (
+  id SERIAL PRIMARY KEY,
+  event_id UUID NOT NULL REFERENCES event (id),
+  label TEXT NOT NULL
+);`;
+
+export const migration = `${userTable}
+
+${eventTableWithCounter}
+
+${seatTableGlobal}
+
+${reservationTable}
 `;
 
-export const seed = `
-INSERT INTO "user" (id, name)
+const migrationWithoutCounter = `${userTable}
+
+${eventTableWithoutCounter}
+
+${seatTableGlobal}
+
+${reservationTable}
+`;
+
+const migrationPerEventSeats = `${userTable}
+
+${eventTableWithoutCounter}
+
+${seatTablePerEvent}
+
+${reservationTable}
+`;
+
+const seedUsers = `INSERT INTO "user" (id, name)
 VALUES
   ('${ADA_ID}', 'Ada'),
-  ('${GRACE_ID}', 'Grace');
+  ('${GRACE_ID}', 'Grace');`;
 
-INSERT INTO seat (label)
-VALUES ('A1'), ('A2'), ('A3');
+const seedSeatsGlobal = `INSERT INTO seat (label)
+VALUES ('A1'), ('A2'), ('A3');`;
 
-INSERT INTO event (id, name, seat_number, seat_available)
-VALUES ('${EVENT_ID}', 'Concert Night', 3, 1);
+const seedSeatsPerEvent = `INSERT INTO seat (event_id, label)
+VALUES
+  ('${EVENT_ID}', 'A1'),
+  ('${EVENT_ID}', 'A2'),
+  ('${EVENT_ID}', 'A3');`;
+
+const seedEventWithCounter = `INSERT INTO event (id, name, seat_number, seat_available)
+VALUES ('${EVENT_ID}', 'Concert Night', 3, 1);`;
+
+const seedEventWithoutCounter = `INSERT INTO event (id, name, seat_number)
+VALUES ('${EVENT_ID}', 'Concert Night', 3);`;
+
+export const seed = `${seedUsers}
+
+${seedSeatsGlobal}
+
+${seedEventWithCounter}
+`;
+
+const seedWithoutCounter = `${seedUsers}
+
+${seedSeatsGlobal}
+
+${seedEventWithoutCounter}
+`;
+
+// Per-event seats reference the event, so the event has to be inserted first.
+const seedPerEvent = `${seedUsers}
+
+${seedEventWithoutCounter}
+
+${seedSeatsPerEvent}
 `;
 
 export const databaseInit: SqlExample = {
@@ -54,19 +129,20 @@ export const databaseInit: SqlExample = {
   query: `${migration}\n${seed}`,
 };
 
-// The correct model doesn't need a running counter at all: the reservation
-// rows and their primary key are the source of truth. This second migration
-// simply drops the seat_available column the naive approach leaned on.
-export const removeCounterMigration = `
-ALTER TABLE event DROP COLUMN seat_available;
-`;
-
 export const databaseInitWithoutCounter: SqlExample = {
   id: SQL_EXAMPLE_IDS.concurrencyReservationSystemDatabaseInitWithoutCounter,
   name: "Concurrency reservation system database (no counter column)",
   description:
-    "The same schema after a migration drops the seat_available counter — reservation rows are the only source of truth.",
-  query: `${databaseInit.query}\n${removeCounterMigration}`,
+    "The same schema with the event's seat_available counter dropped — reservation rows are the only source of truth.",
+  query: `${migrationWithoutCounter}\n${seedWithoutCounter}`,
+};
+
+export const databaseInitPerEventSeats: SqlExample = {
+  id: SQL_EXAMPLE_IDS.concurrencyReservationSystemDatabaseInitPerEventSeats,
+  name: "Concurrency reservation system database (seats scoped to the event)",
+  description:
+    "No counter, and each seat belongs to one event — so a FOR UPDATE lock on a seat blocks only that event.",
+  query: `${migrationPerEventSeats}\n${seedPerEvent}`,
 };
 
 const finalStateQuery = `
@@ -113,8 +189,9 @@ RETURNING *;
 
 export const insertWithLockQuery = `
 BEGIN;
--- Exactly the insert-only approach, with one line added: lock the seat row
--- first so concurrent holds on this seat serialize instead of racing.
+-- Exactly the insert-only approach, with one line added: lock this event's seat
+-- row first so concurrent holds on it serialize instead of racing. (Seats are
+-- scoped to the event now, so this blocks only this event, not seat 2 elsewhere.)
 SELECT * FROM seat WHERE id = 2 FOR UPDATE;
 INSERT INTO reservation (event_id, seat_id, user_id, status, holding_date)
 VALUES ('${EVENT_ID}', 2, '${GRACE_ID}', 'H', now())
@@ -137,6 +214,7 @@ export const database_inits = [
   databaseInit,
   databaseInitWithHold,
   databaseInitWithoutCounter,
+  databaseInitPerEventSeats,
 ] as const;
 
 export const examples: SqlExample[] = [
@@ -170,9 +248,9 @@ export const examples: SqlExample[] = [
   },
   {
     id: SQL_EXAMPLE_IDS.concurrencyReservationSystemInsertWithLock,
-    name: "Insert hold with an early check",
-    description: "Lock the seat, check first, then insert — a cleaner failure path.",
-    database_init: databaseInit,
+    name: "Insert hold with a FOR UPDATE lock",
+    description: "The same insert, serialized behind a per-event seat-row lock.",
+    database_init: databaseInitPerEventSeats,
     query: insertWithLockQuery,
   },
   {
