@@ -157,11 +157,11 @@ export const holdLimitQuery = `BEGIN;
 -- the same user now take turns instead of both passing a stale count.
 SELECT id FROM "user" WHERE id = '${GRACE_ID}' FOR UPDATE;
 -- Count the user's live holds for this event.
-SELECT count(*) AS live_holds
+SELECT count(*) AS actively_held_seats
 FROM reservation
 WHERE user_id = '${GRACE_ID}' AND event_id = '${EVENT_ID}'
   AND status = 'H' AND holding_date > now() - ${HOLD_TTL};
--- App: if live_holds < the limit, run the hold INSERT; otherwise reject.
+-- App: if actively_held_seats < the limit, run the hold INSERT; otherwise reject.
 COMMIT;
 `;
 
