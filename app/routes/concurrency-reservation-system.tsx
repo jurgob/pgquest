@@ -467,16 +467,17 @@ export default function ConcurrencyReservationSystem() {
         <Title2>What happens under concurrency</Title2>
         <Paragraphs>
           <p>
-            Here's all three approaches, side by side: the naive counter (breaks), relying
-            on the primary key alone (overbooking-free), and adding an early{" "}
-            <InlineCode>FOR UPDATE</InlineCode> check on top of it (cleanest failure
+            Here's all three approaches, side by side: checking the{" "}
+            <InlineCode>seat_available</InlineCode> counter (overbooks), insert only
+            relying on the primary key (overbooking-free), and insert only with an early{" "}
+            <InlineCode>FOR UPDATE</InlineCode> block on top of it (cleanest failure
             path).
           </p>
         </Paragraphs>
 
         <div className="mt-6">
           <p className="font-mono text-sm font-semibold uppercase tracking-wide text-zinc-500">
-            Without FOR UPDATE
+            Use seat_available to check (naive)
           </p>
           <div className="mt-3 text-base leading-7 text-zinc-700">
             <ul className="list-disc space-y-2 pl-5">
@@ -503,7 +504,7 @@ export default function ConcurrencyReservationSystem() {
 
         <div className="mt-6">
           <p className="font-mono text-sm font-semibold uppercase tracking-wide text-zinc-500">
-            Insert + primary key
+            Insert only (primary key checks)
           </p>
           <div className="mt-3 text-base leading-7 text-zinc-700">
             <ul className="list-disc space-y-2 pl-5">
@@ -530,7 +531,7 @@ export default function ConcurrencyReservationSystem() {
 
         <div className="mt-6">
           <p className="font-mono text-sm font-semibold uppercase tracking-wide text-zinc-500">
-            Insert + FOR UPDATE (early check)
+            Insert only + FOR UPDATE (early block)
           </p>
           <div className="mt-3 text-base leading-7 text-zinc-700">
             <ul className="list-disc space-y-2 pl-5">

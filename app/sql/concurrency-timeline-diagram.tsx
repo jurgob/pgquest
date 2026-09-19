@@ -1,6 +1,7 @@
 import { useId } from "react";
 
-type StepVariant = "blocked" | "commit" | "lock-read" | "neutral" | "read" | "reject";
+type StepVariant =
+  "blocked" | "commit" | "lock-read" | "neutral" | "overbook" | "read" | "reject";
 
 type Step = {
   label: string;
@@ -20,6 +21,7 @@ const VARIANT_STYLES: Record<
     textClass: "fill-sky-900 font-bold",
   },
   neutral: { fill: "#f4f4f5", stroke: "#a1a1aa", textClass: "fill-zinc-700" },
+  overbook: { fill: "#fef3c7", stroke: "#f59e0b", textClass: "fill-amber-800 font-bold" },
   read: { fill: "#e0f2fe", stroke: "#38bdf8", textClass: "fill-sky-800" },
   reject: { fill: "#fee2e2", stroke: "#ef4444", textClass: "fill-red-800 font-bold" },
 };
@@ -160,16 +162,29 @@ function NaiveGroup({ patternId }: { patternId: string }) {
       width: 182,
       x: 300,
     },
-    { label: "UPDATE (→ -1)", variant: "reject", width: 90, x: 560 },
-    { label: "INSERT hold", variant: "reject", width: 90, x: 658 },
-    { label: "COMMIT", variant: "reject", width: 70, x: 756 },
+    { label: "UPDATE (→ -1)", variant: "overbook", width: 90, x: 560 },
+    { label: "INSERT hold", variant: "overbook", width: 90, x: 658 },
+    { label: "COMMIT ✓", variant: "overbook", width: 70, x: 756 },
   ];
+  const gapMidY = (LANE_A_Y + LANE_HEIGHT + LANE_B_Y) / 2;
 
   return (
     <g>
       <HatchDefs patternId={patternId} />
-      <GroupTitle label="WITHOUT FOR UPDATE" />
-      <StaleReadBand width={90} x={202} />
+      <GroupTitle label="USE seat_available TO CHECK (naive)" />
+      {/* Root cause: both reads see the same stale value before either writes. */}
+      <StaleReadBand width={104} x={188} />
+      <text
+        className="fill-sky-700 font-bold"
+        dominantBaseline="middle"
+        fontFamily="monospace"
+        fontSize={9.5}
+        textAnchor="middle"
+        x={240}
+        y={gapMidY}
+      >
+        both read 1 (stale)
+      </text>
       <UnblockMarker x={482} />
       <Lane
         hatchPatternId={patternId}
@@ -182,6 +197,57 @@ function NaiveGroup({ patternId }: { patternId: string }) {
         label="Transaction B"
         steps={laneBSteps}
         y={LANE_B_Y}
+      />
+      {/* The overbooking itself: B's writes commit even though A took the seat. */}
+      <OverbookedCallout centerX={693} midY={gapMidY} pointToY={LANE_B_Y - 2} />
+    </g>
+  );
+}
+
+function OverbookedCallout({
+  centerX,
+  midY,
+  pointToY,
+}: {
+  centerX: number;
+  midY: number;
+  pointToY: number;
+}) {
+  return (
+    <g>
+      <text
+        className="fill-red-700 font-bold"
+        dominantBaseline="middle"
+        fontFamily="monospace"
+        fontSize={11}
+        textAnchor="middle"
+        x={centerX}
+        y={midY - 8}
+      >
+        ⚠ both commit — OVERBOOKED
+      </text>
+      <text
+        className="fill-red-700"
+        dominantBaseline="middle"
+        fontFamily="monospace"
+        fontSize={10}
+        textAnchor="middle"
+        x={centerX}
+        y={midY + 8}
+      >
+        seat_available = −1 (oversold)
+      </text>
+      <line
+        stroke="#ef4444"
+        strokeWidth={1.5}
+        x1={centerX}
+        x2={centerX}
+        y1={midY + 18}
+        y2={pointToY - 5}
+      />
+      <polygon
+        fill="#ef4444"
+        points={`${centerX - 4},${pointToY - 5} ${centerX + 4},${pointToY - 5} ${centerX},${pointToY + 1}`}
       />
     </g>
   );
@@ -205,7 +271,7 @@ function SeatLockGroup({ patternId }: { patternId: string }) {
   return (
     <g>
       <HatchDefs patternId={patternId} />
-      <GroupTitle label="INSERT + FOR UPDATE (EARLY CHECK)" />
+      <GroupTitle label="INSERT ONLY + FOR UPDATE (primary key, early block)" />
       <UnblockMarker x={554} />
       <Lane
         hatchPatternId={patternId}
@@ -238,7 +304,7 @@ function InsertGroup({ patternId }: { patternId: string }) {
   return (
     <g>
       <HatchDefs patternId={patternId} />
-      <GroupTitle label="INSERT + PRIMARY KEY" />
+      <GroupTitle label="INSERT ONLY (primary key checks)" />
       <UnblockMarker x={420} />
       <Lane
         hatchPatternId={patternId}
@@ -270,7 +336,7 @@ export function ConcurrencyComparisonDiagram() {
 
   return (
     <svg
-      aria-label="Three timelines comparing seat holding without FOR UPDATE, with INSERT relying on the primary key, and with an early FOR UPDATE check"
+      aria-label="Three timelines comparing seat holding: checking the seat_available counter (overbooks), insert only relying on the primary key, and insert only with an early FOR UPDATE block"
       className="h-auto w-full"
       role="img"
       viewBox={`0 0 900 ${totalHeight}`}
