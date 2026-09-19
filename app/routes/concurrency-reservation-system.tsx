@@ -371,7 +371,9 @@ export default function ConcurrencyReservationSystem() {
       </LessonSection>
 
       <LessonSection>
-        <Title2>A simpler fix: let the primary key do the work</Title2>
+        <Title2>
+          The actually overbooking-free fix: let the primary key do the work
+        </Title2>
         <Paragraphs>
           <p>
             In a real app, <InlineCode>holdSeat</InlineCode> is called from a specific
@@ -466,7 +468,7 @@ export default function ConcurrencyReservationSystem() {
         <Paragraphs>
           <p>
             Here's all three approaches, side by side: the naive counter (breaks), relying
-            on the primary key alone (simplest), and adding an early{" "}
+            on the primary key alone (overbooking-free), and adding an early{" "}
             <InlineCode>FOR UPDATE</InlineCode> check on top of it (cleanest failure
             path).
           </p>
