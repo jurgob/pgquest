@@ -435,11 +435,11 @@ export default function ConcurrencyReservationSystem() {
         </div>
         <Paragraphs>
           <p>
-            One more choice worth making explicitly: <InlineCode>INSERT</InlineCode> alone
-            is enough for correctness, but the failure surfaces as a raw Postgres
-            exception — your code has to catch a duplicate-key error and translate it into
-            a friendly response. If you'd rather reject early with your own clean error,
-            lock the seat row first with{" "}
+            One more variation worth showing: the <InlineCode>INSERT</InlineCode> alone is
+            already correct, but every concurrent attempt races straight at the primary
+            key. If you'd rather concurrent holds on a seat take turns instead of racing,
+            wrap that <em>exact same insert</em> in a transaction that locks the seat row
+            first with{" "}
             <a
               className="text-sky-700 underline decoration-sky-300 underline-offset-2 hover:text-sky-900"
               href="https://www.postgresql.org/docs/current/sql-select.html#SQL-FOR-UPDATE-SHARE"
@@ -447,8 +447,8 @@ export default function ConcurrencyReservationSystem() {
               target="_blank"
             >
               <InlineCode>FOR UPDATE</InlineCode>
-            </a>{" "}
-            and check before you insert:
+            </a>
+            :
           </p>
         </Paragraphs>
         <SqlCodeViewer code={insertWithLockQuery} databaseInitId={databaseInit.id} />
@@ -457,9 +457,9 @@ export default function ConcurrencyReservationSystem() {
         </div>
         <Paragraph>
           Either way, the primary key is still what actually guarantees safety —{" "}
-          <InlineCode>FOR UPDATE</InlineCode> here is only about controlling{" "}
-          <em>where</em> and <em>how</em> the expected failure surfaces, not about
-          preventing overbooking on its own.
+          <InlineCode>FOR UPDATE</InlineCode> here only serializes concurrent holds on the
+          seat so they take turns instead of racing; it doesn't prevent overbooking on its
+          own.
         </Paragraph>
       </LessonSection>
 
@@ -469,9 +469,8 @@ export default function ConcurrencyReservationSystem() {
           <p>
             Here's all three approaches, side by side: checking the{" "}
             <InlineCode>seat_available</InlineCode> counter (overbooks), insert only
-            relying on the primary key (overbooking-free), and insert only with an early{" "}
-            <InlineCode>FOR UPDATE</InlineCode> block on top of it (cleanest failure
-            path).
+            relying on the primary key (overbooking-free), and the exact same insert with
+            a <InlineCode>FOR UPDATE</InlineCode> lock so concurrent holds serialize.
           </p>
         </Paragraphs>
 
@@ -531,23 +530,23 @@ export default function ConcurrencyReservationSystem() {
 
         <div className="mt-6">
           <p className="font-mono text-sm font-semibold uppercase tracking-wide text-zinc-500">
-            Insert only + FOR UPDATE (early block)
+            Insert only + FOR UPDATE (serialized)
           </p>
           <div className="mt-3 text-base leading-7 text-zinc-700">
             <ul className="list-disc space-y-2 pl-5">
               <li>
                 A's <InlineCode>SELECT ... FOR UPDATE</InlineCode> locks the seat row
-                immediately. B's identical statement doesn't get to check anything — it
-                blocks right there, before B's application code has made any decision.
+                immediately. B's identical statement blocks right there — the two attempts
+                take turns on the seat instead of racing at the primary key.
               </li>
               <li>
-                Once A commits, B's blocked <InlineCode>SELECT</InlineCode> unblocks and
-                B's own check now finds A's row.
+                Once A commits, B's blocked <InlineCode>SELECT</InlineCode> unblocks and B
+                proceeds to its <InlineCode>INSERT</InlineCode>.
               </li>
               <li>
-                B's application code raises its own "seat taken" error right there — it
-                never attempts the <InlineCode>INSERT</InlineCode> at all. Same guarantee
-                as before, just a cleaner failure path.
+                B's <InlineCode>INSERT</InlineCode> hits the same primary key A just
+                committed and fails with a duplicate-key error — same guarantee as insert
+                only, the lock just made the two attempts serialize first.
               </li>
             </ul>
           </div>

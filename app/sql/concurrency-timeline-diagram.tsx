@@ -275,30 +275,28 @@ function SeatLockGroup({ patternId }: { patternId: string }) {
   const laneASteps: Step[] = [
     { label: "BEGIN", variant: "neutral", width: 60, x: 120 },
     { label: "SELECT seat FOR UPDATE", variant: "lock-read", width: 150, x: 190 },
-    { label: "check: none", variant: "read", width: 100, x: 348 },
-    { label: "INSERT hold", variant: "neutral", width: 90, x: 456 },
-    { label: "COMMIT", variant: "commit", width: 70, x: 554 },
+    { label: "INSERT hold", variant: "neutral", width: 90, x: 348 },
+    { label: "COMMIT", variant: "commit", width: 70, x: 446 },
   ];
   const laneBSteps: Step[] = [
     { label: "BEGIN", variant: "neutral", width: 60, x: 134 },
-    { label: "blocked, same seat lock", variant: "blocked", width: 352, x: 202 },
-    { label: "check: found!", variant: "reject", width: 110, x: 562 },
-    { label: "seat taken → reject", variant: "reject", width: 180, x: 680 },
+    { label: "blocked, same seat lock", variant: "blocked", width: 244, x: 202 },
+    { label: "duplicate key error", variant: "reject", width: 220, x: 454 },
   ];
 
   return (
     <g>
       <HatchDefs patternId={patternId} />
-      <GroupTitle label="INSERT ONLY + FOR UPDATE (primary key, early block)" />
+      <GroupTitle label="INSERT ONLY + FOR UPDATE (same insert, serialized)" />
       {/* The seat row stays locked by A from its FOR UPDATE until it commits;
-          B is blocked for that whole window. */}
-      <HighlightBand fill="#8b5cf6" width={364} x={190} />
+          B is blocked for that whole window, then hits the same primary key. */}
+      <HighlightBand fill="#8b5cf6" width={256} x={190} />
       <GapLabel
         className="fill-violet-700 font-bold"
         text="seat row locked by A · B blocked until A commits"
-        x={372}
+        x={318}
       />
-      <UnblockMarker x={554} />
+      <UnblockMarker x={446} />
       <Lane
         hatchPatternId={patternId}
         label="Transaction A"
@@ -370,7 +368,7 @@ export function ConcurrencyComparisonDiagram() {
 
   return (
     <svg
-      aria-label="Three timelines comparing seat holding: checking the seat_available counter (overbooks), insert only relying on the primary key, and insert only with an early FOR UPDATE block"
+      aria-label="Three timelines comparing seat holding: checking the seat_available counter (overbooks), insert only relying on the primary key, and the same insert with a FOR UPDATE lock so concurrent holds serialize"
       className="h-auto w-full"
       role="img"
       viewBox={`0 0 900 ${totalHeight}`}
