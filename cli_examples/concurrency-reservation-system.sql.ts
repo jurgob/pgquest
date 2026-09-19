@@ -3,6 +3,7 @@ import { SQL_EXAMPLE_IDS, type SqlExample } from "./types";
 const EVENT_ID = "33333333-3333-3333-3333-333333333333";
 const ADA_ID = "11111111-1111-1111-1111-111111111111";
 const GRACE_ID = "22222222-2222-2222-2222-222222222222";
+const BOB_ID = "44444444-4444-4444-4444-444444444444";
 
 // A hold lives for 30 seconds. Expiry is a rule, not a delete: a hold only
 // counts while holding_date is newer than this window.
@@ -49,7 +50,8 @@ ${reservationTable}
 export const seed = `INSERT INTO "user" (id, name)
 VALUES
   ('${ADA_ID}', 'Ada'),
-  ('${GRACE_ID}', 'Grace');
+  ('${GRACE_ID}', 'Grace'),
+  ('${BOB_ID}', 'Bob');
 
 INSERT INTO event (id, name, seat_number)
 VALUES ('${EVENT_ID}', 'Concert Night', 3);
@@ -100,14 +102,22 @@ export const databaseInitGraceHold: SqlExample = {
 
 // Hold: take the seat if free, or take over an EXPIRED hold — atomically.
 // One statement, so the database serializes it: no read-then-write gap.
-export const holdQuery = `INSERT INTO reservation (event_id, seat_id, user_id, status, holding_date)
-VALUES ('${EVENT_ID}', 2, '${GRACE_ID}', 'H', now())
+const holdQueryFor = (
+  userId: string,
+) => `INSERT INTO reservation (event_id, seat_id, user_id, status, holding_date)
+VALUES ('${EVENT_ID}', 2, '${userId}', 'H', now())
 ON CONFLICT (event_id, seat_id) DO UPDATE
   SET user_id = EXCLUDED.user_id, holding_date = now(), status = 'H'
   WHERE reservation.status = 'H'
     AND reservation.holding_date <= now() - ${HOLD_TTL}
 RETURNING *;
 `;
+
+export const holdQuery = holdQueryFor(GRACE_ID);
+
+// Same hold attempt, made by a different user — so "rejected" and "takeover"
+// below aren't both just Grace acting twice in a row.
+export const holdRejectedQuery = holdQueryFor(BOB_ID);
 
 // Reserve (confirm H -> R): only if I still hold it and it hasn't expired.
 export const reserveQuery = `UPDATE reservation
@@ -173,9 +183,9 @@ export const examples: SqlExample[] = [
   {
     id: SQL_EXAMPLE_IDS.concurrencyReservationSystemHoldRejected,
     name: "Hold a live-held seat",
-    description: "A2 is held by Ada and not expired — the guard blocks it, 0 rows.",
+    description: "A2 is held by Ada and not expired — Bob's attempt is blocked, 0 rows.",
     database_init: databaseInitLiveHold,
-    query: holdQuery,
+    query: holdRejectedQuery,
   },
   {
     id: SQL_EXAMPLE_IDS.concurrencyReservationSystemHoldTakeover,

@@ -6,8 +6,10 @@ import {
   exercises,
   holdLimitQuery,
   holdQuery,
+  holdRejectedQuery,
   listAvailableQuery,
   migration,
+  refreshQuery,
   reserveQuery,
   seed,
 } from "../../cli_examples/concurrency-reservation-system.sql";
@@ -38,7 +40,7 @@ export default function ConcurrencyReservationSystem() {
     sqlLoad: databaseInit.query,
   });
   const holdRejectedExecution = useLessonSqlExample({
-    query: holdQuery,
+    query: holdRejectedQuery,
     sqlLoad: databaseInitLiveHold.query,
   });
   const holdTakeoverExecution = useLessonSqlExample({
@@ -77,6 +79,12 @@ export default function ConcurrencyReservationSystem() {
           concept: "INSERT ... ON CONFLICT DO UPDATE",
           description:
             "upsert: take the seat if free, or take over an expired hold — atomically, in one statement, with no read-then-write gap.",
+          url: "https://www.postgresql.org/docs/current/sql-insert.html#SQL-ON-CONFLICT",
+        },
+        {
+          concept: "EXCLUDED",
+          description:
+            "the pseudo-table holding the row you tried to insert, available inside DO UPDATE — lets the update refer back to the values you were writing.",
           url: "https://www.postgresql.org/docs/current/sql-insert.html#SQL-ON-CONFLICT",
         },
         {
@@ -190,25 +198,48 @@ export default function ConcurrencyReservationSystem() {
           <li>
             <a
               className="text-sky-700 underline decoration-sky-300 underline-offset-2 hover:text-sky-900"
-              href="https://variety.com/2022/music/news/ticketmaster-explains-taylor-swift-ticket-crisis-eras-tour-1235435673/"
+              href="https://www.cbsnews.com/losangeles/news/ticketmaster-sells-some-fans-duplicate-sugar-bowl-tickets/"
               rel="noreferrer"
               target="_blank"
             >
-              Ticketmaster Explains Taylor Swift Ticket Crisis for Eras Tour
+              Ticketmaster Sells Some Fans Duplicate Sugar Bowl Tickets
             </a>{" "}
-            — a real-world case of a ticketing system buckling under exactly the kind of
-            contention this lesson models.
+            — Ticketmaster itself confirmed some buyers "received two tickets to the same
+            seat."
           </li>
           <li>
             <a
               className="text-sky-700 underline decoration-sky-300 underline-offset-2 hover:text-sky-900"
-              href="https://singhajit.com/ticket-booking-system-design/"
+              href="https://www.ticketnews.com/2018/03/paul-simon-fan-scored-floor-seats-had-them-revoked-by-ticketmaster-after-seat-was/"
               rel="noreferrer"
               target="_blank"
             >
-              How Ticket Booking Systems Handle 50,000 People Fighting for One Seat
+              Fan Had Ticket Revoked After Ticketmaster "Double Sold" His Floor Seat
             </a>{" "}
-            — a systems-design look at the same problem this lesson solves.
+            — the seat was double-sold, and the buyer with a valid ticket still lost it.
+          </li>
+          <li>
+            <a
+              className="text-sky-700 underline decoration-sky-300 underline-offset-2 hover:text-sky-900"
+              href="https://www.cbsnews.com/chicago/news/on-the-secondary-market-its-buyer-beware-when-tickets-are-sold-twice/"
+              rel="noreferrer"
+              target="_blank"
+            >
+              On The Secondary Market, It's Buyer Beware When Tickets Are Sold Twice
+            </a>{" "}
+            — the same seat sold to multiple buyers, and only one of them got in.
+          </li>
+          <li>
+            <a
+              className="text-sky-700 underline decoration-sky-300 underline-offset-2 hover:text-sky-900"
+              href="https://www.timeslive.co.za/news/south-africa/2026-05-21-flysafair-denies-wrongdoing-after-overbooking-scandal-referral/"
+              rel="noreferrer"
+              target="_blank"
+            >
+              FlySafair Denies Wrongdoing After Overbooking Scandal Referral
+            </a>{" "}
+            — a 2026 case where a regulator says overbooking was systematic, not
+            accidental.
           </li>
         </ul>
       </Section>
@@ -246,6 +277,56 @@ export default function ConcurrencyReservationSystem() {
         <SqlCodeViewer code={seed} />
       </Section>
 
+      <Section>
+        <Title2>The functions we'll implement</Title2>
+        <Paragraphs>
+          <p>In a program, you'd have these functions:</p>
+        </Paragraphs>
+        <div className="pt-8">
+          <Title2>
+            <InlineCode className="text-xl">holdSeat(eventId, seatId, userId)</InlineCode>
+          </Title2>
+        </div>
+        <div className="pl-6">
+          <Paragraph>
+            First, check the user isn't already at their hold limit for this event:
+          </Paragraph>
+          <SqlCodeViewer code={holdLimitQuery} />
+          <div className="pt-6">
+            <Paragraph>Then take the seat:</Paragraph>
+          </div>
+          <SqlCodeViewer code={holdQuery} />
+        </div>
+        <div className="pt-8">
+          <Title2>
+            <InlineCode className="text-xl">
+              refreshHoldSeat(eventId, seatId, userId)
+            </InlineCode>
+          </Title2>
+        </div>
+        <div className="pl-6">
+          <SqlCodeViewer code={refreshQuery} />
+        </div>
+        <div className="pt-8">
+          <Title2>
+            <InlineCode className="text-xl">
+              reserveSeat(eventId, seatId, userId)
+            </InlineCode>
+          </Title2>
+        </div>
+        <div className="pl-6">
+          <SqlCodeViewer code={reserveQuery} />
+        </div>
+        <div className="pt-8">
+          <Title2>
+            <InlineCode className="text-xl">getAvailableSeats(eventId)</InlineCode>
+          </Title2>
+        </div>
+        <div className="pl-6">
+          <SqlCodeViewer code={listAvailableQuery} />
+        </div>
+      </Section>
+
       <LessonSection>
         <Title2>Holding a seat</Title2>
         <Paragraphs>
@@ -264,6 +345,13 @@ export default function ConcurrencyReservationSystem() {
             <InlineCode>WHERE</InlineCode> says the existing hold has expired. A single
             statement is serialized by the database, so there is no gap to race in.
           </p>
+          <p>
+            <InlineCode>EXCLUDED</InlineCode> is a pseudo-table Postgres exposes inside{" "}
+            <InlineCode>DO UPDATE</InlineCode>: it holds the row you just tried to insert
+            (the one that hit the conflict), so <InlineCode>EXCLUDED.user_id</InlineCode>{" "}
+            below means "the user_id from the VALUES clause" — whoever is making this hold
+            attempt.
+          </p>
         </Paragraphs>
         <SqlCodeViewer code={holdQuery} databaseInitId={databaseInit.id} />
         <div className="mt-4">
@@ -272,15 +360,20 @@ export default function ConcurrencyReservationSystem() {
         <Paragraph>
           If the seat is <strong>actively held</strong> (not expired), the{" "}
           <InlineCode>ON CONFLICT</InlineCode> guard fails and the statement changes
-          nothing — zero rows come back, which the app turns into "seat taken":
+          nothing — zero rows come back, which the app turns into "seat taken". Here Bob
+          tries to grab A2 while Ada is still holding it:
         </Paragraph>
-        <SqlCodeViewer code={holdQuery} databaseInitId={databaseInitLiveHold.id} />
+        <SqlCodeViewer
+          code={holdRejectedQuery}
+          databaseInitId={databaseInitLiveHold.id}
+        />
         <div className="mt-4">
           <SqlResult execution={holdRejectedExecution} />
         </div>
         <Paragraph>
           But if the previous hold has <strong>expired</strong>, the exact same statement
-          takes it over cleanly — no delete, no separate check:
+          takes it over cleanly — no delete, no separate check. This time Grace takes over
+          Ada's expired hold:
         </Paragraph>
         <SqlCodeViewer code={holdQuery} databaseInitId={databaseInitExpiredHold.id} />
         <div className="mt-4">
