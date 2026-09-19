@@ -118,16 +118,46 @@ function UnblockMarker({ x }: { x: number }) {
   );
 }
 
-function StaleReadBand({ x, width }: { width: number; x: number }) {
+// A vertical band spanning both lanes, marking a window that matters for the
+// story: the stale-read window (blue) in the naive group, or the window a row
+// stays locked by A while B is blocked (violet) in the other two.
+function HighlightBand({ x, width, fill }: { fill: string; width: number; x: number }) {
   return (
     <rect
-      fill="#38bdf8"
+      fill={fill}
       fillOpacity={0.15}
       height={LANE_B_Y + LANE_HEIGHT - (LANE_A_Y - 4)}
       width={width}
       x={x}
       y={LANE_A_Y - 4}
     />
+  );
+}
+
+const GAP_MID_Y = (LANE_A_Y + LANE_HEIGHT + LANE_B_Y) / 2;
+
+// A short caption sitting in the gap between the two lanes.
+function GapLabel({
+  className,
+  text,
+  x,
+}: {
+  className: string;
+  text: string;
+  x: number;
+}) {
+  return (
+    <text
+      className={className}
+      dominantBaseline="middle"
+      fontFamily="monospace"
+      fontSize={9.5}
+      textAnchor="middle"
+      x={x}
+      y={GAP_MID_Y}
+    >
+      {text}
+    </text>
   );
 }
 
@@ -166,25 +196,13 @@ function NaiveGroup({ patternId }: { patternId: string }) {
     { label: "INSERT hold", variant: "overbook", width: 90, x: 658 },
     { label: "COMMIT ✓", variant: "overbook", width: 70, x: 756 },
   ];
-  const gapMidY = (LANE_A_Y + LANE_HEIGHT + LANE_B_Y) / 2;
-
   return (
     <g>
       <HatchDefs patternId={patternId} />
       <GroupTitle label="USE seat_available TO CHECK (naive)" />
       {/* Root cause: both reads see the same stale value before either writes. */}
-      <StaleReadBand width={104} x={188} />
-      <text
-        className="fill-sky-700 font-bold"
-        dominantBaseline="middle"
-        fontFamily="monospace"
-        fontSize={9.5}
-        textAnchor="middle"
-        x={240}
-        y={gapMidY}
-      >
-        both read 1 (stale)
-      </text>
+      <HighlightBand fill="#38bdf8" width={104} x={188} />
+      <GapLabel className="fill-sky-700 font-bold" text="both read 1 (stale)" x={240} />
       <UnblockMarker x={482} />
       <Lane
         hatchPatternId={patternId}
@@ -199,7 +217,7 @@ function NaiveGroup({ patternId }: { patternId: string }) {
         y={LANE_B_Y}
       />
       {/* The overbooking itself: B's writes commit even though A took the seat. */}
-      <OverbookedCallout centerX={693} midY={gapMidY} pointToY={LANE_B_Y - 2} />
+      <OverbookedCallout centerX={693} midY={GAP_MID_Y} pointToY={LANE_B_Y - 2} />
     </g>
   );
 }
@@ -272,6 +290,14 @@ function SeatLockGroup({ patternId }: { patternId: string }) {
     <g>
       <HatchDefs patternId={patternId} />
       <GroupTitle label="INSERT ONLY + FOR UPDATE (primary key, early block)" />
+      {/* The seat row stays locked by A from its FOR UPDATE until it commits;
+          B is blocked for that whole window. */}
+      <HighlightBand fill="#8b5cf6" width={364} x={190} />
+      <GapLabel
+        className="fill-violet-700 font-bold"
+        text="seat row locked by A · B blocked until A commits"
+        x={372}
+      />
       <UnblockMarker x={554} />
       <Lane
         hatchPatternId={patternId}
@@ -305,6 +331,14 @@ function InsertGroup({ patternId }: { patternId: string }) {
     <g>
       <HatchDefs patternId={patternId} />
       <GroupTitle label="INSERT ONLY (primary key checks)" />
+      {/* A's uncommitted INSERT holds the (event_id, seat_id) key; B's INSERT
+          of the same key blocks until A commits. */}
+      <HighlightBand fill="#8b5cf6" width={200} x={220} />
+      <GapLabel
+        className="fill-violet-700 font-bold"
+        text="PK locked by A · B blocked until A commits"
+        x={320}
+      />
       <UnblockMarker x={420} />
       <Lane
         hatchPatternId={patternId}
