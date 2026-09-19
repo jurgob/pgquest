@@ -54,6 +54,7 @@ export const databaseInit: SqlExample = {
 };
 
 const finalStateQuery = `
+-- Just returning something to visualize the result.
 SELECT
   seat_available,
   (SELECT count(*) FROM reservation WHERE event_id = '${EVENT_ID}') AS holds
@@ -62,6 +63,7 @@ WHERE id = '${EVENT_ID}';
 `;
 
 export const naiveHoldQuery = `
+-- The booking transaction happens between BEGIN and COMMIT.
 BEGIN;
 -- Plain read, no lock — the app decides "seat available" from this snapshot alone.
 SELECT seat_available FROM event WHERE id = '${EVENT_ID}';
@@ -71,15 +73,36 @@ VALUES ('${EVENT_ID}', 1, '${ADA_ID}', 'H', now());
 COMMIT;
 ${finalStateQuery}`;
 
-export const lockedHoldQuery = `
-BEGIN;
--- FOR UPDATE locks this row until COMMIT — another FOR UPDATE on it must wait.
-SELECT seat_available FROM event WHERE id = '${EVENT_ID}' FOR UPDATE;
-UPDATE event SET seat_available = seat_available - 1 WHERE id = '${EVENT_ID}';
+export const insertHoldQuery = `
 INSERT INTO reservation (event_id, seat_id, user_id, status, holding_date)
-VALUES ('${EVENT_ID}', 1, '${ADA_ID}', 'H', now());
+VALUES ('${EVENT_ID}', 2, '${GRACE_ID}', 'H', now())
+RETURNING *;
+`;
+
+export const insertConflictQuery = `
+INSERT INTO reservation (event_id, seat_id, user_id, status, holding_date)
+VALUES ('${EVENT_ID}', 1, '${GRACE_ID}', 'H', now())
+RETURNING *;
+`;
+
+export const insertWithLockQuery = `
+BEGIN;
+-- Lock the seat row so only one transaction at a time decides its fate.
+SELECT * FROM seat WHERE id = 2 FOR UPDATE;
+-- Check while holding that lock: is this seat already held or reserved?
+SELECT * FROM reservation WHERE event_id = '${EVENT_ID}' AND seat_id = 2;
+-- No row found — app code proceeds. If one had come back, it would raise its
+-- own "seat unavailable" error right here instead of attempting the insert.
+INSERT INTO reservation (event_id, seat_id, user_id, status, holding_date)
+VALUES ('${EVENT_ID}', 2, '${ADA_ID}', 'H', now());
 COMMIT;
-${finalStateQuery}`;
+-- Just returning something to visualize the result.
+SELECT * FROM reservation WHERE event_id = '${EVENT_ID}' AND seat_id = 2;
+`;
+
+export const displayCountQuery = `
+SELECT seat_available FROM event WHERE id = '${EVENT_ID}';
+`;
 
 export const databaseInitWithHold: SqlExample = {
   id: SQL_EXAMPLE_IDS.concurrencyReservationSystemDatabaseInitWithHold,
@@ -99,12 +122,32 @@ export const examples: SqlExample[] = [
     query: naiveHoldQuery,
   },
   {
-    id: SQL_EXAMPLE_IDS.concurrencyReservationSystemLockedHold,
-    name: "Safe hold (FOR UPDATE)",
-    description:
-      "Same steps, but the SELECT locks the row for the rest of the transaction.",
+    id: SQL_EXAMPLE_IDS.concurrencyReservationSystemInsertHold,
+    name: "Insert hold (relies on the primary key)",
+    description: "No SELECT, no counter — just insert the hold for the known seat.",
     database_init: databaseInit,
-    query: lockedHoldQuery,
+    query: insertHoldQuery,
+  },
+  {
+    id: SQL_EXAMPLE_IDS.concurrencyReservationSystemInsertConflict,
+    name: "Insert hold on an already-held seat",
+    description: "The primary key rejects it outright — no locking needed.",
+    database_init: databaseInitWithHold,
+    query: insertConflictQuery,
+  },
+  {
+    id: SQL_EXAMPLE_IDS.concurrencyReservationSystemInsertWithLock,
+    name: "Insert hold with an early check",
+    description: "Lock the seat, check first, then insert — a cleaner failure path.",
+    database_init: databaseInit,
+    query: insertWithLockQuery,
+  },
+  {
+    id: SQL_EXAMPLE_IDS.concurrencyReservationSystemDisplayCount,
+    name: "Quick display count",
+    description: 'Fine for a "seats left" badge — not for deciding a hold.',
+    database_init: databaseInit,
+    query: displayCountQuery,
   },
 ];
 

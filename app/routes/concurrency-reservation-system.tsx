@@ -1,7 +1,11 @@
 import {
   databaseInit,
+  databaseInitWithHold,
+  displayCountQuery,
   exercises,
-  lockedHoldQuery,
+  insertConflictQuery,
+  insertHoldQuery,
+  insertWithLockQuery,
   migration,
   naiveHoldQuery,
   seed,
@@ -32,15 +36,27 @@ export default function ConcurrencyReservationSystem() {
     query: naiveHoldQuery,
     sqlLoad: databaseInit.query,
   });
-  const lockedExecution = useLessonSqlExample({
-    query: lockedHoldQuery,
+  const insertHoldExecution = useLessonSqlExample({
+    query: insertHoldQuery,
+    sqlLoad: databaseInit.query,
+  });
+  const insertConflictExecution = useLessonSqlExample({
+    query: insertConflictQuery,
+    sqlLoad: databaseInitWithHold.query,
+  });
+  const displayCountExecution = useLessonSqlExample({
+    query: displayCountQuery,
+    sqlLoad: databaseInit.query,
+  });
+  const insertWithLockExecution = useLessonSqlExample({
+    query: insertWithLockQuery,
     sqlLoad: databaseInit.query,
   });
 
   return (
     <LessonPage
       activeLesson="concurrency-reservation-system"
-      defaultQuery={lockedHoldQuery}
+      defaultQuery={insertWithLockQuery}
       exercises={exercises}
       preloadId={databaseInit.id}
       sqlLoad={databaseInit.query}
@@ -77,6 +93,12 @@ export default function ConcurrencyReservationSystem() {
           url: "https://www.postgresql.org/docs/current/sql-begin.html",
         },
         {
+          concept: "Duplicate key error",
+          description:
+            "Postgres rejects a second row with the same primary key outright — a constraint can be simpler and safer than explicit locking.",
+          url: "https://www.postgresql.org/docs/current/ddl-constraints.html#DDL-CONSTRAINTS-PRIMARY-KEYS",
+        },
+        {
           concept: "Check-then-act race",
           description:
             "reading a value and acting on it in a later, separate statement leaves a gap where another transaction can change that value first.",
@@ -84,7 +106,7 @@ export default function ConcurrencyReservationSystem() {
         {
           concept: "SELECT ... FOR UPDATE",
           description:
-            "locks the selected rows for the rest of the transaction — no other transaction can lock, update, or delete them until this one ends.",
+            "locks the selected rows for the rest of the transaction — useful for checking and rejecting early, before attempting a write that would otherwise fail.",
           url: "https://www.postgresql.org/docs/current/sql-select.html#SQL-FOR-UPDATE-SHARE",
         },
       ]}
@@ -156,6 +178,61 @@ export default function ConcurrencyReservationSystem() {
       </Section>
 
       <Section>
+        <Title2>Setting expectations: rejection is fine, double-booking is not</Title2>
+        <Paragraphs>
+          <p>
+            Under real concurrent load, some booking attempts will fail — and that's fine.
+            A UI that says "Sorry, that seat was just taken — pick another one" is a
+            perfectly acceptable outcome.
+          </p>
+          <p>
+            What's <strong>not</strong> acceptable is two different people both believing
+            they hold the same seat, only discovering the conflict when they show up at
+            the venue. That's the failure this lesson is actually about preventing —
+            overbooking is a well-documented, recurring problem:
+          </p>
+        </Paragraphs>
+        <ul className="mt-2 list-disc space-y-2 pl-5 text-base leading-7 text-zinc-800">
+          <li>
+            <a
+              className="text-sky-700 underline decoration-sky-300 underline-offset-2 hover:text-sky-900"
+              href="https://www.travelandtourworld.com/news/article/overbooked-flights-in-the-uk-and-globally-passengers-now-most-likely-to-be-bumped-experts-warn/"
+              rel="noreferrer"
+              target="_blank"
+            >
+              Overbooked Flights in the UK and Globally: Passengers Now Most Likely to Be
+              Bumped
+            </a>{" "}
+            — airlines have run on deliberate overbooking for decades; this is what it
+            costs passengers when the numbers don't work out.
+          </li>
+          <li>
+            <a
+              className="text-sky-700 underline decoration-sky-300 underline-offset-2 hover:text-sky-900"
+              href="https://variety.com/2022/music/news/ticketmaster-explains-taylor-swift-ticket-crisis-eras-tour-1235435673/"
+              rel="noreferrer"
+              target="_blank"
+            >
+              Ticketmaster Explains Taylor Swift Ticket Crisis for Eras Tour
+            </a>{" "}
+            — a real-world case of a ticketing system buckling under exactly the kind of
+            contention this lesson models.
+          </li>
+          <li>
+            <a
+              className="text-sky-700 underline decoration-sky-300 underline-offset-2 hover:text-sky-900"
+              href="https://singhajit.com/ticket-booking-system-design/"
+              rel="noreferrer"
+              target="_blank"
+            >
+              How Ticket Booking Systems Handle 50,000 People Fighting for One Seat
+            </a>{" "}
+            — a systems-design look at the same problem this lesson solves.
+          </li>
+        </ul>
+      </Section>
+
+      <Section>
         <Title2>Why this needs ACID, especially atomicity</Title2>
         <Paragraphs>
           <p>
@@ -220,16 +297,67 @@ export default function ConcurrencyReservationSystem() {
         </div>
         <Paragraph>
           Run once, on its own, this looks completely fine: 1 seat becomes 0, one hold
-          recorded. The bug only shows up when two users try to hold the last seat at the
-          same instant — see the diagram below.
+          recorded. But this isn't a rare edge case — under real concurrent traffic, two
+          users racing for the last seat <strong>will</strong> both get through
+          eventually. This implementation is guaranteed to overbook.
         </Paragraph>
       </LessonSection>
 
       <LessonSection>
-        <Title2>The safe way: SELECT ... FOR UPDATE</Title2>
+        <Title2>A simpler fix: let the primary key do the work</Title2>
         <Paragraphs>
           <p>
-            Adding{" "}
+            In a real app, <InlineCode>holdSeat</InlineCode> is called from a specific
+            seat's button — the user already picked a seat from a list before clicking
+            Hold. That means we already know <InlineCode>seat_id</InlineCode> up front; we
+            never actually need to ask the database for "any available seat," only "this
+            one."
+          </p>
+          <p>
+            That changes the shape of the problem entirely. Instead of checking a counter
+            and then writing, we can just insert the hold directly.{" "}
+            <InlineCode>reservation</InlineCode>'s primary key{" "}
+            <InlineCode>(event_id, seat_id)</InlineCode> means Postgres itself rejects a
+            second hold on the same seat — no <InlineCode>SELECT</InlineCode>, no lock, no
+            gap to race in.
+          </p>
+        </Paragraphs>
+        <SqlCodeViewer code={insertHoldQuery} databaseInitId={databaseInit.id} />
+        <div className="mt-4">
+          <SqlResult execution={insertHoldExecution} />
+        </div>
+        <Paragraph>If the seat's already held, the same statement just fails:</Paragraph>
+        <SqlCodeViewer
+          code={insertConflictQuery}
+          databaseInitId={databaseInitWithHold.id}
+        />
+        <div className="mt-4">
+          <SqlResult execution={insertConflictExecution} />
+        </div>
+        <Paragraph>
+          That error comes straight from Postgres, under any level of concurrency, without
+          our application code needing to know anything about locks.
+        </Paragraph>
+        <Paragraphs>
+          <p>
+            So what's <InlineCode>seat_available</InlineCode> for, then? Nothing
+            safety-critical — it's still handy as a fast, approximate count for a "seats
+            left" badge on the event page. Just never let it decide whether a hold
+            succeeds; the <InlineCode>INSERT</InlineCode> above already does that
+            correctly on its own.
+          </p>
+        </Paragraphs>
+        <SqlCodeViewer code={displayCountQuery} databaseInitId={databaseInit.id} />
+        <div className="mt-4">
+          <SqlResult execution={displayCountExecution} />
+        </div>
+        <Paragraphs>
+          <p>
+            One more choice worth making explicitly: <InlineCode>INSERT</InlineCode> alone
+            is enough for correctness, but the failure surfaces as a raw Postgres
+            exception — your code has to catch a duplicate-key error and translate it into
+            a friendly response. If you'd rather reject early with your own clean error,
+            lock the seat row first with{" "}
             <a
               className="text-sky-700 underline decoration-sky-300 underline-offset-2 hover:text-sky-900"
               href="https://www.postgresql.org/docs/current/sql-select.html#SQL-FOR-UPDATE-SHARE"
@@ -238,19 +366,18 @@ export default function ConcurrencyReservationSystem() {
             >
               <InlineCode>FOR UPDATE</InlineCode>
             </a>{" "}
-            to the <InlineCode>SELECT</InlineCode> locks that row for the rest of the
-            transaction: any other transaction that tries to{" "}
-            <InlineCode>SELECT ... FOR UPDATE</InlineCode> the same row has to wait until
-            this one commits or rolls back.
+            and check before you insert:
           </p>
         </Paragraphs>
-        <SqlCodeViewer code={lockedHoldQuery} databaseInitId={databaseInit.id} />
+        <SqlCodeViewer code={insertWithLockQuery} databaseInitId={databaseInit.id} />
         <div className="mt-4">
-          <SqlResult execution={lockedExecution} />
+          <SqlResult execution={insertWithLockExecution} />
         </div>
         <Paragraph>
-          Run once, the result looks identical to the naive version — the difference only
-          appears under concurrency, shown below.
+          Either way, the primary key is still what actually guarantees safety —{" "}
+          <InlineCode>FOR UPDATE</InlineCode> here is only about controlling{" "}
+          <em>where</em> and <em>how</em> the expected failure surfaces, not about
+          preventing overbooking on its own.
         </Paragraph>
       </LessonSection>
 
@@ -258,8 +385,10 @@ export default function ConcurrencyReservationSystem() {
         <Title2>What happens under concurrency</Title2>
         <Paragraphs>
           <p>
-            Here's the same "last seat" scenario, twice: first without the lock, then with
-            it.
+            Here's all three approaches, side by side: the naive counter (breaks), relying
+            on the primary key alone (simplest), and adding an early{" "}
+            <InlineCode>FOR UPDATE</InlineCode> check on top of it (cleanest failure
+            path).
           </p>
         </Paragraphs>
 
@@ -292,24 +421,50 @@ export default function ConcurrencyReservationSystem() {
 
         <div className="mt-6">
           <p className="font-mono text-sm font-semibold uppercase tracking-wide text-zinc-500">
-            With FOR UPDATE
+            Insert + primary key
           </p>
           <div className="mt-3 text-base leading-7 text-zinc-700">
             <ul className="list-disc space-y-2 pl-5">
               <li>
-                A's <InlineCode>SELECT ... FOR UPDATE</InlineCode> locks the event row
-                immediately. B's identical statement doesn't get to read anything — it
+                Both transactions attempt <InlineCode>INSERT</InlineCode> for the same{" "}
+                <InlineCode>seat_id</InlineCode> — the primary key{" "}
+                <InlineCode>(event_id, seat_id)</InlineCode> is what's actually being
+                contested, not a value either side read first.
+              </li>
+              <li>
+                B's <InlineCode>INSERT</InlineCode> blocks the moment it hits the same
+                not-yet-committed key A is inserting. Neither transaction asked for this —
+                Postgres enforces it automatically.
+              </li>
+              <li>
+                Once A commits, B's <InlineCode>INSERT</InlineCode> resumes and
+                immediately fails with a duplicate-key error. B's application code catches
+                that and reports "seat taken" — it never got the chance to write anything
+                wrong.
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="mt-6">
+          <p className="font-mono text-sm font-semibold uppercase tracking-wide text-zinc-500">
+            Insert + FOR UPDATE (early check)
+          </p>
+          <div className="mt-3 text-base leading-7 text-zinc-700">
+            <ul className="list-disc space-y-2 pl-5">
+              <li>
+                A's <InlineCode>SELECT ... FOR UPDATE</InlineCode> locks the seat row
+                immediately. B's identical statement doesn't get to check anything — it
                 blocks right there, before B's application code has made any decision.
               </li>
               <li>
                 Once A commits, B's blocked <InlineCode>SELECT</InlineCode> unblocks and
-                reads the fresh, committed value: <InlineCode>0</InlineCode>.
+                B's own check now finds A's row.
               </li>
               <li>
-                B's application code now correctly rejects the hold — no{" "}
-                <InlineCode>UPDATE</InlineCode>, no <InlineCode>INSERT</InlineCode>, no
-                negative counter. The lock moved the blocking point from <em>after</em>{" "}
-                the decision to <em>before</em> it.
+                B's application code raises its own "seat taken" error right there — it
+                never attempts the <InlineCode>INSERT</InlineCode> at all. Same guarantee
+                as before, just a cleaner failure path.
               </li>
             </ul>
           </div>

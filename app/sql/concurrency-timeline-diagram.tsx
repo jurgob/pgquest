@@ -187,26 +187,26 @@ function NaiveGroup({ patternId }: { patternId: string }) {
   );
 }
 
-function LockedGroup({ patternId }: { patternId: string }) {
+function SeatLockGroup({ patternId }: { patternId: string }) {
   const laneASteps: Step[] = [
     { label: "BEGIN", variant: "neutral", width: 60, x: 120 },
-    { label: "SELECT ... FOR UPDATE", variant: "lock-read", width: 140, x: 188 },
-    { label: "UPDATE (→0)", variant: "neutral", width: 90, x: 336 },
-    { label: "INSERT hold", variant: "neutral", width: 90, x: 434 },
-    { label: "COMMIT", variant: "commit", width: 70, x: 532 },
+    { label: "SELECT seat FOR UPDATE", variant: "lock-read", width: 150, x: 190 },
+    { label: "check: none", variant: "read", width: 100, x: 348 },
+    { label: "INSERT hold", variant: "neutral", width: 90, x: 456 },
+    { label: "COMMIT", variant: "commit", width: 70, x: 554 },
   ];
   const laneBSteps: Step[] = [
     { label: "BEGIN", variant: "neutral", width: 60, x: 134 },
-    { label: "SELECT ... FOR UPDATE — blocked", variant: "blocked", width: 400, x: 202 },
-    { label: "reads 0", variant: "read", width: 100, x: 610 },
-    { label: "0 available → reject", variant: "reject", width: 160, x: 718 },
+    { label: "blocked, same seat lock", variant: "blocked", width: 352, x: 202 },
+    { label: "check: found!", variant: "reject", width: 110, x: 562 },
+    { label: "seat taken → reject", variant: "reject", width: 180, x: 680 },
   ];
 
   return (
     <g>
       <HatchDefs patternId={patternId} />
-      <GroupTitle label="WITH FOR UPDATE" />
-      <UnblockMarker x={602} />
+      <GroupTitle label="INSERT + FOR UPDATE (EARLY CHECK)" />
+      <UnblockMarker x={554} />
       <Lane
         hatchPatternId={patternId}
         label="Transaction A"
@@ -223,15 +223,54 @@ function LockedGroup({ patternId }: { patternId: string }) {
   );
 }
 
+function InsertGroup({ patternId }: { patternId: string }) {
+  const laneASteps: Step[] = [
+    { label: "BEGIN", variant: "neutral", width: 60, x: 120 },
+    { label: "INSERT (seat 1)", variant: "neutral", width: 160, x: 220 },
+    { label: "COMMIT", variant: "commit", width: 90, x: 420 },
+  ];
+  const laneBSteps: Step[] = [
+    { label: "BEGIN", variant: "neutral", width: 60, x: 134 },
+    { label: "blocked, same PK", variant: "blocked", width: 188, x: 232 },
+    { label: "duplicate key error", variant: "reject", width: 220, x: 428 },
+  ];
+
+  return (
+    <g>
+      <HatchDefs patternId={patternId} />
+      <GroupTitle label="INSERT + PRIMARY KEY" />
+      <UnblockMarker x={420} />
+      <Lane
+        hatchPatternId={patternId}
+        label="Transaction A"
+        steps={laneASteps}
+        y={LANE_A_Y}
+      />
+      <Lane
+        hatchPatternId={patternId}
+        label="Transaction B"
+        steps={laneBSteps}
+        y={LANE_B_Y}
+      />
+    </g>
+  );
+}
+
+function GroupDivider({ y }: { y: number }) {
+  return <line stroke="#e4e4e7" strokeWidth={1} x1={0} x2={900} y1={y} y2={y} />;
+}
+
 export function ConcurrencyComparisonDiagram() {
   const naivePatternId = `hatch-naive-${useId()}`;
-  const lockedPatternId = `hatch-locked-${useId()}`;
+  const insertPatternId = `hatch-insert-${useId()}`;
+  const seatLockPatternId = `hatch-seat-lock-${useId()}`;
   const secondGroupY = GROUP_HEIGHT + GROUP_GAP;
-  const totalHeight = secondGroupY + GROUP_HEIGHT;
+  const thirdGroupY = secondGroupY * 2;
+  const totalHeight = thirdGroupY + GROUP_HEIGHT;
 
   return (
     <svg
-      aria-label="Two timelines comparing seat holding with and without FOR UPDATE"
+      aria-label="Three timelines comparing seat holding without FOR UPDATE, with INSERT relying on the primary key, and with an early FOR UPDATE check"
       className="h-auto w-full"
       role="img"
       viewBox={`0 0 900 ${totalHeight}`}
@@ -239,16 +278,13 @@ export function ConcurrencyComparisonDiagram() {
       <g>
         <NaiveGroup patternId={naivePatternId} />
       </g>
-      <line
-        stroke="#e4e4e7"
-        strokeWidth={1}
-        x1={0}
-        x2={900}
-        y1={GROUP_HEIGHT + GROUP_GAP / 2}
-        y2={GROUP_HEIGHT + GROUP_GAP / 2}
-      />
+      <GroupDivider y={GROUP_HEIGHT + GROUP_GAP / 2} />
       <g transform={`translate(0, ${secondGroupY})`}>
-        <LockedGroup patternId={lockedPatternId} />
+        <InsertGroup patternId={insertPatternId} />
+      </g>
+      <GroupDivider y={secondGroupY + GROUP_HEIGHT + GROUP_GAP / 2} />
+      <g transform={`translate(0, ${thirdGroupY})`}>
+        <SeatLockGroup patternId={seatLockPatternId} />
       </g>
     </svg>
   );

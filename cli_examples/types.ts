@@ -200,8 +200,17 @@ export const SQL_EXAMPLE_IDS = {
   concurrencyReservationSystemNaiveHold: sqlExampleId(
     "concurrency-reservation-system.naive-hold",
   ),
-  concurrencyReservationSystemLockedHold: sqlExampleId(
-    "concurrency-reservation-system.locked-hold",
+  concurrencyReservationSystemInsertHold: sqlExampleId(
+    "concurrency-reservation-system.insert-hold",
+  ),
+  concurrencyReservationSystemInsertConflict: sqlExampleId(
+    "concurrency-reservation-system.insert-conflict",
+  ),
+  concurrencyReservationSystemInsertWithLock: sqlExampleId(
+    "concurrency-reservation-system.insert-with-lock",
+  ),
+  concurrencyReservationSystemDisplayCount: sqlExampleId(
+    "concurrency-reservation-system.display-count",
   ),
   concurrencyReservationSystemExerciseListAvailable: sqlExampleId(
     "concurrency-reservation-system.list-available",
