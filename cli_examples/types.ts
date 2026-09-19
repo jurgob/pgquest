@@ -200,6 +200,9 @@ export const SQL_EXAMPLE_IDS = {
   concurrencyReservationSystemNaiveHold: sqlExampleId(
     "concurrency-reservation-system.naive-hold",
   ),
+  concurrencyReservationSystemRollbackDemo: sqlExampleId(
+    "concurrency-reservation-system.rollback-demo",
+  ),
   concurrencyReservationSystemInsertHold: sqlExampleId(
     "concurrency-reservation-system.insert-hold",
   ),

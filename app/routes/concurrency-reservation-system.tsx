@@ -8,6 +8,7 @@ import {
   insertWithLockQuery,
   migration,
   naiveHoldQuery,
+  rollbackDemoQuery,
   seed,
 } from "../../cli_examples/concurrency-reservation-system.sql";
 import { ConcurrencyComparisonDiagram } from "../sql/concurrency-timeline-diagram";
@@ -35,6 +36,14 @@ export default function ConcurrencyReservationSystem() {
   const naiveExecution = useLessonSqlExample({
     query: naiveHoldQuery,
     sqlLoad: databaseInit.query,
+  });
+  const rollbackDemoExecution = useLessonSqlExample({
+    query: rollbackDemoQuery,
+    sqlLoad: databaseInitWithHold.query,
+  });
+  const rollbackCheckExecution = useLessonSqlExample({
+    query: displayCountQuery,
+    sqlLoad: databaseInitWithHold.query,
   });
   const insertHoldExecution = useLessonSqlExample({
     query: insertHoldQuery,
@@ -290,7 +299,38 @@ export default function ConcurrencyReservationSystem() {
             explicit <InlineCode>BEGIN</InlineCode> spanning multiple statements, there's
             nothing for it to protect.
           </p>
+          <p>
+            Concretely: say the first operation succeeds and the second one fails. Does
+            the first operation stay applied? Here, seat 1 is already held by Ada. Grace's
+            attempt does two things — decrement <InlineCode>seat_available</InlineCode>,
+            then insert her own hold on the same seat:
+          </p>
         </Paragraphs>
+        <SqlCodeViewer
+          code={rollbackDemoQuery}
+          databaseInitId={databaseInitWithHold.id}
+        />
+        <div className="mt-4">
+          <SqlResult execution={rollbackDemoExecution} />
+        </div>
+        <Paragraph>
+          Operation 2 fails — the primary key rejects it. Postgres doesn't apply operation
+          1 and skip operation 2; it discards operation 1 too, the moment operation 2
+          errors. Checking the counter afterward proves it — still{" "}
+          <InlineCode>0</InlineCode>, not <InlineCode>-1</InlineCode>:
+        </Paragraph>
+        <SqlCodeViewer
+          code={displayCountQuery}
+          databaseInitId={databaseInitWithHold.id}
+        />
+        <div className="mt-4">
+          <SqlResult execution={rollbackCheckExecution} />
+        </div>
+        <Paragraph>
+          That's what <InlineCode>BEGIN</InlineCode> and <InlineCode>COMMIT</InlineCode>{" "}
+          are for: everything in between is all-or-nothing. Now here's the full{" "}
+          <InlineCode>holdSeat</InlineCode>, wrapped the same way:
+        </Paragraph>
         <SqlCodeViewer code={naiveHoldQuery} databaseInitId={databaseInit.id} />
         <div className="mt-4">
           <SqlResult execution={naiveExecution} />

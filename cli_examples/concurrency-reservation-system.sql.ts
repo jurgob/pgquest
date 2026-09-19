@@ -62,6 +62,16 @@ FROM event
 WHERE id = '${EVENT_ID}';
 `;
 
+export const rollbackDemoQuery = `
+BEGIN;
+-- Operation 1: succeeds, for now.
+UPDATE event SET seat_available = seat_available - 1 WHERE id = '${EVENT_ID}';
+-- Operation 2: fails — seat 1 already has a reservation row (Ada's hold).
+INSERT INTO reservation (event_id, seat_id, user_id, status, holding_date)
+VALUES ('${EVENT_ID}', 1, '${GRACE_ID}', 'H', now());
+COMMIT;
+`;
+
 export const naiveHoldQuery = `
 -- The booking transaction happens between BEGIN and COMMIT.
 BEGIN;
@@ -114,6 +124,13 @@ export const databaseInitWithHold: SqlExample = {
 export const database_inits = [databaseInit, databaseInitWithHold] as const;
 
 export const examples: SqlExample[] = [
+  {
+    id: SQL_EXAMPLE_IDS.concurrencyReservationSystemRollbackDemo,
+    name: "A failed operation rolls back the whole transaction",
+    description: "Operation 1 succeeds, operation 2 fails — both get undone.",
+    database_init: databaseInitWithHold,
+    query: rollbackDemoQuery,
+  },
   {
     id: SQL_EXAMPLE_IDS.concurrencyReservationSystemNaiveHold,
     name: "Naive hold (no FOR UPDATE)",
