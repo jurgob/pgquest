@@ -21,6 +21,7 @@ import {
   Paragraph,
   Paragraphs,
   Section,
+  slugify,
   Title2,
 } from "../sql/lesson-layout";
 import { CourseLessonPage } from "../sql/course-lesson-page";
@@ -91,7 +92,7 @@ export default function TypesOfJoins() {
       </Paragraphs>
 
       <Section>
-        <Title2>Types of JOIN</Title2>
+        <Title2 id="types-of-join">Types of JOIN</Title2>
         <div className="mt-3 overflow-auto">
           <table className="w-full border-collapse text-left text-sm">
             <thead>
@@ -121,7 +122,7 @@ export default function TypesOfJoins() {
       </Section>
 
       <LessonSection>
-        <Title2>A real scenario</Title2>
+        <Title2 id="a-real-scenario">A real scenario</Title2>
         <Paragraphs>
           <p>
             Some authors have no book yet, and one book has no listed author. Watch what
@@ -169,7 +170,7 @@ function PreviewTable({ name, query }: { name: string; query: string }) {
 
   return (
     <div>
-      <Title2>{name}</Title2>
+      <Title2 id={slugify(name)}>{name}</Title2>
       <SqlCodeViewer code={query} databaseInitId={databaseInit.id} />
       <div className="mt-4">
         <SqlResult execution={execution} />
@@ -186,7 +187,7 @@ function CrossJoinExample() {
 
   return (
     <LessonSection>
-      <Title2>CROSS JOIN</Title2>
+      <Title2 id="cross-join">CROSS JOIN</Title2>
       <Paragraph>
         No <InlineCode>ON</InlineCode> clause, so nothing is matched or excluded: every
         author pairs with every book. 3 authors × 4 books = 12 rows.
@@ -220,7 +221,7 @@ function JoinExample({
 
   return (
     <LessonSection>
-      <Title2>{keyword}</Title2>
+      <Title2 id={slugify(keyword)}>{keyword}</Title2>
       <Paragraph>{description}</Paragraph>
       <SqlCodeViewer code={query} databaseInitId={databaseInit.id} />
       <div className="mt-4 grid gap-6 md:grid-cols-[312px_1fr] md:items-start">

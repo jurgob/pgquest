@@ -164,7 +164,7 @@ export default function Lesson2() {
       </Paragraphs>
 
       <Section>
-        <Title2>List schemas (empty database)</Title2>
+        <Title2 id="list-schemas-empty">List schemas (empty database)</Title2>
         <Paragraph>
           A schema groups database objects such as tables inside one database. Given a
           fresh Postgres database <strong>where no migration has run yet</strong>,
@@ -185,7 +185,7 @@ export default function Lesson2() {
       </Section>
 
       <LessonSection>
-        <Title2>Create the schemas (migration)</Title2>
+        <Title2 id="create-schemas-migration">Create the schemas (migration)</Title2>
         <Paragraph>
           With <InlineCode>CREATE SCHEMA</InlineCode> we can pick a name other than the
           default public for a schema. Most of the time, a service&apos;s migrations only
@@ -204,7 +204,7 @@ export default function Lesson2() {
       </LessonSection>
 
       <LessonSection>
-        <Title2>List schemas (after migration)</Title2>
+        <Title2 id="list-schemas-after-migration">List schemas (after migration)</Title2>
         <Paragraph>
           The migration above was just applied twice in a row before this query ran, and
           nothing broke. Same query as before, now against a migrated database.
@@ -219,7 +219,7 @@ export default function Lesson2() {
       </LessonSection>
 
       <LessonSection>
-        <Title2>Setting the default schema</Title2>
+        <Title2 id="setting-default-schema">Setting the default schema</Title2>
         <Paragraph>
           Yes, you can change which schema unqualified names resolve to:{" "}
           <InlineCode>SET search_path</InlineCode> picks the search order. Here we point
@@ -242,7 +242,7 @@ export default function Lesson2() {
       </LessonSection>
 
       <LessonSection>
-        <Title2>A cross-schema join</Title2>
+        <Title2 id="cross-schema-join">A cross-schema join</Title2>
         <Paragraph>
           Joining across schemas works exactly like joining tables in the same schema — a
           schema is a naming namespace, not a query boundary. This finds which book each
@@ -262,7 +262,7 @@ export default function Lesson2() {
       </LessonSection>
 
       <LessonSection>
-        <Title2>List tables</Title2>
+        <Title2 id="list-tables">List tables</Title2>
         <Paragraph>
           information_schema.tables shows the tables visible in each schema.
         </Paragraph>
@@ -275,7 +275,7 @@ export default function Lesson2() {
       </LessonSection>
 
       <LessonSection>
-        <Title2>Inspect table shape</Title2>
+        <Title2 id="inspect-table-shape">Inspect table shape</Title2>
         <Paragraph>
           information_schema.columns shows each column name, type, and nullability.
         </Paragraph>
@@ -288,7 +288,7 @@ export default function Lesson2() {
       </LessonSection>
 
       <LessonSection>
-        <Title2>Putting it together</Title2>
+        <Title2 id="putting-it-together">Putting it together</Title2>
         <Paragraph>
           You don&apos;t need to read the migration to know the shape of these tables.
           Joining <InlineCode>information_schema.tables</InlineCode> and{" "}
@@ -345,7 +345,9 @@ export default function Lesson2() {
       </LessonSection>
 
       <LessonSection>
-        <Title2>Finding primary keys: information_schema</Title2>
+        <Title2 id="primary-keys-information-schema">
+          Finding primary keys: information_schema
+        </Title2>
         <Paragraph>
           The portable, ANSI-SQL-standard way — works the same on any SQL database, not
           just Postgres.
@@ -362,7 +364,9 @@ export default function Lesson2() {
       </LessonSection>
 
       <LessonSection>
-        <Title2>Finding primary keys: pg_constraint</Title2>
+        <Title2 id="primary-keys-pg-constraint">
+          Finding primary keys: pg_constraint
+        </Title2>
         <Paragraph>
           Postgres&apos; own catalog, the one <InlineCode>information_schema</InlineCode>{" "}
           is built on top of. Not portable, but simpler and faster.
@@ -379,7 +383,7 @@ export default function Lesson2() {
       </LessonSection>
 
       <LessonSection>
-        <Title2>Finding primary keys: pg_index</Title2>
+        <Title2 id="primary-keys-pg-index">Finding primary keys: pg_index</Title2>
         <Paragraph>
           A primary key is always backed by a unique index, so you can find it there too —
           useful when you care about the index itself.

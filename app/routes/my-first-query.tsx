@@ -133,7 +133,7 @@ export default function LessonOne() {
       </Paragraphs>
 
       <Section>
-        <Title2>Migration</Title2>
+        <Title2 id="migration">Migration</Title2>
         <Paragraph>
           A migration defines the table schema before the application uses the database.
           It is SQL usually run during deployment or setup; CREATE TABLE creates the
@@ -143,7 +143,7 @@ export default function LessonOne() {
       </Section>
 
       <Section>
-        <Title2>Seed</Title2>
+        <Title2 id="seed">Seed</Title2>
         <Paragraph>
           A seed inserts initial or example data after the schema exists. It is also SQL,
           but it runs after migrations so there is a table to insert into.
@@ -152,7 +152,7 @@ export default function LessonOne() {
       </Section>
 
       <Section>
-        <Title2>Query</Title2>
+        <Title2 id="basic-query">Query</Title2>
         <Paragraph>
           Once the table and rows exist, this SELECT reads every user back without a
           filter.
@@ -163,7 +163,7 @@ export default function LessonOne() {
       <SqlResult execution={exampleOne} />
 
       <Section>
-        <Title2>Explanation</Title2>
+        <Title2 id="basic-query-explanation">Explanation</Title2>
         <Paragraph>
           Add <InlineCode>EXPLAIN</InlineCode> before a query to ask PostgreSQL how it
           plans to run it. Plain <InlineCode>EXPLAIN</InlineCode> does not execute the
@@ -252,7 +252,7 @@ export default function LessonOne() {
         </Paragraphs>
 
         <Section>
-          <Title2>Reading a relation</Title2>
+          <Title2 id="reading-a-relation">Reading a relation</Title2>
           <Paragraph>
             This statement produces a result containing rows from the
             <InlineCode className="mx-1">"User"</InlineCode> table:
@@ -261,7 +261,7 @@ export default function LessonOne() {
         </Section>
 
         <Section>
-          <Title2>Changing a relation</Title2>
+          <Title2 id="changing-a-relation">Changing a relation</Title2>
           <Paragraph>
             This statement changes the stored
             <InlineCode className="mx-1">"User"</InlineCode> table by adding a row.
@@ -306,7 +306,9 @@ export default function LessonOne() {
 
       <LessonSection>
         <div>
-          <Title2>Let's select a specific user by email</Title2>
+          <Title2 id="select-specific-user-by-email">
+            Let's select a specific user by email
+          </Title2>
           <Paragraphs>
             <p>
               Instead of reading every user, we can filter the table by a known email.
@@ -315,7 +317,7 @@ export default function LessonOne() {
           </Paragraphs>
         </div>
         <Section>
-          <Title2>Query</Title2>
+          <Title2 id="specific-select-query">Query</Title2>
           <Paragraph>
             This SELECT looks for one user whose email matches the value in the WHERE
             clause.
@@ -324,7 +326,7 @@ export default function LessonOne() {
         </Section>
         <SqlResult execution={exampleOneSpecific} />
         <Section>
-          <Title2>Explanation</Title2>
+          <Title2 id="specific-select-explanation">Explanation</Title2>
           <SqlCodeViewer code={"EXPLAIN " + exampleOneSpecificQuery.trim()} />
           <SqlPlan execution={exampleOneSpecific} />
           <div className="mt-3 text-base leading-7 text-zinc-700">
@@ -346,7 +348,7 @@ export default function LessonOne() {
 
       <LessonSection>
         <div>
-          <Title2>Insert a new user</Title2>
+          <Title2 id="insert-a-new-user">Insert a new user</Title2>
           <Paragraphs>
             <p>
               Tables are not only for reading data. You can also insert new rows into
@@ -363,7 +365,7 @@ export default function LessonOne() {
           </Paragraphs>
         </div>
         <Section>
-          <Title2>Query</Title2>
+          <Title2 id="insert-query">Query</Title2>
           <Paragraph>
             This INSERT creates a new user and returns the row PostgreSQL added.
           </Paragraph>
@@ -371,7 +373,7 @@ export default function LessonOne() {
         </Section>
         <SqlResult execution={exampleOneInsert} />
         <Section>
-          <Title2>Explanation</Title2>
+          <Title2 id="insert-explanation">Explanation</Title2>
           <SqlCodeViewer code={"EXPLAIN " + exampleOneInsertQuery.trim()} />
           <div className="mt-3 text-base leading-7 text-zinc-700">
             <p>

@@ -106,7 +106,7 @@ export default function ExampleThree() {
       </Paragraphs>
 
       <Section>
-        <Title2>Migration</Title2>
+        <Title2 id="migration">Migration</Title2>
         <Paragraph>As you can see, the only difference is the index.</Paragraph>
         <div className="mt-4 flex flex-col gap-5">
           <div className="min-w-0">
@@ -125,7 +125,7 @@ export default function ExampleThree() {
       </Section>
 
       <Section>
-        <Title2>Seed</Title2>
+        <Title2 id="seed">Seed</Title2>
         <Paragraph>
           Both databases use the same seed data, then analyze the table so the planner has
           statistics.
@@ -134,19 +134,19 @@ export default function ExampleThree() {
       </Section>
 
       <Section>
-        <Title2>Query</Title2>
+        <Title2 id="query">Query</Title2>
         <Paragraph>This is the same email lookup query on both databases.</Paragraph>
         <SqlCodeViewer code={exampleThreeIndexedQuery} />
       </Section>
 
       <Section>
-        <Title2>Result</Title2>
+        <Title2 id="result">Result</Title2>
         <Paragraph>The query returns the same row either way.</Paragraph>
         <SqlResult execution={indexed} />
       </Section>
 
       <Section>
-        <Title2>Explain</Title2>
+        <Title2 id="explain">Explain</Title2>
         <Paragraph>The result is the same, but the plan is different.</Paragraph>
         <SqlCodeViewer code={"EXPLAIN " + exampleThreeIndexedQuery.trim()} />
         <div className="mt-4 flex flex-col gap-5">

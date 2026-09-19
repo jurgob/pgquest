@@ -52,7 +52,7 @@ export function ExampleBlock({ example }: { example: SqlExample }) {
 
   return (
     <Section>
-      <Title2>{example.name}</Title2>
+      <Title2 id={example.id}>{example.name}</Title2>
       <Paragraph>{example.description}</Paragraph>
       <div className="mt-4">
         <SqlCodeViewer code={example.query} databaseInitId={example.database_init?.id} />

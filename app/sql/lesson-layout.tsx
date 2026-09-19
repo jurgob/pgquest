@@ -70,7 +70,7 @@ export function WhatWeLearned({
 
   return (
     <section className="mt-6 border-t border-zinc-200 pt-8">
-      <Title2>What We Learned</Title2>
+      <Title2 id="what-we-learned">What We Learned</Title2>
       <ul className="mt-5 flex flex-col gap-5">
         {items.map((item) => (
           <li className="text-base leading-7 text-zinc-800" key={item.concept}>
@@ -118,18 +118,22 @@ export function DraftBadge() {
   );
 }
 
-export function Title2({
-  children,
-  id,
-}: {
-  children: React.ReactNode;
-  id?: string | undefined;
-}) {
+export function Title2({ children, id }: { children: React.ReactNode; id: string }) {
   return (
     <h2 className="text-2xl font-bold text-zinc-950" id={id}>
-      {children}
+      <a className="hover:underline" href={`#${id}`}>
+        {children}
+      </a>
     </h2>
   );
+}
+
+export function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }
 
 export function Paragraph({ children }: { children: React.ReactNode }) {
@@ -232,7 +236,7 @@ export function TryYourself({
       {exercises?.length ? (
         <section className="mt-8 border-t border-zinc-200 pt-6">
           <div className="flex items-baseline gap-4">
-            <Title2>Exercises</Title2>
+            <Title2 id="exercises">Exercises</Title2>
             <span className="font-mono text-sm uppercase tracking-wide text-zinc-500">
               {completedCount} OF {exercises.length} DONE
             </span>

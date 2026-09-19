@@ -121,7 +121,7 @@ export default function ConcurrencyReservationSystem() {
       </Paragraphs>
 
       <Section>
-        <Title2>The problem we are solving</Title2>
+        <Title2 id="the-problem-we-are-solving">The problem we are solving</Title2>
         <ProblemCallout>
           <p>
             We want to design and develop the REST API service that will manage the event
@@ -180,7 +180,9 @@ export default function ConcurrencyReservationSystem() {
       </Section>
 
       <Section>
-        <Title2>Setting expectations: rejection is fine, double-booking is not</Title2>
+        <Title2 id="setting-expectations">
+          Setting expectations: rejection is fine, double-booking is not
+        </Title2>
         <Paragraphs>
           <p>
             Under real concurrent load, some booking attempts will fail — and that's fine.
@@ -245,7 +247,7 @@ export default function ConcurrencyReservationSystem() {
       </Section>
 
       <Section>
-        <Title2>Modeling the problem</Title2>
+        <Title2 id="modeling-the-problem">Modeling the problem</Title2>
         <Paragraphs>
           <p>
             Four tables. <InlineCode>&quot;user&quot;</InlineCode> is a catalog.{" "}
@@ -278,12 +280,12 @@ export default function ConcurrencyReservationSystem() {
       </Section>
 
       <Section>
-        <Title2>The functions we'll implement</Title2>
+        <Title2 id="the-functions-well-implement">The functions we'll implement</Title2>
         <Paragraphs>
           <p>In a program, you'd have these functions:</p>
         </Paragraphs>
         <div className="pt-8">
-          <Title2>
+          <Title2 id="hold-seat">
             <InlineCode className="text-xl">holdSeat(eventId, seatId, userId)</InlineCode>
           </Title2>
         </div>
@@ -298,7 +300,7 @@ export default function ConcurrencyReservationSystem() {
           <SqlCodeViewer code={holdQuery} />
         </div>
         <div className="pt-8">
-          <Title2>
+          <Title2 id="refresh-hold-seat">
             <InlineCode className="text-xl">
               refreshHoldSeat(eventId, seatId, userId)
             </InlineCode>
@@ -308,7 +310,7 @@ export default function ConcurrencyReservationSystem() {
           <SqlCodeViewer code={refreshQuery} />
         </div>
         <div className="pt-8">
-          <Title2>
+          <Title2 id="reserve-seat">
             <InlineCode className="text-xl">
               reserveSeat(eventId, seatId, userId)
             </InlineCode>
@@ -318,7 +320,7 @@ export default function ConcurrencyReservationSystem() {
           <SqlCodeViewer code={reserveQuery} />
         </div>
         <div className="pt-8">
-          <Title2>
+          <Title2 id="get-available-seats">
             <InlineCode className="text-xl">getAvailableSeats(eventId)</InlineCode>
           </Title2>
         </div>
@@ -328,7 +330,7 @@ export default function ConcurrencyReservationSystem() {
       </Section>
 
       <LessonSection>
-        <Title2>Holding a seat</Title2>
+        <Title2 id="holding-a-seat">Holding a seat</Title2>
         <Paragraphs>
           <p>
             Holding is trickier than it looks: we want to grab the seat if it's free,{" "}
@@ -382,7 +384,9 @@ export default function ConcurrencyReservationSystem() {
       </LessonSection>
 
       <LessonSection>
-        <Title2>Reserving: confirm only if you still hold it</Title2>
+        <Title2 id="reserving-confirm-only-if-you-still-hold-it">
+          Reserving: confirm only if you still hold it
+        </Title2>
         <Paragraphs>
           <p>
             Reserving is where a naive implementation overbooks. Near the expiry deadline,
@@ -414,7 +418,7 @@ export default function ConcurrencyReservationSystem() {
       </LessonSection>
 
       <LessonSection>
-        <Title2>Listing available seats</Title2>
+        <Title2 id="listing-available-seats">Listing available seats</Title2>
         <Paragraphs>
           <p>
             A seat is available if it has no reservation row at all, <em>or</em> if its
@@ -436,7 +440,9 @@ export default function ConcurrencyReservationSystem() {
       </LessonSection>
 
       <LessonSection>
-        <Title2>When you actually need a lock: FOR UPDATE</Title2>
+        <Title2 id="when-you-need-a-lock-for-update">
+          When you actually need a lock: FOR UPDATE
+        </Title2>
         <Paragraphs>
           <p>
             Every operation so far was a single guarded statement, so we never reached for

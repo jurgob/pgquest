@@ -16,7 +16,7 @@ export function DraftLessonPage({ lessonId }: { lessonId: LessonId }) {
       </Paragraphs>
 
       <Section>
-        <Title2>Draft</Title2>
+        <Title2 id="draft">Draft</Title2>
         <Paragraph>
           This lesson is part of the course catalogue, but the full walkthrough and
           exercises are not written yet.
