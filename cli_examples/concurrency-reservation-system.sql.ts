@@ -117,10 +117,12 @@ BEGIN;
 SELECT * FROM seat WHERE id = 2 FOR UPDATE;
 -- Check while holding that lock: is this seat already held or reserved?
 SELECT * FROM reservation WHERE event_id = '${EVENT_ID}' AND seat_id = 2;
--- No row found — app code proceeds. If one had come back, it would raise its
--- own "seat unavailable" error right here instead of attempting the insert.
+-- No row found — app code proceeds. This is the exact same INSERT as the
+-- insert-only approach above; the SELECT ... FOR UPDATE and check are all we
+-- added. If a row had come back, we'd raise our own "seat unavailable" error
+-- right here instead of attempting the insert.
 INSERT INTO reservation (event_id, seat_id, user_id, status, holding_date)
-VALUES ('${EVENT_ID}', 2, '${ADA_ID}', 'H', now());
+VALUES ('${EVENT_ID}', 2, '${GRACE_ID}', 'H', now());
 COMMIT;
 -- Just returning something to visualize the result.
 SELECT * FROM reservation WHERE event_id = '${EVENT_ID}' AND seat_id = 2;
