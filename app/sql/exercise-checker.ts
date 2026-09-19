@@ -6,6 +6,7 @@ const unavailablePlan = "Unavailable for a multi-statement SQL example.";
 
 type ExerciseCheckBaseInput = {
   databasePreload: string;
+  ignoreColumns?: readonly string[] | undefined;
   userCode: string;
 };
 
@@ -52,6 +53,7 @@ async function runExerciseCheck({
   databasePreload,
   exerciseCode,
   expectedOutput: precomputedExpectedOutput,
+  ignoreColumns,
   userCode,
 }: ExerciseCheckInput): Promise<ExerciseCheckSuccess> {
   const userResultPromise = runSqlQuery(
@@ -74,7 +76,7 @@ async function runExerciseCheck({
   const expectedOutput =
     precomputedExpectedOutput ?? unwrapExpectedResult(expectedResult);
 
-  if (!sameRows(userOutput.rows, expectedOutput.rows)) {
+  if (!sameRows(userOutput.rows, expectedOutput.rows, ignoreColumns)) {
     return {
       expectedOutput,
       reason: "result-mismatch",
@@ -122,6 +124,32 @@ function unwrapExpectedResult(
   return unwrapExecutionOutput(result);
 }
 
-function sameRows(left: ExecutionOutput["rows"], right: ExecutionOutput["rows"]) {
-  return JSON.stringify(left) === JSON.stringify(right);
+function sameRows(
+  left: ExecutionOutput["rows"],
+  right: ExecutionOutput["rows"],
+  ignoreColumns?: readonly string[] | undefined,
+) {
+  return (
+    JSON.stringify(dropColumns(left, ignoreColumns)) ===
+    JSON.stringify(dropColumns(right, ignoreColumns))
+  );
+}
+
+function dropColumns(
+  rows: ExecutionOutput["rows"],
+  columns?: readonly string[] | undefined,
+) {
+  if (!columns?.length) {
+    return rows;
+  }
+
+  return rows.map((row) => {
+    const next = { ...row };
+
+    for (const column of columns) {
+      delete next[column];
+    }
+
+    return next;
+  });
 }

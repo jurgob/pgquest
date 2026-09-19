@@ -161,7 +161,7 @@ SELECT count(*) AS actively_held_seats
 FROM reservation
 WHERE user_id = '${GRACE_ID}' AND event_id = '${EVENT_ID}'
   AND status = 'H' AND holding_date > now() - ${HOLD_TTL};
--- App: if actively_held_seats < the limit, run the hold INSERT; otherwise reject.
+-- App: if actively_held_seats is under the limit, run the hold INSERT — otherwise reject.
 COMMIT;
 `;
 
@@ -239,6 +239,7 @@ export const exercises: SqlExample[] = [
     description:
       "Refresh Grace's hold on seat A2 — push holding_date to now(), but only while the hold is still hers and not expired. Return the row.",
     database_init: databaseInitGraceHold,
+    ignoreColumns: ["holding_date"],
     query: refreshQuery,
   },
 ];

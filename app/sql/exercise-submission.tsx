@@ -67,6 +67,7 @@ export function useExerciseSubmission({
       void exerciseCheck({
         databasePreload,
         expectedOutput: expectedOutputResult.value,
+        ignoreColumns: exercise.ignoreColumns,
         userCode: query,
       }).then((checkResult) => {
         checkResult.match(

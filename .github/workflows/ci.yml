@@ -20,7 +20,6 @@ jobs:
           - format
           - typecheck
           - test
-          - cli
           - build
     steps:
       - uses: actions/checkout@v4

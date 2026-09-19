@@ -6,6 +6,10 @@ import type { ExecutionOutput, ExplainRow, QueryRow, SqlExecutionInput } from ".
 
 let timingId = 0;
 
+function isTimingEnabled() {
+  return import.meta.env?.DEV && import.meta.env.MODE !== "test";
+}
+
 export function runSqlExample(example: SqlExample) {
   return runSqlQuery(
     { query: example.query, sqlLoad: example.database_init?.query ?? "" },
@@ -31,7 +35,7 @@ export function runSqlQueryOnDatabase(db: PGliteInterface, query: string) {
 
 export async function createSqlDatabase(sqlLoad: string, signal?: AbortSignal) {
   const timer = `pglite-init-${++timingId}`;
-  if (import.meta.env?.DEV) {
+  if (isTimingEnabled()) {
     console.time(timer);
   }
 
@@ -60,7 +64,7 @@ export async function createSqlDatabase(sqlLoad: string, signal?: AbortSignal) {
     await db.close();
     throw error;
   } finally {
-    if (import.meta.env?.DEV) {
+    if (isTimingEnabled()) {
       console.timeEnd(timer);
     }
   }
@@ -72,7 +76,7 @@ async function executeSqlQuery(
   signal?: AbortSignal,
 ): Promise<ExecutionOutput> {
   const timer = `lesson-query-${++timingId}`;
-  if (import.meta.env?.DEV) {
+  if (isTimingEnabled()) {
     console.time(timer);
   }
 
@@ -82,7 +86,7 @@ async function executeSqlQuery(
     return await executeSqlQueryOnDatabase(db, query, signal);
   } finally {
     await db.close();
-    if (import.meta.env?.DEV) {
+    if (isTimingEnabled()) {
       console.timeEnd(timer);
     }
   }
@@ -108,17 +112,24 @@ async function executeSqlQueryOnDatabase(
 
   const result = await db.query<QueryRow>(finalStatement);
   throwIfAborted(signal);
-  const explainResult = isMultiStatement
-    ? undefined
-    : await db.query<ExplainRow>(`EXPLAIN ${query}`);
+  const plan = isMultiStatement
+    ? "Unavailable for a multi-statement SQL example."
+    : await explainQuery(db, query);
   throwIfAborted(signal);
 
   return {
     rows: result.rows,
-    plan:
-      explainResult?.rows.map((row) => row["QUERY PLAN"]).join("\n") ??
-      "Unavailable for a multi-statement SQL example.",
+    plan,
   };
+}
+
+async function explainQuery(db: PGliteInterface, query: string) {
+  try {
+    const explainResult = await db.query<ExplainRow>(`EXPLAIN ${query}`);
+    return explainResult.rows.map((row) => row["QUERY PLAN"]).join("\n");
+  } catch (error) {
+    return `Unavailable: ${error instanceof Error ? error.message : String(error)}`;
+  }
 }
 
 function throwIfAborted(signal?: AbortSignal) {

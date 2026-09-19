@@ -236,6 +236,8 @@ export type SqlExample = {
   id: SqlExampleId;
   description: string;
   database_init?: SqlExample;
+  // Columns to drop from rows before comparing an exercise answer (e.g. a now()-set column).
+  ignoreColumns?: readonly string[];
   query: string;
 };
 
