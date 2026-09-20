@@ -8,60 +8,65 @@ type SiteHeaderProps = {
   activeLesson?: LessonId;
 };
 
+// Fixed square so every nav link (icon or lesson number) lines up in a
+// uniform grid; w-8 comfortably fits a 2-digit lesson number up to 99.
+const navSquareClass =
+  "inline-flex h-8 w-8 items-center justify-center rounded-sm border border-zinc-500 text-white no-underline transition hover:border-white hover:bg-white hover:text-zinc-950";
+
 export function SiteHeader({ activeLesson }: SiteHeaderProps) {
   return (
     <header className="bg-[#222222] text-white">
-      <div className="relative mx-auto flex w-full max-w-6xl flex-col gap-2 px-5 py-4 pr-16 sm:pr-24">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-2 px-5 py-4">
         <NavLink className="flex w-fit items-center text-white no-underline" to="/">
-          <span className="text-3xl font-bold">PgQuest</span>
+          <img alt="" className="h-11 w-11" src="/favicon.svg" />
+          <span className="text-3xl font-bold">gQuest</span>
         </NavLink>
-        <img
-          alt=""
-          className="pointer-events-none absolute right-5 top-1/2 h-12 w-12 -translate-y-1/2 sm:h-20 sm:w-20"
-          src="/favicon.svg"
-        />
 
-        <nav className="flex flex-wrap items-center gap-2 text-sm text-zinc-300">
-          <NavLink
-            aria-label="Home"
-            className="inline-flex h-7 w-7 items-center justify-center rounded-sm border border-zinc-500 text-white no-underline transition hover:border-white hover:bg-white hover:text-zinc-950"
-            title="Home"
-            to="/"
-          >
-            <HomeIcon />
-          </NavLink>
-          <NavLink
-            aria-label="Playground"
-            className="inline-flex h-7 w-7 items-center justify-center rounded-sm border border-zinc-500 text-white no-underline transition hover:border-white hover:bg-white hover:text-zinc-950"
-            title="Playground"
-            to="/playground"
-          >
-            <PlaygroundIcon />
-          </NavLink>
-          <NavLink
-            aria-label="Search"
-            className="inline-flex h-7 w-7 items-center justify-center rounded-sm border border-zinc-500 text-white no-underline transition hover:border-white hover:bg-white hover:text-zinc-950"
-            title="Search"
-            to="/search"
-          >
-            <SearchIcon />
-          </NavLink>
-          {lessonSummaries.map((lesson) => (
-            <LessonNavLink
-              active={activeLesson === lesson.id}
-              key={lesson.id}
-              lesson={lesson}
-            />
-          ))}
-          <NavLink
-            aria-label="Feedback"
-            className="ml-auto inline-flex h-7 items-center justify-center rounded-sm border border-zinc-500 px-2 text-white no-underline transition hover:border-white hover:bg-white hover:text-zinc-950"
-            title="Feedback"
-            to="/feedback"
-          >
-            <FeedbackIcon />
-            <span className="ml-1.5 hidden sm:inline">Feedback</span>
-          </NavLink>
+        <nav className="@container flex flex-wrap items-start gap-x-6 gap-y-2 text-sm text-zinc-300">
+          <div className="flex flex-wrap gap-2">
+            <NavLink aria-label="Home" className={navSquareClass} title="Home" to="/">
+              <HomeIcon />
+            </NavLink>
+            <NavLink
+              aria-label="Playground"
+              className={navSquareClass}
+              title="Playground"
+              to="/playground"
+            >
+              <PlaygroundIcon />
+            </NavLink>
+            <NavLink
+              aria-label="Search"
+              className={navSquareClass}
+              title="Search"
+              to="/search"
+            >
+              <SearchIcon />
+            </NavLink>
+            <NavLink
+              aria-label="Feedback"
+              className={navSquareClass}
+              title="Feedback"
+              to="/feedback"
+            >
+              <FeedbackIcon />
+            </NavLink>
+          </div>
+
+          <div
+            aria-hidden="true"
+            className="hidden self-stretch border-l border-zinc-700 @min-[950px]:block"
+          />
+
+          <div className="flex flex-wrap gap-2">
+            {lessonSummaries.map((lesson) => (
+              <LessonNavLink
+                active={activeLesson === lesson.id}
+                key={lesson.id}
+                lesson={lesson}
+              />
+            ))}
+          </div>
         </nav>
       </div>
     </header>
@@ -80,7 +85,7 @@ function LessonNavLink({
   return (
     <NavLink
       className={[
-        "inline-flex h-7 min-w-7 items-center justify-center rounded-sm border border-zinc-500 px-2 text-white no-underline transition hover:border-white hover:bg-white hover:text-zinc-950",
+        navSquareClass,
         progress.isComplete
           ? "relative border-emerald-400 bg-emerald-950 text-emerald-100 hover:border-emerald-300 hover:bg-emerald-900 hover:text-white"
           : "",
