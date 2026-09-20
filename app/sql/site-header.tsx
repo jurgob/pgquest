@@ -38,6 +38,14 @@ export function SiteHeader({ activeLesson }: SiteHeaderProps) {
           >
             <PlaygroundIcon />
           </NavLink>
+          <NavLink
+            aria-label="Search"
+            className="inline-flex h-7 w-7 items-center justify-center rounded-sm border border-zinc-500 text-white no-underline transition hover:border-white hover:bg-white hover:text-zinc-950"
+            title="Search"
+            to="/search"
+          >
+            <SearchIcon />
+          </NavLink>
           {lessonSummaries.map((lesson) => (
             <LessonNavLink
               active={activeLesson === lesson.id}
@@ -45,6 +53,15 @@ export function SiteHeader({ activeLesson }: SiteHeaderProps) {
               lesson={lesson}
             />
           ))}
+          <NavLink
+            aria-label="Feedback"
+            className="ml-auto inline-flex h-7 items-center justify-center rounded-sm border border-zinc-500 px-2 text-white no-underline transition hover:border-white hover:bg-white hover:text-zinc-950"
+            title="Feedback"
+            to="/feedback"
+          >
+            <FeedbackIcon />
+            <span className="ml-1.5 hidden sm:inline">Feedback</span>
+          </NavLink>
         </nav>
       </div>
     </header>
@@ -97,6 +114,34 @@ function PlaygroundIcon() {
     <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24">
       <path
         d="M7 4h10M9 4v5l-4 7a2 2 0 0 0 1.7 3h10.6A2 2 0 0 0 19 16l-4-7V4M8 14h8"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.8"
+      />
+    </svg>
+  );
+}
+
+function SearchIcon() {
+  return (
+    <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24">
+      <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="1.8" />
+      <path
+        d="m20 20-3.5-3.5"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="1.8"
+      />
+    </svg>
+  );
+}
+
+function FeedbackIcon() {
+  return (
+    <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24">
+      <path
+        d="M4 5h16v11H8l-4 4V5Z"
         stroke="currentColor"
         strokeLinecap="round"
         strokeLinejoin="round"

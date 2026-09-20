@@ -22,9 +22,27 @@
     "cli": {
       "outputs": []
     },
+    "search:index": {
+      "inputs": [
+        "scripts/build-search-index.tsx",
+        "app/routes/**",
+        "app/sql/**",
+        "cli_examples/**",
+        "vite.cli.config.ts"
+      ],
+      "outputs": ["app/sql/search-index.generated.json"]
+    },
     "build": {
-      "dependsOn": ["typecheck"],
+      "dependsOn": ["typecheck", "search:index"],
       "outputs": ["build/**"]
+    },
+    "dev:app": {
+      "cache": false,
+      "persistent": true
+    },
+    "dev:native:app": {
+      "cache": false,
+      "persistent": true
     }
   }
 }

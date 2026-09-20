@@ -5,6 +5,8 @@ export default [
   index("routes/home.tsx"),
   ...lessons.map((lesson) => route(`lessons/${lesson.slug}`, lesson.routeModule)),
   route("playground", "routes/playground.tsx"),
+  route("search", "routes/search.tsx"),
+  route("feedback", "routes/feedback.tsx"),
   route("dbviewer", "routes/dbviewer.tsx", { id: "dbviewer" }),
   route("dbviewer/:databaseInitId", "routes/dbviewer.tsx", { id: "dbviewer-with-id" }),
   route("health", "routes/health.tsx"),
