@@ -267,10 +267,9 @@ export const lessons: readonly LessonCatalogItem[] = [
     cliExampleModule: "concurrency-reservation-system.sql.ts",
     href: "/lessons/concurrency-reservation-system",
     summary:
-      "Model a seat reservation system and use transactions with SELECT ... FOR UPDATE to close a real race condition.",
-    meta: "ACID · TRANSACTIONS · FOR UPDATE",
+      "Model a seat reservation system and use transactions with advisory locks to close a real race condition.",
+    meta: "ACID · TRANSACTIONS · ADVISORY LOCKS",
     time: "25 min",
-    draft: true,
   },
 ] as const satisfies readonly LessonCatalogItem[];
 
