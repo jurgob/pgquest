@@ -19,11 +19,11 @@ export function SiteHeader({ activeLesson }: SiteHeaderProps) {
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-2 px-5 py-4">
         <NavLink className="flex w-fit items-center text-white no-underline" to="/">
           <img alt="" className="h-11 w-11" src="/favicon.svg" />
-          <span className="text-3xl font-bold">gQuest</span>
+          <span className="-ml-2.5 text-3xl font-bold">gQuest</span>
         </NavLink>
 
-        <nav className="@container flex flex-wrap items-start gap-x-6 gap-y-2 text-sm text-zinc-300">
-          <div className="flex flex-wrap gap-2">
+        <nav className="grid grid-cols-[auto_auto_1fr] items-stretch gap-x-6 gap-y-2 text-sm text-zinc-300">
+          <div className="grid auto-rows-min grid-cols-2 content-start gap-2">
             <NavLink aria-label="Home" className={navSquareClass} title="Home" to="/">
               <HomeIcon />
             </NavLink>
@@ -53,12 +53,9 @@ export function SiteHeader({ activeLesson }: SiteHeaderProps) {
             </NavLink>
           </div>
 
-          <div
-            aria-hidden="true"
-            className="hidden self-stretch border-l border-zinc-700 @min-[950px]:block"
-          />
+          <div aria-hidden="true" className="w-px bg-zinc-700" />
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap content-start gap-2">
             {lessonSummaries.map((lesson) => (
               <LessonNavLink
                 active={activeLesson === lesson.id}
