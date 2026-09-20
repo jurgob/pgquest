@@ -23,7 +23,7 @@ export function SiteHeader({ activeLesson }: SiteHeaderProps) {
         </NavLink>
 
         <nav className="grid grid-cols-[auto_auto_1fr] items-stretch gap-x-6 gap-y-2 text-sm text-zinc-300">
-          <div className="grid auto-rows-min grid-cols-2 content-start gap-2">
+          <div className="grid auto-rows-min grid-cols-2 content-start gap-2 sm:flex sm:flex-row sm:gap-2">
             <NavLink aria-label="Home" className={navSquareClass} title="Home" to="/">
               <HomeIcon />
             </NavLink>
