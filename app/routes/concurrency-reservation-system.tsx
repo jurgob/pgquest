@@ -519,7 +519,7 @@ export default function ConcurrencyReservationSystem() {
           <p>
             The index on <InlineCode>(event_id, user_id, holding_date)</InlineCode>,
             restricted to <InlineCode>status = &apos;H&apos;</InlineCode>, supports the
-            live-hold lookup. The example's maximum is two, so{" "}
+            live-hold lookup. The example&apos;s maximum is two, so{" "}
             <InlineCode>LIMIT 2</InlineCode>
             inside the counted subquery stops after two matches. For a maximum of 100, use{" "}
             <InlineCode>LIMIT 100</InlineCode> and compare the count with 100. The expiry

@@ -8,9 +8,6 @@ const BOB_ID = "44444444-4444-4444-4444-444444444444";
 // A hold lives for 30 seconds. Expiry is a rule, not a delete: a hold only
 // counts while holding_date is newer than this window.
 const HOLD_TTL = "interval '30 seconds'";
-// An application setting. This lesson uses two so the example stays small.
-const MAX_LIVE_HOLDS = 2;
-
 // ---- Schema, table by table (seats scoped to the event, no counter) ----
 const userTable = `CREATE TABLE "user" (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -176,7 +173,7 @@ ORDER BY seat.id;
 `;
 
 // The count and write run AFTER acquiring the coordination lock, and the lock
-// stays held until the write commits. Change MAX_LIVE_HOLDS for a larger limit.
+// stays held until the write commits.
 export const holdLimitQuery = `${lockUserEvent}
 
 INSERT INTO reservation (event_id, seat_id, user_id, status, holding_date)
@@ -187,9 +184,9 @@ WHERE (
     WHERE event_id = '${EVENT_ID}' AND user_id = '${GRACE_ID}'
       AND status = 'H'
       AND holding_date > statement_timestamp() - ${HOLD_TTL}
-    LIMIT ${MAX_LIVE_HOLDS}
+    LIMIT 2 -- Maximum live holds per user per event. Change both 2s for another limit.
   ) AS live_holds
-) < ${MAX_LIVE_HOLDS}
+) < 2
 ON CONFLICT (event_id, seat_id) DO UPDATE
   SET user_id = EXCLUDED.user_id,
       holding_date = EXCLUDED.holding_date, status = 'H'
