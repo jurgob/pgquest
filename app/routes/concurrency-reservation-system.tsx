@@ -303,8 +303,9 @@ export default function ConcurrencyReservationSystem() {
         </div>
         <div className="pl-6">
           <Paragraph>
-            Lock the user/event pair, check a limit of two live holds, and take the seat
-            before committing. This is the complete operation:
+            Lock the user/event pair, check the configured maximum number of live holds,
+            and take the seat before committing. This example sets the maximum to two so
+            the result is easy to inspect:
           </Paragraph>
           <SqlCodeViewer code={holdLimitQuery} />
         </div>
@@ -518,10 +519,12 @@ export default function ConcurrencyReservationSystem() {
           <p>
             The index on <InlineCode>(event_id, user_id, holding_date)</InlineCode>,
             restricted to <InlineCode>status = &apos;H&apos;</InlineCode>, supports the
-            live-hold lookup. We only need to know whether two holds exist, so
-            <InlineCode>LIMIT 2</InlineCode> inside the counted subquery stops after two
-            matches. The expiry cutoff belongs in the query: a partial index cannot
-            automatically remove entries as time passes.
+            live-hold lookup. The example's maximum is two, so{" "}
+            <InlineCode>LIMIT 2</InlineCode>
+            inside the counted subquery stops after two matches. For a maximum of 100, use{" "}
+            <InlineCode>LIMIT 100</InlineCode> and compare the count with 100. The expiry
+            cutoff belongs in the query: a partial index cannot automatically remove
+            entries as time passes.
           </p>
         </Paragraphs>
 
@@ -536,6 +539,19 @@ export default function ConcurrencyReservationSystem() {
             reservation's unique key still resolving competition for the same seat.
             Atomicity, advisory locks, row locks, and statement snapshots each do a
             different part of the work.
+          </p>
+          <p>
+            This is the shape every remaining hard case takes — postponing an expiry,
+            confirming right at the deadline, any &quot;check several rows then
+            decide.&quot; It&apos;s also exactly what Redis struggles with: its{" "}
+            <InlineCode>GET</InlineCode>/<InlineCode>SET</InlineCode> pairs aren&apos;t
+            atomic, and its handful of compare-and-set operators can&apos;t express
+            &quot;read these rows under a lock, then write.&quot; In Postgres it&apos;s
+            one clause.
+          </p>
+          <p>
+            To implement this in Redis, you need a Lua script or Redis Function to make
+            the multi-key check and write atomic.
           </p>
         </Paragraphs>
       </LessonSection>
