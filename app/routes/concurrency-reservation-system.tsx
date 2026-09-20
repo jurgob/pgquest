@@ -9,7 +9,7 @@ import {
   holdRejectedQuery,
   listAvailableQuery,
   migration,
-  refreshQuery,
+  refreshWithLimitQuery,
   reserveQuery,
   seed,
 } from "../../cli_examples/concurrency-reservation-system.sql";
@@ -90,7 +90,7 @@ export default function ConcurrencyReservationSystem() {
         {
           concept: "Guarded UPDATE",
           description:
-            "putting every precondition in the WHERE clause re-checks it at write time, so a single statement is race-free without any lock.",
+            "checking ownership and status in the WHERE clause protects a single seat; UPDATE takes a row lock automatically.",
           url: "https://www.postgresql.org/docs/current/sql-update.html",
         },
         {
@@ -99,15 +99,15 @@ export default function ConcurrencyReservationSystem() {
             "a hold counts only while holding_date is newer than the window; nothing has to delete it on a timer.",
         },
         {
-          concept: "SELECT ... FOR UPDATE",
+          concept: "pg_advisory_xact_lock",
           description:
-            "declares intent to read a row and then write based on it; Postgres blocks intermediate writes until you commit — the fix for count-then-insert.",
-          url: "https://www.postgresql.org/docs/current/sql-select.html#SQL-FOR-UPDATE-SHARE",
+            "coordinates holds and refreshes for the same user/event pair; the lock releases automatically on commit or rollback.",
+          url: "https://www.postgresql.org/docs/current/explicit-locking.html#ADVISORY-LOCKS",
         },
         {
           concept: "Atomicity",
           description:
-            "a single SQL statement is serialized by the database, so what you check and what you write can't drift apart underneath you.",
+            "the transaction commits all its changes or none; isolation and locking determine how concurrent transactions interact.",
           url: "https://en.wikipedia.org/wiki/Atomicity_(database_systems)",
         },
       ]}
@@ -259,6 +259,11 @@ export default function ConcurrencyReservationSystem() {
             <InlineCode>R</InlineCode> (reserved).
           </p>
           <p>
+            A transaction-scoped advisory lock will coordinate requests for each
+            user/event pair, even when that user has no reservations yet. A partial index
+            on reservation holds makes the limit lookup efficient.
+          </p>
+          <p>
             The single most important line is{" "}
             <InlineCode>PRIMARY KEY (event_id, seat_id)</InlineCode>. It means a seat can
             have <strong>at most one</strong> reservation row — so two people can never
@@ -272,9 +277,16 @@ export default function ConcurrencyReservationSystem() {
           Crucially, expiry is a <strong>rule, not a background job</strong>: we never
           delete a hold on a timer. A hold simply <em>counts</em> only while its{" "}
           <InlineCode>holding_date</InlineCode> is newer than{" "}
-          <InlineCode>now() - interval &apos;30 seconds&apos;</InlineCode>. Once it's
-          older than that, the seat is free again — the row can just sit there until
-          someone takes it over.
+          <InlineCode>statement_timestamp() - interval &apos;30 seconds&apos;</InlineCode>
+          . Once it's older than that, the seat is free again — the row can just sit there
+          until someone takes it over.
+        </Paragraph>
+        <Paragraph>
+          These examples evaluate expiry at the start of the operation's SQL statement.
+          <InlineCode>now()</InlineCode> is fixed at the start of the transaction, so it
+          can be stale after waiting for a lock. Send the lock command and the subsequent
+          write as separate commands on the same connection, and keep transactions short:
+          a hold can expire before a slow transaction commits.
         </Paragraph>
         <SqlCodeViewer code={seed} />
       </Section>
@@ -291,13 +303,10 @@ export default function ConcurrencyReservationSystem() {
         </div>
         <div className="pl-6">
           <Paragraph>
-            First, check the user isn't already at their hold limit for this event:
+            Lock the user/event pair, check a limit of two live holds, and take the seat
+            before committing. This is the complete operation:
           </Paragraph>
           <SqlCodeViewer code={holdLimitQuery} />
-          <div className="pt-6">
-            <Paragraph>Then take the seat:</Paragraph>
-          </div>
-          <SqlCodeViewer code={holdQuery} />
         </div>
         <div className="pt-8">
           <Title2 id="refresh-hold-seat">
@@ -307,7 +316,7 @@ export default function ConcurrencyReservationSystem() {
           </Title2>
         </div>
         <div className="pl-6">
-          <SqlCodeViewer code={refreshQuery} />
+          <SqlCodeViewer code={refreshWithLimitQuery} />
         </div>
         <div className="pt-8">
           <Title2 id="reserve-seat">
@@ -344,8 +353,10 @@ export default function ConcurrencyReservationSystem() {
             Instead we do it in <strong>one statement</strong>. The primary key turns the
             insert into an upsert: if a row already exists,{" "}
             <InlineCode>ON CONFLICT DO UPDATE</InlineCode> takes over — but only when its{" "}
-            <InlineCode>WHERE</InlineCode> says the existing hold has expired. A single
-            statement is serialized by the database, so there is no gap to race in.
+            <InlineCode>WHERE</InlineCode> says the existing hold has expired. The unique
+            constraint and the lock on the conflicting reservation protect this seat. This
+            standalone statement doesn't enforce the user's hold limit; the transaction
+            above adds that protection.
           </p>
           <p>
             <InlineCode>EXCLUDED</InlineCode> is a pseudo-table Postgres exposes inside{" "}
@@ -398,9 +409,9 @@ export default function ConcurrencyReservationSystem() {
           <p>
             So we put every precondition in the <InlineCode>WHERE</InlineCode>: it's still
             an <InlineCode>H</InlineCode> row, still <em>yours</em>, and still within the
-            window. Postgres re-evaluates that at write time, so if your hold expired a
-            millisecond ago the update matches nothing — you're rejected instead of
-            overbooking:
+            window at the statement's start. If another writer changes the row while we
+            wait, Postgres checks the updated row against these conditions. A hold that
+            was already expired when this statement began matches nothing:
           </p>
         </Paragraphs>
         <SqlCodeViewer code={reserveQuery} databaseInitId={databaseInitGraceHold.id} />
@@ -441,15 +452,14 @@ export default function ConcurrencyReservationSystem() {
 
       <LessonSection>
         <Title2 id="when-you-need-a-lock-for-update">
-          When you actually need a lock: FOR UPDATE
+          When you actually need a lock: advisory locks
         </Title2>
         <Paragraphs>
           <p>
-            Every operation so far was a single guarded statement, so we never reached for
-            a lock — the database serialized each one for us. One requirement doesn't fit
-            that shape: <strong>limit how many seats a user can hold</strong>. That's{" "}
-            <em>count, then insert</em> — a genuine read-then-write across rows, and the
-            two steps can't be folded into one statement.
+            The upsert and guarded updates use row locks automatically to protect a single
+            seat. The <strong>per-user hold limit</strong> spans several seats: two
+            requests can write different reservation rows and never conflict. Putting a
+            count and an insert in one statement alone doesn't prevent that race.
           </p>
           <p>
             Run it naively and two concurrent requests from the same user both read the
@@ -460,12 +470,58 @@ export default function ConcurrencyReservationSystem() {
         <SqlCodeViewer code={holdLimitQuery} databaseInitId={databaseInit.id} />
         <Paragraphs>
           <p>
-            <InlineCode>SELECT ... FOR UPDATE</InlineCode> is the fix. It tells Postgres
-            "I'm going to read this row and then write based on it" — so from the moment
-            you read it until you commit, no other transaction can slip a write in
-            between. Lock the <InlineCode>user</InlineCode> row first and the two requests
-            take turns: the second one blocks, then reads the <em>real</em> count and
-            rejects.
+            Both requests first call <InlineCode>pg_advisory_xact_lock</InlineCode>
+            with the same key for this user/event pair. The second request waits until the
+            first commits or rolls back, releasing its lock. At{" "}
+            <InlineCode>READ COMMITTED</InlineCode>, its subsequent statement gets a fresh
+            snapshot that includes the first request's committed hold. Acquiring the lock
+            in a CTE inside the count statement would retain a snapshot from before the
+            wait.
+          </p>
+          <p>
+            The check and seat insert must finish in this same transaction, on the same
+            connection. Committing after the count and inserting afterward releases the
+            lock too early. A zero-row insert means either the user is at the limit or the
+            seat is unavailable; report success only after commit.
+          </p>
+          <p>
+            This is a coordination rule: an advisory lock does not automatically lock
+            reservations. Every path that creates a hold or extends its expiry must
+            acquire the same lock first. That's why the refresh operation above also uses
+            it. Confirming a reservation only reduces the number of holds, so its guarded
+            update can stand alone.
+          </p>
+          <p>
+            Locking the <InlineCode>user</InlineCode> row would also queue that user's
+            requests for unrelated events, and <InlineCode>FOR UPDATE</InlineCode>
+            conflicts with foreign-key checks referencing that user. The advisory lock
+            coordinates the user/event pair without a persistent lock row. Use the
+            transaction-scoped function shown here: a session-scoped advisory lock would
+            survive commit and rollback until explicitly released or the connection
+            closes.
+          </p>
+          <p>
+            Our IDs are UUIDs, while this advisory-lock function accepts a 64-bit integer.{" "}
+            <InlineCode>hashtextextended</InlineCode> hashes a namespaced string
+            containing the event UUID followed by the user UUID, with seed zero. Casting
+            through <InlineCode>uuid::text</InlineCode> gives a canonical spelling. Every
+            caller must use this same key recipe. A hash collision makes unrelated pairs
+            wait for each other; it does not allow two requests for the same pair to
+            bypass the lock.
+          </p>
+          <p>
+            Keep the explicit <InlineCode>READ COMMITTED</InlineCode> setting. An advisory
+            lock does not refresh a transaction's snapshot under{" "}
+            <InlineCode>REPEATABLE READ</InlineCode>, so changing the isolation level
+            would invalidate this count-and-insert strategy.
+          </p>
+          <p>
+            The index on <InlineCode>(event_id, user_id, holding_date)</InlineCode>,
+            restricted to <InlineCode>status = &apos;H&apos;</InlineCode>, supports the
+            live-hold lookup. We only need to know whether two holds exist, so
+            <InlineCode>LIMIT 2</InlineCode> inside the counted subquery stops after two
+            matches. The expiry cutoff belongs in the query: a partial index cannot
+            automatically remove entries as time passes.
           </p>
         </Paragraphs>
 
@@ -475,12 +531,11 @@ export default function ConcurrencyReservationSystem() {
 
         <Paragraphs>
           <p>
-            This is the shape every remaining hard case takes — postponing an expiry,
-            confirming right at the deadline, any "check several rows then decide." It's
-            also exactly what Redis struggles with: its <InlineCode>GET</InlineCode>/
-            <InlineCode>SET</InlineCode> pairs aren't atomic, and its handful of
-            compare-and-set operators can't express "read these rows under a lock, then
-            write." In Postgres it's one clause.
+            The lock makes concurrent holds and refreshes for the same user/event pair
+            take turns. Pairs with different lock keys can proceed independently, with the
+            reservation's unique key still resolving competition for the same seat.
+            Atomicity, advisory locks, row locks, and statement snapshots each do a
+            different part of the work.
           </p>
         </Paragraphs>
       </LessonSection>

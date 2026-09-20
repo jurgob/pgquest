@@ -197,7 +197,7 @@ function LimitBrokenCallout({ centerX }: { centerX: number }) {
         x={centerX}
         y={GAP_MID_Y + 8}
       >
-        user now holds 2 &gt; limit 1
+        user now holds 3 &gt; limit 2
       </text>
       <line
         stroke="#ef4444"
@@ -215,17 +215,17 @@ function LimitBrokenCallout({ centerX }: { centerX: number }) {
   );
 }
 
-// Two concurrent hold requests from the SAME user, limit = 1, no lock.
+// Two concurrent hold requests from the SAME user, limit = 2, no lock.
 function NoLockGroup({ patternId }: { patternId: string }) {
   const laneASteps: Step[] = [
     { label: "BEGIN", variant: "neutral", width: 60, x: 120 },
-    { label: "SELECT count (=0)", variant: "read", width: 120, x: 190 },
+    { label: "count (=1)", variant: "read", width: 120, x: 190 },
     { label: "INSERT hold A2", variant: "neutral", width: 120, x: 320 },
     { label: "COMMIT", variant: "commit", width: 70, x: 450 },
   ];
   const laneBSteps: Step[] = [
     { label: "BEGIN", variant: "neutral", width: 60, x: 134 },
-    { label: "SELECT count (=0)", variant: "read", width: 120, x: 204 },
+    { label: "count (=1)", variant: "read", width: 120, x: 204 },
     { label: "INSERT hold A3", variant: "overbook", width: 120, x: 560 },
     { label: "COMMIT", variant: "overbook", width: 70, x: 690 },
   ];
@@ -233,10 +233,10 @@ function NoLockGroup({ patternId }: { patternId: string }) {
   return (
     <g>
       <HatchDefs patternId={patternId} />
-      <GroupTitle label="PER-USER LIMIT WITHOUT FOR UPDATE" />
+      <GroupTitle label="PER-USER LIMIT WITHOUT AN ADVISORY LOCK" />
       {/* Both read the count before either commits its INSERT. */}
       <HighlightBand fill="#38bdf8" width={134} x={190} />
-      <GapLabel className="fill-sky-700 font-bold" text="both count 0 (stale)" x={257} />
+      <GapLabel className="fill-sky-700 font-bold" text="both count 1 (stale)" x={257} />
       <Lane
         hatchPatternId={patternId}
         label="Hold request 1"
@@ -245,7 +245,7 @@ function NoLockGroup({ patternId }: { patternId: string }) {
       />
       <Lane
         hatchPatternId={patternId}
-        label="Hold request 2 (same user)"
+        label="Hold request 2 (same user/event)"
         steps={laneBSteps}
         y={LANE_B_Y}
       />
@@ -254,31 +254,31 @@ function NoLockGroup({ patternId }: { patternId: string }) {
   );
 }
 
-// Same two requests, but the user row is locked first with FOR UPDATE.
+// Same two requests, but the user/event pair is locked first with an advisory lock.
 function WithLockGroup({ patternId }: { patternId: string }) {
   const laneASteps: Step[] = [
     { label: "BEGIN", variant: "neutral", width: 60, x: 120 },
-    { label: "SELECT user FOR UPDATE", variant: "lock-read", width: 150, x: 190 },
-    { label: "SELECT count (=0)", variant: "read", width: 110, x: 348 },
+    { label: "advisory lock", variant: "lock-read", width: 150, x: 190 },
+    { label: "count (=1)", variant: "read", width: 110, x: 348 },
     { label: "INSERT hold", variant: "neutral", width: 90, x: 466 },
     { label: "COMMIT", variant: "commit", width: 70, x: 564 },
   ];
   const laneBSteps: Step[] = [
     { label: "BEGIN", variant: "neutral", width: 60, x: 134 },
-    { label: "blocked, user row locked", variant: "blocked", width: 362, x: 202 },
-    { label: "SELECT count (=1)", variant: "read", width: 110, x: 572 },
+    { label: "blocked, same advisory key", variant: "blocked", width: 362, x: 202 },
+    { label: "count (=2)", variant: "read", width: 110, x: 572 },
     { label: "reject: at limit", variant: "reject", width: 170, x: 690 },
   ];
 
   return (
     <g>
       <HatchDefs patternId={patternId} />
-      <GroupTitle label="PER-USER LIMIT WITH FOR UPDATE" />
-      {/* The user row stays locked by A from its FOR UPDATE until it commits. */}
+      <GroupTitle label="PER-USER LIMIT WITH AN ADVISORY LOCK" />
+      {/* A holds the transaction-scoped advisory lock until it commits. */}
       <HighlightBand fill="#8b5cf6" width={374} x={190} />
       <GapLabel
         className="fill-violet-700 font-bold"
-        text="user row locked by A · B blocked until A commits"
+        text="advisory lock held by A · B blocked until A commits"
         x={377}
       />
       <UnblockMarker x={564} />
@@ -290,7 +290,7 @@ function WithLockGroup({ patternId }: { patternId: string }) {
       />
       <Lane
         hatchPatternId={patternId}
-        label="Hold request 2 (same user)"
+        label="Hold request 2 (same user/event)"
         steps={laneBSteps}
         y={LANE_B_Y}
       />
@@ -310,7 +310,7 @@ export function ConcurrencyComparisonDiagram() {
 
   return (
     <svg
-      aria-label="Two timelines of a per-user hold limit: without FOR UPDATE both concurrent requests read a stale count and exceed the limit; with FOR UPDATE the second request blocks, then sees the real count and is rejected"
+      aria-label="Two timelines of a per-user hold limit: without an advisory lock both concurrent requests read a stale count and exceed the limit; with an advisory lock the second request blocks, then sees the real count and is rejected"
       className="h-auto w-full"
       role="img"
       viewBox={`0 0 900 ${totalHeight}`}

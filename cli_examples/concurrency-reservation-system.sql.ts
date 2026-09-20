@@ -38,6 +38,10 @@ const reservationTable = `CREATE TABLE reservation (
   PRIMARY KEY (event_id, seat_id)
 );`;
 
+const holdIndex = `CREATE INDEX reservation_live_hold_lookup
+ON reservation (event_id, user_id, holding_date)
+WHERE status = 'H';`;
+
 export const migration = `${userTable}
 
 ${eventTable}
@@ -45,6 +49,8 @@ ${eventTable}
 ${seatTable}
 
 ${reservationTable}
+
+${holdIndex}
 `;
 
 export const seed = `INSERT INTO "user" (id, name)
@@ -67,7 +73,7 @@ VALUES
 // ageSeconds >= 30 makes it already expired.
 const seedHoldOnSeatTwo = (userId: string, ageSeconds: number) =>
   `INSERT INTO reservation (event_id, seat_id, user_id, status, holding_date)
-VALUES ('${EVENT_ID}', 2, '${userId}', 'H', now() - interval '${ageSeconds} seconds');`;
+VALUES ('${EVENT_ID}', 2, '${userId}', 'H', statement_timestamp() - interval '${ageSeconds} seconds');`;
 
 export const databaseInit: SqlExample = {
   id: SQL_EXAMPLE_IDS.concurrencyReservationSystemDatabaseInit,
@@ -101,15 +107,15 @@ export const databaseInitGraceHold: SqlExample = {
 // ---- Operations ----
 
 // Hold: take the seat if free, or take over an EXPIRED hold — atomically.
-// One statement, so the database serializes it: no read-then-write gap.
+// The unique key and conflict-row lock protect this seat, not the per-user limit.
 const holdQueryFor = (
   userId: string,
 ) => `INSERT INTO reservation (event_id, seat_id, user_id, status, holding_date)
-VALUES ('${EVENT_ID}', 2, '${userId}', 'H', now())
+VALUES ('${EVENT_ID}', 2, '${userId}', 'H', statement_timestamp())
 ON CONFLICT (event_id, seat_id) DO UPDATE
-  SET user_id = EXCLUDED.user_id, holding_date = now(), status = 'H'
+  SET user_id = EXCLUDED.user_id, holding_date = statement_timestamp(), status = 'H'
   WHERE reservation.status = 'H'
-    AND reservation.holding_date <= now() - ${HOLD_TTL}
+    AND reservation.holding_date <= statement_timestamp() - ${HOLD_TTL}
 RETURNING *;
 `;
 
@@ -121,20 +127,37 @@ export const holdRejectedQuery = holdQueryFor(BOB_ID);
 
 // Reserve (confirm H -> R): only if I still hold it and it hasn't expired.
 export const reserveQuery = `UPDATE reservation
-SET status = 'R', reservation_date = now()
+SET status = 'R', reservation_date = statement_timestamp()
 WHERE event_id = '${EVENT_ID}' AND seat_id = 2 AND user_id = '${GRACE_ID}'
   AND status = 'H'
-  AND holding_date > now() - ${HOLD_TTL}
+  AND holding_date > statement_timestamp() - ${HOLD_TTL}
 RETURNING *;
 `;
 
-// Refresh a hold: push the expiry out, only while it is still mine and live.
+// Send these commands separately on the same connection. The statement after
+// the lock gets a fresh READ COMMITTED snapshot and statement timestamp.
+const lockUserEvent = `BEGIN ISOLATION LEVEL READ COMMITTED;
+-- Use the same namespace, UUID order, and hash seed in every hold/refresh path.
+SELECT pg_advisory_xact_lock(hashtextextended(
+  'reservation-hold:' || '${EVENT_ID}'::uuid::text
+    || ':' || '${GRACE_ID}'::uuid::text,
+  0
+));`;
+
+// Refresh must use the same lock as hold acquisition: extending a hold can
+// change whether a concurrent hold request counts it as live.
 export const refreshQuery = `UPDATE reservation
-SET holding_date = now()
+SET holding_date = statement_timestamp()
 WHERE event_id = '${EVENT_ID}' AND seat_id = 2 AND user_id = '${GRACE_ID}'
   AND status = 'H'
-  AND holding_date > now() - ${HOLD_TTL}
+  AND holding_date > statement_timestamp() - ${HOLD_TTL}
 RETURNING *;
+`;
+
+export const refreshWithLimitQuery = `${lockUserEvent}
+
+${refreshQuery}
+COMMIT;
 `;
 
 // Available = no reservation row, or a hold that has already expired.
@@ -145,23 +168,32 @@ LEFT JOIN reservation
 WHERE seat.event_id = '${EVENT_ID}'
   AND (
     reservation.seat_id IS NULL
-    OR (reservation.status = 'H' AND reservation.holding_date <= now() - ${HOLD_TTL})
+    OR (reservation.status = 'H' AND reservation.holding_date <= statement_timestamp() - ${HOLD_TTL})
   )
 ORDER BY seat.id;
 `;
 
-// Per-user hold limit: count-then-insert is a real read-then-write, so lock
-// the user row first with FOR UPDATE to serialize a user's concurrent holds.
-export const holdLimitQuery = `BEGIN;
--- Declare intent: read this user, then write based on it. Concurrent holds for
--- the same user now take turns instead of both passing a stale count.
-SELECT id FROM "user" WHERE id = '${GRACE_ID}' FOR UPDATE;
--- Count the user's live holds for this event.
-SELECT count(*) AS actively_held_seats
-FROM reservation
-WHERE user_id = '${GRACE_ID}' AND event_id = '${EVENT_ID}'
-  AND status = 'H' AND holding_date > now() - ${HOLD_TTL};
--- App: if actively_held_seats is under the limit, run the hold INSERT — otherwise reject.
+// Limit = 2. The count and write run AFTER acquiring the coordination lock,
+// and the lock stays held until the write commits.
+export const holdLimitQuery = `${lockUserEvent}
+
+INSERT INTO reservation (event_id, seat_id, user_id, status, holding_date)
+SELECT '${EVENT_ID}', 2, '${GRACE_ID}', 'H', statement_timestamp()
+WHERE (
+  SELECT count(*) FROM (
+    SELECT 1 FROM reservation
+    WHERE event_id = '${EVENT_ID}' AND user_id = '${GRACE_ID}'
+      AND status = 'H'
+      AND holding_date > statement_timestamp() - ${HOLD_TTL}
+    LIMIT 2
+  ) AS live_holds
+) < 2
+ON CONFLICT (event_id, seat_id) DO UPDATE
+  SET user_id = EXCLUDED.user_id,
+      holding_date = EXCLUDED.holding_date, status = 'H'
+  WHERE reservation.status = 'H'
+    AND reservation.holding_date <= statement_timestamp() - ${HOLD_TTL}
+RETURNING *;
 COMMIT;
 `;
 
@@ -217,8 +249,9 @@ export const examples: SqlExample[] = [
   },
   {
     id: SQL_EXAMPLE_IDS.concurrencyReservationSystemHoldLimit,
-    name: "Per-user hold limit (FOR UPDATE)",
-    description: "Lock the user row, count live holds, then decide — serialized.",
+    name: "Per-user hold limit (advisory lock)",
+    description:
+      "Lock the user/event pair, check the two-seat limit, and take A2 before committing.",
     database_init: databaseInit,
     query: holdLimitQuery,
   },
@@ -237,7 +270,7 @@ export const exercises: SqlExample[] = [
     id: SQL_EXAMPLE_IDS.concurrencyReservationSystemExerciseRefresh,
     name: "Exercise 2",
     description:
-      "Refresh Grace's hold on seat A2 — push holding_date to now(), but only while the hold is still hers and not expired. Return the row.",
+      "Refresh Grace's hold on seat A2 — push holding_date to statement_timestamp(), but only while the hold is still hers and not expired. Return the row.",
     database_init: databaseInitGraceHold,
     ignoreColumns: ["holding_date"],
     query: refreshQuery,
