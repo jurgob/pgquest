@@ -271,6 +271,20 @@ export const lessons: readonly LessonCatalogItem[] = [
     meta: "ACID · TRANSACTIONS · ADVISORY LOCKS",
     time: "25 min",
   },
+  {
+    id: "transaction-isolation-levels",
+    label: "Lesson 19",
+    number: "19",
+    title: "Transaction isolation levels",
+    slug: "transaction-isolation-levels",
+    routeModule: "routes/transaction-isolation-levels.tsx",
+    cliExampleModule: "transaction-isolation-levels.sql.ts",
+    href: "/lessons/transaction-isolation-levels",
+    summary:
+      "See what READ COMMITTED, REPEATABLE READ, and SERIALIZABLE actually let concurrent transactions see, with a bug only SERIALIZABLE catches.",
+    meta: "ISOLATION LEVELS · WRITE SKEW",
+    time: "20 min",
+  },
 ] as const satisfies readonly LessonCatalogItem[];
 
 export const lessonSummaries = lessons.map(({ id, number, title, href }) => ({

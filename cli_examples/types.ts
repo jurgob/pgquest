@@ -228,6 +228,18 @@ export const SQL_EXAMPLE_IDS = {
   concurrencyReservationSystemExerciseRefresh: sqlExampleId(
     "concurrency-reservation-system.exercise-refresh",
   ),
+  transactionIsolationLevelsDatabaseInit: sqlExampleId(
+    "transaction-isolation-levels.database-init",
+  ),
+  transactionIsolationLevelsAliceAlone: sqlExampleId(
+    "transaction-isolation-levels.alice-alone",
+  ),
+  transactionIsolationLevelsExerciseOnCallNames: sqlExampleId(
+    "transaction-isolation-levels.on-call-names",
+  ),
+  transactionIsolationLevelsExerciseSerializableShow: sqlExampleId(
+    "transaction-isolation-levels.serializable-show",
+  ),
   emptyDatabase: sqlExampleId("empty-database.database-init"),
 } as const;
 

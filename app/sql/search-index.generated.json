@@ -814,5 +814,71 @@
     "heading": "What We Learned",
     "lessonId": "concurrency-reservation-system",
     "text": "Primary key (event_id, seat_id) one reservation row per seat, so two people can never both book the same seat — the double-booking invariant holds by construction. INSERT ... ON CONFLICT DO UPDATE upsert: take the seat if free, or take over an expired hold — atomically, in one statement, with no read-then-write gap. EXCLUDED the pseudo-table holding the row you tried to insert, available inside DO UPDATE — lets the update refer back to the values you were writing. Guarded UPDATE checking ownership and status in the WHERE clause protects a single seat; UPDATE takes a row lock automatically. Expiry as a rule a hold counts only while holding_date is newer than the window; nothing has to delete it on a timer. pg_advisory_xact_lock coordinates holds and refreshes for the same user/event pair; the lock releases automatically on commit or rollback. Atomicity the transaction commits all its changes or none; isolation and locking determine how concurrent transactions interact."
+  },
+  {
+    "anchor": null,
+    "heading": null,
+    "lessonId": "transaction-isolation-levels",
+    "text": "Transaction isolation levels Every transaction runs at one of four isolation levels. The level decides one thing: how much of what other, concurrent transactions are doing your transaction is allowed to see. Postgres implements only three of them for real — READ UNCOMMITTED is accepted for standards compliance and silently upgraded. Here's what each one actually guarantees, from the official docs : Isolation level What your transaction sees READ UNCOMMITTED Accepted, but treated exactly like READ COMMITTED. Postgres has no dirty reads. READ COMMITTED (default) Every statement re-reads the latest committed data, even mid-transaction. REPEATABLE READ The whole transaction sees one snapshot, frozen at its first query. SERIALIZABLE Same frozen snapshot, plus conflict detection: as if transactions ran one at a time."
+  },
+  {
+    "anchor": "the-scenario",
+    "heading": "The scenario",
+    "lessonId": "transaction-isolation-levels",
+    "text": "Alice and Bob are both on call. The rule: at least one engineer must always be on call. Before going off call, each of them checks \"is someone else still covering?\" — and only steps down if the answer is yes."
+  },
+  {
+    "anchor": "check-then-act",
+    "heading": "Check, then act",
+    "lessonId": "transaction-isolation-levels",
+    "text": "Run alone, Alice's script is completely ordinary: check, then update, then commit. Loaded Database: transaction-isolation-levels.database-init"
+  },
+  {
+    "anchor": "the-race",
+    "heading": "The race",
+    "lessonId": "transaction-isolation-levels",
+    "text": "Now imagine Bob's transaction interleaved with Alice's, in this order: Alice starts her transaction and runs Step 1: Check — sees 1 (Bob is on call). Bob starts his own transaction and runs his Step 1: Check — sees 1 (Alice is on call). Bob runs Step 2: Update and commits — Bob is off call. Alice, still holding her Step 1 answer, runs Step 2: Update and commits — Alice is off call too. This playground can't run two sessions at once — the engine underneath is single-connection — so the diagram and scripts below show what two real, concurrent sessions would do, the same way the Postgres docs present two-session examples: as a script to read, not to run."
+  },
+  {
+    "anchor": "read-uncommitted",
+    "heading": "READ UNCOMMITTED / READ COMMITTED",
+    "lessonId": "transaction-isolation-levels",
+    "text": "Both behave the same way here: neither Alice nor Bob ever look again after their first check, so both go off call."
+  },
+  {
+    "anchor": "read-committed",
+    "heading": "READ COMMITTED (default)",
+    "lessonId": "transaction-isolation-levels",
+    "text": "Same outcome — the default isolation level does not help here."
+  },
+  {
+    "anchor": "repeatable-read",
+    "heading": "REPEATABLE READ",
+    "lessonId": "transaction-isolation-levels",
+    "text": "This is the surprising one. Freezing the snapshot doesn't stop the bug — it just means neither transaction would have noticed the change even if it had looked again. The invariant still breaks."
+  },
+  {
+    "anchor": "serializable",
+    "heading": "SERIALIZABLE",
+    "lessonId": "transaction-isolation-levels",
+    "text": "The only level that catches it. Postgres notices both transactions read a row set the other one wrote to, and refuses the second commit."
+  },
+  {
+    "anchor": "tradeoffs",
+    "heading": "Choosing a level",
+    "lessonId": "transaction-isolation-levels",
+    "text": "Stricter isolation doesn't just add guarantees — it adds cost, usually in the form of more aborted transactions your application has to retry. Isolation level Protects against Cost READ UNCOMMITTED Nothing extra — identical to READ COMMITTED in Postgres. None. It's free, but also pointless to ask for. READ COMMITTED (default) Nothing beyond \"don't read uncommitted data.\" Cheapest: no extra locking, never aborts a transaction for isolation reasons. REPEATABLE READ Non-repeatable reads, phantom reads. Holds a snapshot open for the whole transaction; a concurrent write to a row you also wrote aborts your transaction immediately. SERIALIZABLE Everything above, plus write skew — a real \"as if run one at a time\" guarantee. Highest overhead: tracks read/write dependencies across every concurrent SERIALIZABLE transaction. More aborts (SQLSTATE 40001) — your app must catch and retry them. Default to READ COMMITTED unless you have a specific reason not to — it's what most queries run at anyway, including in this lesson's own scenario, where it made no difference. Reach for REPEATABLE READ when you need a consistent multi-statement read, like a report or an export. Reach for SERIALIZABLE only when you have a genuine cross-row invariant like this lesson's write-skew case — and only if your application actually retries on 40001, since without that, SERIALIZABLE just trades silent corruption for silent failure. Try Yourself Loaded Database: transaction-isolation-levels.database-init The database for this lesson is already loaded. Write any query you want and run it directly in your browser."
+  },
+  {
+    "anchor": "exercises",
+    "heading": "Exercises",
+    "lessonId": "transaction-isolation-levels",
+    "text": "0 OF 2 DONE 1. Return the names of the engineers currently on call, alphabetically. 2. Start a transaction at the SERIALIZABLE isolation level and confirm it with SHOW."
+  },
+  {
+    "anchor": "what-we-learned",
+    "heading": "What We Learned",
+    "lessonId": "transaction-isolation-levels",
+    "text": "READ COMMITTED Postgres's default. Each statement gets a fresh view of committed data, even inside an open transaction. REPEATABLE READ The whole transaction sees one snapshot taken at its first query — later commits from other transactions stay invisible to it. SERIALIZABLE Adds real conflict detection on top of REPEATABLE READ's snapshot: if the result wouldn't match some one-at-a-time ordering of the transactions, Postgres rejects one of the commits instead of allowing it. Write skew Two transactions each read a shared fact, each act on what they read, and each commit successfully — but only because neither saw the other's change. Individually valid, together wrong. SQLSTATE 40001 The error code for a SERIALIZABLE conflict. An application using SERIALIZABLE is expected to catch it and retry the transaction. SET TRANSACTION ISOLATION LEVEL Sets the isolation level for the current transaction; also settable as BEGIN ISOLATION LEVEL ... ."
   }
 ]

@@ -34,4 +34,5 @@ export type LessonId =
   | "transactions"
   | "advanced-aggregation"
   | "vectors"
-  | "concurrency-reservation-system";
+  | "concurrency-reservation-system"
+  | "transaction-isolation-levels";
