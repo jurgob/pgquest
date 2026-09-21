@@ -20,7 +20,7 @@
     "format:fix": "prettier . --write",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "prepare": "husky || true",
+    "prepare": "command -v husky >/dev/null 2>&1 && exec husky; exit 0",
     "start": "pnpm --silent config:check && react-router-serve ./build/server/index.js",
     "ship": "./scripts/ship.sh",
     "sops:config:decrypt": "vite-node --config ./vite.cli.config.ts ./scripts/sops-config-decrypt.ts",
