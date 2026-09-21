@@ -1,0 +1,35 @@
+# PgQuest is a free, interactive PostgreSQL course. Everything here is
+# meant to be crawled, read, and reused, humans and AI alike - see /license
+# for the terms, and /llms.txt for a machine-readable overview.
+
+User-agent: *
+Allow: /
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+User-agent: Amazonbot
+Allow: /
+
+Sitemap: https://pgquest.dev/sitemap.xml

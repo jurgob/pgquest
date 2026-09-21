@@ -100,6 +100,28 @@ export default function Home() {
             <LessonCard key={lesson.id} lesson={lesson} />
           ))}
         </section>
+
+        <footer className="mt-16 border-t border-zinc-200 pt-8 text-sm text-zinc-500">
+          <p>
+            Lesson content is licensed{" "}
+            <Link
+              className="text-sky-700 underline decoration-sky-300 underline-offset-2 hover:text-sky-900"
+              to="/license"
+            >
+              CC BY 4.0
+            </Link>
+            . Code is{" "}
+            <a
+              className="text-sky-700 underline decoration-sky-300 underline-offset-2 hover:text-sky-900"
+              href="https://github.com/jurgob/pgquest/blob/main/LICENSE.md"
+              rel="noreferrer"
+              target="_blank"
+            >
+              MIT
+            </a>
+            .
+          </p>
+        </footer>
       </div>
     </main>
   );

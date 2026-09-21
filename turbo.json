@@ -32,8 +32,18 @@
       ],
       "outputs": ["app/sql/search-index.generated.json"]
     },
+    "sitemap:lastmod": {
+      "inputs": [
+        "scripts/build-sitemap-lastmod.ts",
+        "app/routes/**",
+        "app/sql/lesson-catalog.ts",
+        "cli_examples/**",
+        "vite.cli.config.ts"
+      ],
+      "outputs": ["app/sql/sitemap-lastmod.generated.json"]
+    },
     "build": {
-      "dependsOn": ["typecheck", "search:index"],
+      "dependsOn": ["typecheck", "search:index", "sitemap:lastmod"],
       "outputs": ["build/**"]
     },
     "dev:app": {

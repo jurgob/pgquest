@@ -44,6 +44,10 @@ jobs:
     concurrency: fly-deploy
     steps:
       - uses: actions/checkout@v4
+        with:
+          # sitemap.xml's lastmod dates come from `git log` at build time;
+          # a shallow clone would only have the latest commit's history.
+          fetch-depth: 0
 
       - uses: superfly/flyctl-actions/setup-flyctl@master
 
