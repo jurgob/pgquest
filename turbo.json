@@ -22,7 +22,8 @@
     "cli": {
       "outputs": []
     },
-    "search:index": {
+    "build-assets:search-index": {
+      "dependsOn": ["build-assets:pgexamples"],
       "inputs": [
         "scripts/build-search-index.tsx",
         "app/routes/**",
@@ -30,9 +31,9 @@
         "cli_examples/**",
         "vite.cli.config.ts"
       ],
-      "outputs": ["app/sql/search-index.generated.json"]
+      "outputs": ["app/generated/search-index.json"]
     },
-    "sitemap:lastmod": {
+    "build-assets:sitemap": {
       "inputs": [
         "scripts/build-sitemap-lastmod.ts",
         "app/routes/**",
@@ -40,13 +41,36 @@
         "cli_examples/**",
         "vite.cli.config.ts"
       ],
-      "outputs": ["app/sql/sitemap-lastmod.generated.json"]
+      "outputs": ["app/generated/sitemap-lastmod.json"]
+    },
+    "build-assets:pgexamples": {
+      "inputs": [
+        "scripts/build-postgres-examples.ts",
+        "app/sql/lesson-catalog.ts",
+        "app/sql/run-example.ts",
+        "cli_examples/**",
+        "vite.cli.config.ts"
+      ],
+      "outputs": ["app/generated/postgres-examples.json"]
     },
     "build": {
-      "dependsOn": ["typecheck", "search:index", "sitemap:lastmod"],
+      "dependsOn": [
+        "typecheck",
+        "build-assets:search-index",
+        "build-assets:sitemap",
+        "build-assets:pgexamples"
+      ],
       "outputs": ["build/**"]
     },
+    "build-assets:check": {
+      "dependsOn": ["build"],
+      "cache": false
+    },
     "dev:app": {
+      "cache": false,
+      "persistent": true
+    },
+    "dev:pg": {
       "cache": false,
       "persistent": true
     },

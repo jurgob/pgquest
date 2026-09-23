@@ -1,0 +1,142 @@
+{
+  "mvcc.session-a-transcript": {
+    "inputHash": "b6d1cecc81e2cb0bf0bba325f3c0f034e3ba6308da69ee5378022aff4e54b7bf",
+    "steps": [
+      {
+        "label": "Before either session does anything — the committed baseline",
+        "pgSessionId": "A",
+        "query": "SELECT xmin, xmax, name, balance FROM accounts WHERE name = 'checking';",
+        "output": {
+          "plan": "Unavailable: plan not requested.",
+          "rows": [
+            {
+              "xmin": "751",
+              "xmax": "0",
+              "name": "checking",
+              "balance": 1000
+            }
+          ]
+        },
+        "status": "done",
+        "observedBy": [
+          {
+            "label": "Same baseline, from Session B",
+            "pgSessionId": "B",
+            "query": "SELECT xmin, xmax, name, balance FROM accounts WHERE name = 'checking';",
+            "output": {
+              "plan": "Unavailable: plan not requested.",
+              "rows": [
+                {
+                  "xmin": "751",
+                  "xmax": "0",
+                  "name": "checking",
+                  "balance": 1000
+                }
+              ]
+            },
+            "status": "done"
+          }
+        ]
+      },
+      {
+        "label": "Open a transaction, update the row — not committed yet",
+        "pgSessionId": "A",
+        "query": "\nBEGIN;\n\nUPDATE accounts\nSET balance = balance - 100\nWHERE name = 'checking'\nRETURNING xmin, xmax, name, balance;\n\n-- No COMMIT here — the transaction stays open (uncommitted) so Session B can see it\n-- mid-flight in the next step.\n",
+        "output": {
+          "plan": "Unavailable for a multi-statement SQL example.",
+          "rows": [
+            {
+              "xmin": "752",
+              "xmax": "0",
+              "name": "checking",
+              "balance": 900
+            }
+          ]
+        },
+        "status": "done",
+        "observedBy": [
+          {
+            "label": "Meanwhile — checks the same row",
+            "pgSessionId": "B",
+            "query": "SELECT xmin, xmax, name, balance FROM accounts WHERE name = 'checking';",
+            "output": {
+              "plan": "Unavailable: plan not requested.",
+              "rows": [
+                {
+                  "xmin": "751",
+                  "xmax": "752",
+                  "name": "checking",
+                  "balance": 1000
+                }
+              ]
+            },
+            "status": "done"
+          }
+        ]
+      },
+      {
+        "label": "Still inside the same open transaction",
+        "pgSessionId": "A",
+        "query": "SELECT xmin, xmax, name, balance FROM accounts WHERE name = 'checking';",
+        "output": {
+          "plan": "Unavailable: plan not requested.",
+          "rows": [
+            {
+              "xmin": "752",
+              "xmax": "0",
+              "name": "checking",
+              "balance": 900
+            }
+          ]
+        },
+        "status": "done"
+      },
+      {
+        "label": "Commit",
+        "pgSessionId": "A",
+        "query": "COMMIT;",
+        "output": {
+          "plan": "Unavailable: plan not requested.",
+          "rows": []
+        },
+        "status": "done"
+      },
+      {
+        "label": "A fresh read, now that it's committed",
+        "pgSessionId": "A",
+        "query": "SELECT xmin, xmax, name, balance FROM accounts WHERE name = 'checking';",
+        "output": {
+          "plan": "Unavailable: plan not requested.",
+          "rows": [
+            {
+              "xmin": "752",
+              "xmax": "0",
+              "name": "checking",
+              "balance": 900
+            }
+          ]
+        },
+        "status": "done",
+        "observedBy": [
+          {
+            "label": "Checks again, after the commit",
+            "pgSessionId": "B",
+            "query": "SELECT xmin, xmax, name, balance FROM accounts WHERE name = 'checking';",
+            "output": {
+              "plan": "Unavailable: plan not requested.",
+              "rows": [
+                {
+                  "xmin": "752",
+                  "xmax": "0",
+                  "name": "checking",
+                  "balance": 900
+                }
+              ]
+            },
+            "status": "done"
+          }
+        ]
+      }
+    ]
+  }
+}

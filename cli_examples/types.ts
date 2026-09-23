@@ -117,6 +117,14 @@ export const SQL_EXAMPLE_IDS = {
     "insert-update-delete.exercise-bulk-delete",
   ),
   insertUpdateDeleteExerciseUpsert: sqlExampleId("insert-update-delete.exercise-upsert"),
+  mvccDatabaseInit: sqlExampleId("mvcc.database-init"),
+  mvccPlainSelect: sqlExampleId("mvcc.plain-select"),
+  mvccHiddenColumns: sqlExampleId("mvcc.hidden-columns"),
+  mvccTwoInsertsOneTransaction: sqlExampleId("mvcc.two-inserts-one-transaction"),
+  mvccUpdateChangesXmin: sqlExampleId("mvcc.update-changes-xmin"),
+  mvccExerciseSelectXmin: sqlExampleId("mvcc.exercise-select-xmin"),
+  mvccExerciseDepositReturning: sqlExampleId("mvcc.exercise-deposit-returning"),
+  mvccSessionATranscript: sqlExampleId("mvcc.session-a-transcript"),
   constraintsDatabaseInit: sqlExampleId("constraints.database-init"),
   constraintsInsertValidProduct: sqlExampleId("constraints.insert-valid-product"),
   constraintsListConstraints: sqlExampleId("constraints.list-constraints"),
@@ -265,6 +273,32 @@ export type SqlExample = {
   // Columns to drop from rows before comparing an exercise answer (e.g. a now()-set column).
   ignoreColumns?: readonly string[];
   query: string;
+};
+
+// A single statement within an ordered, multi-step "session" transcript — e.g. the
+// live BEGIN/UPDATE/COMMIT steps in the MVCC lesson. `pgSessionId` is display/narrative
+// metadata only; it never affects execution routing (see runMultiSessionSteps).
+export type PostgresExampleStep<SessionId extends string = string> = {
+  pgSessionId: SessionId;
+  query: string;
+  label?: string;
+  // Build-time only: after this step runs, run these against a genuinely separate,
+  // concurrently-open connection to the same real Postgres database (see
+  // runConcurrentSessionSteps in app/sql/run-example.ts) — a real second session's
+  // xmin/xmax, not a narrated or simulated one. Only
+  // scripts/build-postgres-examples.ts's runConcurrentSessionSteps acts on this field;
+  // the browser-side useLessonSqlExampleMultipleSession/runMultiSessionSteps ignore it.
+  observedBy?: readonly PostgresExampleStep<SessionId>[];
+};
+
+// A registration of one such transcript, precomputed at build time by
+// scripts/build-postgres-examples.ts into app/generated/postgres-examples.json.
+export type PostgresTranscript<SessionId extends string = string> = {
+  id: SqlExampleId;
+  sqlLoad: string;
+  pgSessionIds: readonly SessionId[];
+  queries: readonly PostgresExampleStep<SessionId>[];
+  runExplain?: boolean;
 };
 
 export function getSqlExample(

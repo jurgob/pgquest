@@ -46,7 +46,10 @@ export function computeExerciseExpectedOutput({
   databasePreload: string;
   exerciseCode: string;
 }) {
-  return runSqlQuery({ query: exerciseCode, sqlLoad: databasePreload }, exerciseCode);
+  return runSqlQuery(
+    { query: exerciseCode, runExplain: true, sqlLoad: databasePreload },
+    exerciseCode,
+  );
 }
 
 async function runExerciseCheck({
@@ -57,7 +60,7 @@ async function runExerciseCheck({
   userCode,
 }: ExerciseCheckInput): Promise<ExerciseCheckSuccess> {
   const userResultPromise = runSqlQuery(
-    { query: userCode, sqlLoad: databasePreload },
+    { query: userCode, runExplain: true, sqlLoad: databasePreload },
     userCode,
   );
   const expectedResultPromise = precomputedExpectedOutput

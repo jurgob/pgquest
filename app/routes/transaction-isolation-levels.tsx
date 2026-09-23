@@ -23,7 +23,7 @@ import { SqlResult, useLessonSqlExample } from "../sql/use-lesson-sql-example";
 
 export function meta(_args: Route.MetaArgs) {
   return [
-    { title: "pgquest | Lesson 19" },
+    { title: "pgquest | Lesson 20" },
     {
       name: "description",
       content: "Compare Postgres transaction isolation levels with a write-skew bug.",

@@ -30,7 +30,7 @@ function mostRecent(dates: (string | undefined)[]): string | undefined {
 }
 
 const root = process.cwd();
-const outPath = path.join(root, "app", "sql", "sitemap-lastmod.generated.json");
+const outPath = path.join(root, "app", "generated", "sitemap-lastmod.json");
 
 const staticPages: { path: string; routeFile: string }[] = [
   { path: "/", routeFile: "app/routes/home.tsx" },

@@ -56,18 +56,22 @@ export default function ExampleThree() {
   const exampleThreeIndexedQuery = indexedExample.query;
   const sequential = useLessonSqlExample({
     query: exampleThreeQuery,
+    runExplain: true,
     sqlLoad: sequentialLoad,
   });
   const indexed = useLessonSqlExample({
     query: exampleThreeIndexedQuery,
+    runExplain: true,
     sqlLoad: indexedLoad,
   });
   const sequentialWrite = useLessonSqlExample({
     query: writeQuery,
+    runExplain: true,
     sqlLoad: sequentialLoad,
   });
   const indexedWrite = useLessonSqlExample({
     query: writeQuery,
+    runExplain: true,
     sqlLoad: indexedLoad,
   });
 

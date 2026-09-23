@@ -1,4 +1,4 @@
-import rawSections from "./search-index.generated.json";
+import rawSections from "../generated/search-index.json";
 import { lessons, type LessonCatalogItem } from "./lesson-catalog";
 import type { LessonId } from "./types";
 

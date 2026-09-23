@@ -21,6 +21,7 @@ jobs:
           - typecheck
           - test
           - build
+          - build-assets:check
     steps:
       - uses: actions/checkout@v4
 

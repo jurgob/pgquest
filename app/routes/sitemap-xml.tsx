@@ -1,4 +1,4 @@
-import lastmodByPath from "../sql/sitemap-lastmod.generated.json";
+import lastmodByPath from "../generated/sitemap-lastmod.json";
 import { lessons } from "../sql/lesson-catalog";
 
 const SITE_URL = "https://pgquest.dev";

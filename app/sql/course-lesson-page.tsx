@@ -47,6 +47,7 @@ export function CourseLessonPage({
 export function ExampleBlock({ example }: { example: SqlExample }) {
   const execution = useLessonSqlExample({
     query: example.query,
+    runExplain: true,
     sqlLoad: example.database_init?.query ?? "",
   });
 

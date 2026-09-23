@@ -29,13 +29,19 @@ export function meta(_args: Route.MetaArgs) {
 
 export default function LessonOne() {
   const sqlLoad = exampleOneDatabaseInit.query;
-  const exampleOne = useLessonSqlExample({ query: exampleOneQuery, sqlLoad });
+  const exampleOne = useLessonSqlExample({
+    query: exampleOneQuery,
+    runExplain: true,
+    sqlLoad,
+  });
   const exampleOneSpecific = useLessonSqlExample({
     query: exampleOneSpecificQuery,
+    runExplain: true,
     sqlLoad,
   });
   const exampleOneInsert = useLessonSqlExample({
     query: exampleOneInsertQuery,
+    runExplain: true,
     sqlLoad,
   });
 

@@ -158,7 +158,7 @@ export function SqlEditor({
     setOutputView(view);
     setExecution({ status: "loading" });
 
-    const result = await runSqlQueryOnDatabase(db, query);
+    const result = await runSqlQueryOnDatabase(db, query, view === "plan");
 
     const nextExecution = result.match<SqlExecutionState>(
       (output) => ({ status: "done", output }),

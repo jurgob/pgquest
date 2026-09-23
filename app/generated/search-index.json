@@ -309,7 +309,7 @@
     "anchor": "upsert-vs-delete-insert",
     "heading": "UPSERT vs DELETE + INSERT",
     "lessonId": "insert-update-delete",
-    "text": "Refreshing an existing row is often written as a DELETE followed by an INSERT . It reaches the same end state as the upsert above, but not the same way under the hood — deleting marks the old row dead and writes the replacement somewhere new, while ON CONFLICT updates the existing row in place. A full comparison walks through the difference in detail, including the VACUUM cost DELETE + INSERT leaves behind. A VACUUM is a cleanup process for rows marked as deleted — either run by hand ( VACUUM users; ) or triggered automatically in the background by autovacuum . It scans the table for those leftover rows and marks their space reusable, so the table doesn't just keep growing with every write. VACUUM is needed because PostgreSQL internally implements MVCC (Multi-Version Concurrency Control): it never overwrites a row version in place, because some other transaction might still need to see the version that was there before. A DELETE just marks that row's version as no longer current — the bytes stay on the disk page as a dead tuple until VACUUM reclaims the space. An UPDATE (what ON CONFLICT DO UPDATE runs) leaves a dead tuple too — MVCC doesn't make an exception for it — but when the new version fits on the same page and no indexed column changed, it qualifies as a HOT (Heap-Only Tuple) update : no other index has to be touched, and PostgreSQL can often clean up that dead space on its own without waiting for a full VACUUM pass. A DELETE followed by a separate INSERT never gets that shortcut. Same scenario as the upsert above — deactivate Katherine Johnson — done two ways, with EXPLAIN (ANALYZE, BUFFERS) instead of a plain EXPLAIN . This actually runs the statement and reports real timing and page reads, not just an estimate. DELETE + INSERT UPSERT Removing Katherine Johnson's row so it can be reinserted from scratch. Loaded Database: insert-update-delete.database-init Reinserting her as a brand new row, right after the DELETE above. Loaded Database: insert-update-delete.refresh-after-delete-init Same end state, one statement: update her row in place instead of deleting and reinserting it. Loaded Database: insert-update-delete.database-init Look at the Buffers line in each plan — it counts real page touches, not an estimate. DELETE + INSERT pays for two statements: a lookup through the email index to find the old row, then a whole new tuple written elsewhere in the table — with a new id , since the sequence never rewinds after a delete — and every index loses an entry and gains a new one. UPSERT pays for the same conflict-checking lookup, but updates the tuple it already found instead: same id , one statement, and (usually) no other index touched. Run this enough times and that gap compounds — here's what the article linked above measured on a 100k-row table, single-row operations: Approach Total Time Buffer Hits Disk I/O Dead Tuples DELETE + INSERT 0.423 ms 10 Higher Yes UPSERT (ON CONFLICT) 0.145 ms 5 Lower No In their benchmark, the UPSERT approach is ~2.9x faster and uses 50% fewer buffer hits than DELETE + INSERT. Try Yourself Loaded Database: insert-update-delete.database-init The database for this lesson is already loaded. Write any query you want and run it directly in your browser."
+    "text": "Refreshing an existing row is often written as a DELETE followed by an INSERT . It reaches the same end state as the upsert above, but not the same way under the hood — deleting marks the old row dead and writes the replacement somewhere new, while ON CONFLICT updates the existing row in place. A full comparison walks through the difference in detail, including the VACUUM cost DELETE + INSERT leaves behind. A VACUUM is a cleanup process for rows marked as deleted — either run by hand ( VACUUM users; ) or triggered automatically in the background by autovacuum . It scans the table for those leftover rows and marks their space reusable, so the table doesn't just keep growing with every write. VACUUM is needed because PostgreSQL internally implements MVCC (Multi-Version Concurrency Control): it never overwrites a row version in place, because some other transaction might still need to see the version that was there before. A DELETE just marks that row's version as no longer current — the bytes stay on the disk page as a dead tuple until VACUUM reclaims the space. An UPDATE (what ON CONFLICT DO UPDATE runs) leaves a dead tuple too — MVCC doesn't make an exception for it — but when the new version fits on the same page and no indexed column changed, it qualifies as a HOT (Heap-Only Tuple) update : no other index has to be touched, and PostgreSQL can often clean up that dead space on its own without waiting for a full VACUUM pass. A DELETE followed by a separate INSERT never gets that shortcut. Learn more in the dedicated lesson about MVCC . Same scenario as the upsert above — deactivate Katherine Johnson — done two ways, with EXPLAIN (ANALYZE, BUFFERS) instead of a plain EXPLAIN . This actually runs the statement and reports real timing and page reads, not just an estimate. DELETE + INSERT UPSERT Removing Katherine Johnson's row so it can be reinserted from scratch. Loaded Database: insert-update-delete.database-init Reinserting her as a brand new row, right after the DELETE above. Loaded Database: insert-update-delete.refresh-after-delete-init Same end state, one statement: update her row in place instead of deleting and reinserting it. Loaded Database: insert-update-delete.database-init Look at the Buffers line in each plan — it counts real page touches, not an estimate. DELETE + INSERT pays for two statements: a lookup through the email index to find the old row, then a whole new tuple written elsewhere in the table — with a new id , since the sequence never rewinds after a delete — and every index loses an entry and gains a new one. UPSERT pays for the same conflict-checking lookup, but updates the tuple it already found instead: same id , one statement, and (usually) no other index touched. Run this enough times and that gap compounds — here's what the article linked above measured on a 100k-row table, single-row operations: Approach Total Time Buffer Hits Disk I/O Dead Tuples DELETE + INSERT 0.423 ms 10 Higher Yes UPSERT (ON CONFLICT) 0.145 ms 5 Lower No In their benchmark, the UPSERT approach is ~2.9x faster and uses 50% fewer buffer hits than DELETE + INSERT. Try Yourself Loaded Database: insert-update-delete.database-init The database for this lesson is already loaded. Write any query you want and run it directly in your browser."
   },
   {
     "anchor": "exercises",
@@ -322,6 +322,66 @@
     "heading": "What We Learned",
     "lessonId": "insert-update-delete",
     "text": "INSERT adds new rows to a table. UPDATE changes rows that match a WHERE clause — every match, not just one. DELETE removes rows that match a WHERE clause. RETURNING turns writes into visible result rows. INSERT ... ON CONFLICT an upsert: insert a new row, or update the existing one if it already conflicts on a unique column. MVCC PostgreSQL never overwrites a row version in place. A DELETE or UPDATE leaves the old version behind as a dead tuple instead of erasing it. VACUUM reclaims the space dead tuples leave behind. A HOT update can often clean some of that up on its own; DELETE + INSERT always needs a real VACUUM pass. HOT update a Heap-Only Tuple update: when the new row version fits on the same page and no indexed column changed, PostgreSQL updates it without touching any other index."
+  },
+  {
+    "anchor": null,
+    "heading": null,
+    "lessonId": "mvcc",
+    "text": "MVCC and row versions The Insert, update, delete, upsert lesson mentioned that Postgres never overwrites a row in place — that's MVCC (Multi-Version Concurrency Control). This lesson goes deeper: every row secretly carries the two system columns that make MVCC work, xmin and xmax , and we'll read them directly to watch a row version get created, live, inside a real BEGIN ... COMMIT ."
+  },
+  {
+    "anchor": "the-migration",
+    "heading": "The migration",
+    "lessonId": "mvcc",
+    "text": "One table, accounts . Empty, as far as MVCC goes — there is no xmin or xmax column declared anywhere in here."
+  },
+  {
+    "anchor": "the-seed",
+    "heading": "The seed",
+    "lessonId": "mvcc",
+    "text": "This is what creates checking and savings, the two rows we'll be watching."
+  },
+  {
+    "anchor": "a-normal-select",
+    "heading": "A normal SELECT",
+    "lessonId": "mvcc",
+    "text": "Nothing unusual — just the columns declared in the migration above. Loaded Database: mvcc.database-init"
+  },
+  {
+    "anchor": "select-the-hidden-columns",
+    "heading": "Select the hidden columns",
+    "lessonId": "mvcc",
+    "text": "Even though the migration never declared them, every row secretly carries xmin and xmax — Postgres adds them to every table automatically, and you can select them like any other column. xmin — the id of the transaction that created this row version. xmax — the id of the transaction that ended it. 0 means nothing has, so this is the live version. ctid — this row version's physical location on disk. Loaded Database: mvcc.database-init (0,1) isn't a transaction id — that's ctid , formatted as (page number, position on that page). checking landed in slot 1 of page 0, savings in slot 2 of the same page. They differ because they're two different rows, each with its own physical slot — not because two transactions ran. Both actually share the same xmin above, since the seed's single INSERT statement created them both in one transaction."
+  },
+  {
+    "anchor": "two-inserts-one-transaction",
+    "heading": "Two inserts, one transaction",
+    "lessonId": "mvcc",
+    "text": "Two separate INSERT statements, but one transaction: both new rows come back with the same xmin . xmin is stamped by the transaction, not the statement — anything that same transaction creates or changes shares it. Loaded Database: mvcc.database-init payroll and reserve come back with the same xmin — proof it tracks the transaction, not the statement. Without the explicit BEGIN / COMMIT wrapping them, each INSERT would run as its own implicit, auto-committed transaction and get a different xmin — the same way checking and savings differ in ctid above but not in xmin , because that seed was one statement too."
+  },
+  {
+    "anchor": "update-changes-xmin",
+    "heading": "xmin changes on UPDATE",
+    "lessonId": "mvcc",
+    "text": "UPDATE doesn't touch the row you had — it writes a brand new row version stamped with the current transaction's id as its xmin . Compare the number below to checking's xmin above: it's a new, higher transaction id, even though id and name didn't change. Loaded Database: mvcc.database-init"
+  },
+  {
+    "anchor": "two-concurrent-transactions",
+    "heading": "Two concurrent transactions",
+    "lessonId": "mvcc",
+    "text": "Two transactions are about to touch the same row, in the same migration and seed as above. Session A opens a transaction, updates checking's balance, and holds that change open for a moment before committing. Session B just runs plain SELECT s against that same row, once while Session A's change is still uncommitted and once after it commits — watch what changes between those two checks. Both sessions below are real — two genuinely separate, concurrently-open connections to one real Postgres server, exactly like two psql windows. Session A's steps run in order on its connection — a real BEGIN , an uncommitted UPDATE , a real COMMIT . Session B's checks run on a second connection while Session A's transaction is still open, so its results are whatever Postgres's own MVCC visibility rules actually hand back — nothing simulated or narrated. (This only works server-side, at build time — the browser's playground runs on PGlite, a single-connection engine, so both sessions' full transcripts are precomputed once against a real Postgres and baked into this page rather than re-run on every visit.) Session A Step 0 Before either session does anything — the committed baseline xmin xmax name balance 751 0 checking 1000 Session B Step 0 Same baseline, from Session B xmin xmax name balance 751 0 checking 1000 Same starting point for both — before Session A touches anything, this is the one committed row version that exists, and both sessions agree on it. Session A Step 1 Open a transaction, update the row — not committed yet xmin xmax name balance 752 0 checking 900 Session B Step 2 Meanwhile — checks the same row xmin xmax name balance 751 752 checking 1000 Session A's new row version already exists on disk, xmin and all, but MVCC keeps it invisible to every other session until it commits — this is what stops dirty reads. Session A Step 3 Still inside the same open transaction xmin xmax name balance 752 0 checking 900 Session A Step 4 Commit No rows Session A Step 5 A fresh read, now that it's committed xmin xmax name balance 752 0 checking 900 Session B Step 6 Checks again, after the commit xmin xmax name balance 752 0 checking 900 Now that Session A has committed, a fresh SELECT gets a fresh snapshot. A SELECT issued earlier, inside an open REPEATABLE READ or SERIALIZABLE transaction, would keep seeing the old row — that's the subject of the isolation-levels lesson. Readers never wait on writers, and writers never wait on readers — Session A and Session B were never blocked by each other. They were just looking at different row versions of the same row. Try Yourself Loaded Database: mvcc.database-init The database for this lesson is already loaded. Write any query you want and run it directly in your browser."
+  },
+  {
+    "anchor": "exercises",
+    "heading": "Exercises",
+    "lessonId": "mvcc",
+    "text": "0 OF 2 DONE 1. Return id, name, balance, and xmin for every account, ordered by id, so you can see each row's creating transaction. 2. Deposit 250 into the savings account (balance = balance + 250) and return the updated row, including xmin and xmax."
+  },
+  {
+    "anchor": "what-we-learned",
+    "heading": "What We Learned",
+    "lessonId": "mvcc",
+    "text": "MVCC Multi-Version Concurrency Control: Postgres never overwrites a row in place. Every write creates a new row version, so readers never block writers and writers never block readers. xmin A hidden column on every row: the id of the transaction that created this row version. xmax A hidden column on every row: the id of the transaction that ended this row version — 0 while it's still the live version. Dead tuple A row version nothing can see anymore once every transaction that could still need it is gone — reclaimed by VACUUM ."
   },
   {
     "anchor": null,

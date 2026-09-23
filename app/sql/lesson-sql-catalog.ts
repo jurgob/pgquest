@@ -19,6 +19,10 @@ import {
   exercises as exampleFourExercises,
 } from "../../cli_examples/insert-update-delete.sql";
 import {
+  database_inits as exampleMvccDatabaseInits,
+  exercises as exampleMvccExercises,
+} from "../../cli_examples/mvcc.sql";
+import {
   database_inits as exampleFiveDatabaseInits,
   exercises as exampleFiveExercises,
 } from "../../cli_examples/constraints.sql";
@@ -108,6 +112,10 @@ const lessonSqlById = {
   "insert-update-delete": {
     databaseInits: exampleFourDatabaseInits,
     exercises: exampleFourExercises,
+  },
+  mvcc: {
+    databaseInits: exampleMvccDatabaseInits,
+    exercises: exampleMvccExercises,
   },
   constraints: {
     databaseInits: exampleFiveDatabaseInits,

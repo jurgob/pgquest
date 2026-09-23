@@ -1,3 +1,5 @@
+import { Link } from "react-router";
+
 import { getSqlExample, SQL_EXAMPLE_IDS } from "../../cli_examples/types";
 import {
   afterKatherineDeletedInit,
@@ -53,22 +55,27 @@ export default function Lesson3() {
 
   const insertExecution = useLessonSqlExample({
     query: insertExample.query,
+    runExplain: true,
     sqlLoad: databaseInit.query,
   });
   const updateExecution = useLessonSqlExample({
     query: updateExample.query,
+    runExplain: true,
     sqlLoad: databaseInit.query,
   });
   const deleteExecution = useLessonSqlExample({
     query: deleteExample.query,
+    runExplain: true,
     sqlLoad: databaseInit.query,
   });
   const upsertExecution = useLessonSqlExample({
     query: upsertExample.query,
+    runExplain: true,
     sqlLoad: databaseInit.query,
   });
   const deactivateMalesExecution = useLessonSqlExample({
     query: deactivateMalesExample.query,
+    runExplain: true,
     sqlLoad: databaseInit.query,
   });
   const refreshDeleteExecution = useLessonSqlExample({
@@ -450,7 +457,14 @@ export default function Lesson3() {
             dead space on its own without waiting for a full{" "}
             <InlineCode>VACUUM</InlineCode> pass. A <InlineCode>DELETE</InlineCode>{" "}
             followed by a separate <InlineCode>INSERT</InlineCode> never gets that
-            shortcut.
+            shortcut. Learn more in the{" "}
+            <Link
+              className="text-sky-700 underline decoration-sky-300 underline-offset-2 hover:text-sky-900"
+              to="/lessons/mvcc"
+            >
+              dedicated lesson about MVCC
+            </Link>
+            .
           </p>
         </Paragraphs>
         <div className="mt-4 flex justify-center">

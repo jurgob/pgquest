@@ -20,7 +20,7 @@ type Section = {
 };
 
 const root = process.cwd();
-const outPath = path.join(root, "app", "sql", "search-index.generated.json");
+const outPath = path.join(root, "app", "generated", "search-index.json");
 const sections: Section[] = [];
 
 for (const lesson of lessons) {

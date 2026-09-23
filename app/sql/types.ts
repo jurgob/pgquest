@@ -1,6 +1,10 @@
 export type SqlExecutionInput = {
   query: string;
   sqlLoad: string;
+  // Whether to also run EXPLAIN <query> and populate ExecutionOutput.plan. Defaults to
+  // false — pass true only when the caller actually renders the plan (e.g. <SqlPlan>),
+  // since EXPLAIN is a second, real query against the connection.
+  runExplain?: boolean;
 };
 
 export type SqlValue = string | number | boolean | null;
@@ -22,6 +26,7 @@ export type LessonId =
   | "schemas-tables-and-types"
   | "introduction-to-indexes"
   | "insert-update-delete"
+  | "mvcc"
   | "constraints"
   | "advanced-indexes"
   | "aggregation-intro"
