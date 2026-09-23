@@ -96,7 +96,8 @@ export default function Lesson3() {
         },
         {
           concept: "UPDATE",
-          description: "changes rows that match a WHERE clause — every match, not just one.",
+          description:
+            "changes rows that match a WHERE clause — every match, not just one.",
           url: "https://www.postgresql.org/docs/current/sql-update.html",
         },
         {
@@ -154,9 +155,7 @@ export default function Lesson3() {
 
       <Section>
         <Title2 id="seed">Seed</Title2>
-        <Paragraph>
-          Eight people, a mix of genders, everyone active to start.
-        </Paragraph>
+        <Paragraph>Eight people, a mix of genders, everyone active to start.</Paragraph>
         <SqlCodeViewer code={seed} />
       </Section>
 
@@ -228,9 +227,9 @@ export default function Lesson3() {
         </div>
         <Paragraphs>
           <p>
-            <InlineCode>INSERT</InlineCode> has nothing to find — it just builds the new row
-            and stops. The plan is <InlineCode>Insert on users</InlineCode> straight over a{" "}
-            <InlineCode>Result</InlineCode> node, cost close to{" "}
+            <InlineCode>INSERT</InlineCode> has nothing to find — it just builds the new
+            row and stops. The plan is <InlineCode>Insert on users</InlineCode> straight
+            over a <InlineCode>Result</InlineCode> node, cost close to{" "}
             <InlineCode className="border-emerald-200 bg-emerald-100 px-1.5 font-semibold text-emerald-900">
               0.00..0.01
             </InlineCode>
@@ -242,8 +241,8 @@ export default function Lesson3() {
             <InlineCode>email</InlineCode> is <InlineCode>UNIQUE</InlineCode>, PostgreSQL
             already has an index for it, so both plans show an{" "}
             <InlineCode>Index Scan</InlineCode> on that index underneath{" "}
-            <InlineCode>Update on users</InlineCode> / <InlineCode>Delete on users</InlineCode>,
-            costed around{" "}
+            <InlineCode>Update on users</InlineCode> /{" "}
+            <InlineCode>Delete on users</InlineCode>, costed around{" "}
             <InlineCode className="border-amber-200 bg-amber-100 px-1.5 font-semibold text-amber-900">
               0.15..8.17
             </InlineCode>
@@ -253,10 +252,10 @@ export default function Lesson3() {
             (<InlineCode>random_page_cost = 4</InlineCode>), the 8.17 is mostly two page
             reads: one to read the matching entry in the <InlineCode>email</InlineCode>{" "}
             index, one to fetch the actual row from the table — 4 + 4, plus a sliver of{" "}
-            <InlineCode>cpu_tuple_cost</InlineCode> for evaluating the condition and handing
-            back the one row. The tiny <InlineCode>0.15</InlineCode> startup cost is just
-            descending the index to find that first matching entry — small here because the
-            table (and its index) only spans a page or two.
+            <InlineCode>cpu_tuple_cost</InlineCode> for evaluating the condition and
+            handing back the one row. The tiny <InlineCode>0.15</InlineCode> startup cost
+            is just descending the index to find that first matching entry — small here
+            because the table (and its index) only spans a page or two.
           </p>
         </Paragraphs>
       </LessonSection>
@@ -314,8 +313,8 @@ export default function Lesson3() {
         </div>
         <Paragraph>
           Katherine Johnson&apos;s <InlineCode>id</InlineCode> doesn&apos;t change — this
-          updated the existing row instead of erroring on the duplicate email or inserting a
-          second one.
+          updated the existing row instead of erroring on the duplicate email or inserting
+          a second one.
         </Paragraph>
         <div className="mt-6">
           <h3 className="text-xl font-bold text-zinc-950">Explain the explain</h3>
@@ -330,9 +329,9 @@ export default function Lesson3() {
             <p>
               Two lines make it an upsert:{" "}
               <InlineCode>Conflict Resolution: UPDATE</InlineCode> and{" "}
-              <InlineCode>Conflict Arbiter Indexes: users_email_key</InlineCode>. The second
-              one names the unique index PostgreSQL checks to decide whether a row already
-              exists. If <InlineCode>email</InlineCode> collides, it runs the{" "}
+              <InlineCode>Conflict Arbiter Indexes: users_email_key</InlineCode>. The
+              second one names the unique index PostgreSQL checks to decide whether a row
+              already exists. If <InlineCode>email</InlineCode> collides, it runs the{" "}
               <InlineCode>DO UPDATE SET</InlineCode> instead of raising a duplicate-key
               error — no index on the conflict column, no upsert.
             </p>
@@ -355,7 +354,8 @@ export default function Lesson3() {
         <div className="mt-6">
           <h3 className="text-xl font-bold text-zinc-950">Explain the explain</h3>
           <Paragraph>
-            <InlineCode>gender</InlineCode> has no index, unlike <InlineCode>email</InlineCode>.
+            <InlineCode>gender</InlineCode> has no index, unlike{" "}
+            <InlineCode>email</InlineCode>.
           </Paragraph>
           <div className="mt-4">
             <SqlPlan execution={deactivateMalesExecution} />
@@ -363,12 +363,12 @@ export default function Lesson3() {
           <Paragraphs>
             <p>
               The plan falls back to <InlineCode>Seq Scan on users</InlineCode> with{" "}
-              <InlineCode>Filter: (gender = &apos;male&apos;)</InlineCode> — PostgreSQL reads
-              every row in the table, keeps the ones that match, and updates each one it
-              keeps. <InlineCode>RETURNING *</InlineCode> hands back every row it touched,
-              not just one. On a small table this is nothing; on a large one, an index on{" "}
-              <InlineCode>gender</InlineCode> would turn that seq scan into an index scan the
-              same way it did for <InlineCode>email</InlineCode> above.
+              <InlineCode>Filter: (gender = &apos;male&apos;)</InlineCode> — PostgreSQL
+              reads every row in the table, keeps the ones that match, and updates each
+              one it keeps. <InlineCode>RETURNING *</InlineCode> hands back every row it
+              touched, not just one. On a small table this is nothing; on a large one, an
+              index on <InlineCode>gender</InlineCode> would turn that seq scan into an
+              index scan the same way it did for <InlineCode>email</InlineCode> above.
             </p>
           </Paragraphs>
         </div>
@@ -378,11 +378,12 @@ export default function Lesson3() {
         <Title2 id="upsert-vs-delete-insert">UPSERT vs DELETE + INSERT</Title2>
         <Paragraphs>
           <p>
-            Refreshing an existing row is often written as a <InlineCode>DELETE</InlineCode>{" "}
-            followed by an <InlineCode>INSERT</InlineCode>. It reaches the same end state as
-            the upsert above, but not the same way under the hood — deleting marks the old
-            row dead and writes the replacement somewhere new, while{" "}
-            <InlineCode>ON CONFLICT</InlineCode> updates the existing row in place. A{" "}
+            Refreshing an existing row is often written as a{" "}
+            <InlineCode>DELETE</InlineCode> followed by an <InlineCode>INSERT</InlineCode>
+            . It reaches the same end state as the upsert above, but not the same way
+            under the hood — deleting marks the old row dead and writes the replacement
+            somewhere new, while <InlineCode>ON CONFLICT</InlineCode> updates the existing
+            row in place. A{" "}
             <a
               className="text-sky-700 underline decoration-sky-300 underline-offset-2 hover:text-sky-900"
               href="https://iniakunhuda.medium.com/postgresql-upsert-vs-delete-insert-a-complete-performance-guide-021c2cd7dcc3"
@@ -404,11 +405,11 @@ export default function Lesson3() {
             >
               VACUUM
             </a>{" "}
-            is a cleanup process for rows marked as deleted — either run by hand
-            (<InlineCode>VACUUM users;</InlineCode>) or triggered automatically in the
-            background by <InlineCode>autovacuum</InlineCode>. It scans the table for those
-            leftover rows and marks their space reusable, so the table doesn&apos;t just
-            keep growing with every write.
+            is a cleanup process for rows marked as deleted — either run by hand (
+            <InlineCode>VACUUM users;</InlineCode>) or triggered automatically in the
+            background by <InlineCode>autovacuum</InlineCode>. It scans the table for
+            those leftover rows and marks their space reusable, so the table doesn&apos;t
+            just keep growing with every write.
           </p>
           <p className="mt-3">
             VACUUM is needed because PostgreSQL internally implements{" "}
@@ -420,11 +421,10 @@ export default function Lesson3() {
             >
               MVCC
             </a>{" "}
-            (Multi-Version Concurrency Control): it never overwrites a row version in place,
-            because some other transaction might still need to see the version that was
-            there before. A{" "}
-            <InlineCode>DELETE</InlineCode> just marks that row&apos;s version as no longer
-            current — the bytes stay on the{" "}
+            (Multi-Version Concurrency Control): it never overwrites a row version in
+            place, because some other transaction might still need to see the version that
+            was there before. A <InlineCode>DELETE</InlineCode> just marks that row&apos;s
+            version as no longer current — the bytes stay on the{" "}
             <a
               className="text-sky-700 underline decoration-sky-300 underline-offset-2 hover:text-sky-900"
               href="https://en.wikipedia.org/wiki/Block_(data_storage)"
@@ -434,11 +434,10 @@ export default function Lesson3() {
               disk page
             </a>{" "}
             as a <InlineCode>dead tuple</InlineCode> until <InlineCode>VACUUM</InlineCode>{" "}
-            reclaims the space. An{" "}
-            <InlineCode>UPDATE</InlineCode> (what <InlineCode>ON CONFLICT DO UPDATE</InlineCode>{" "}
-            runs) leaves a dead tuple too — MVCC doesn&apos;t make an exception for it — but
-            when the new version fits on the same page and no indexed column changed, it
-            qualifies as a{" "}
+            reclaims the space. An <InlineCode>UPDATE</InlineCode> (what{" "}
+            <InlineCode>ON CONFLICT DO UPDATE</InlineCode> runs) leaves a dead tuple too —
+            MVCC doesn&apos;t make an exception for it — but when the new version fits on
+            the same page and no indexed column changed, it qualifies as a{" "}
             <a
               className="text-sky-700 underline decoration-sky-300 underline-offset-2 hover:text-sky-900"
               href="https://www.postgresql.org/docs/current/storage-hot.html"
@@ -447,10 +446,11 @@ export default function Lesson3() {
             >
               HOT (Heap-Only Tuple) update
             </a>
-            : no other index has to be touched, and PostgreSQL can often clean up that dead
-            space on its own without waiting for a full <InlineCode>VACUUM</InlineCode> pass.
-            A <InlineCode>DELETE</InlineCode> followed by a separate{" "}
-            <InlineCode>INSERT</InlineCode> never gets that shortcut.
+            : no other index has to be touched, and PostgreSQL can often clean up that
+            dead space on its own without waiting for a full{" "}
+            <InlineCode>VACUUM</InlineCode> pass. A <InlineCode>DELETE</InlineCode>{" "}
+            followed by a separate <InlineCode>INSERT</InlineCode> never gets that
+            shortcut.
           </p>
         </Paragraphs>
         <div className="mt-4 flex justify-center">
@@ -510,16 +510,16 @@ export default function Lesson3() {
         </div>
         <Paragraphs>
           <p>
-            Look at the <InlineCode>Buffers</InlineCode> line in each plan — it counts real
-            page touches, not an estimate. DELETE + INSERT pays for two statements: a lookup
-            through the <InlineCode>email</InlineCode> index to find the old row, then a
-            whole new tuple written elsewhere in the table — with a new{" "}
+            Look at the <InlineCode>Buffers</InlineCode> line in each plan — it counts
+            real page touches, not an estimate. DELETE + INSERT pays for two statements: a
+            lookup through the <InlineCode>email</InlineCode> index to find the old row,
+            then a whole new tuple written elsewhere in the table — with a new{" "}
             <InlineCode>id</InlineCode>, since the sequence never rewinds after a delete —
             and every index loses an entry and gains a new one. UPSERT pays for the same
             conflict-checking lookup, but updates the tuple it already found instead: same{" "}
-            <InlineCode>id</InlineCode>, one statement, and (usually) no other index touched.
-            Run this enough times and that gap compounds — here&apos;s what the article
-            linked above measured on a 100k-row table, single-row operations:
+            <InlineCode>id</InlineCode>, one statement, and (usually) no other index
+            touched. Run this enough times and that gap compounds — here&apos;s what the
+            article linked above measured on a 100k-row table, single-row operations:
           </p>
         </Paragraphs>
         <div className="mt-4 overflow-auto">
@@ -552,7 +552,9 @@ export default function Lesson3() {
                   0.423 ms
                 </td>
                 <td className="border-b border-zinc-100 px-3 py-2 text-zinc-800">10</td>
-                <td className="border-b border-zinc-100 px-3 py-2 text-zinc-800">Higher</td>
+                <td className="border-b border-zinc-100 px-3 py-2 text-zinc-800">
+                  Higher
+                </td>
                 <td className="border-b border-zinc-100 px-3 py-2 text-zinc-800">Yes</td>
               </tr>
               <tr>
@@ -563,7 +565,9 @@ export default function Lesson3() {
                   0.145 ms
                 </td>
                 <td className="border-b border-zinc-100 px-3 py-2 text-zinc-800">5</td>
-                <td className="border-b border-zinc-100 px-3 py-2 text-zinc-800">Lower</td>
+                <td className="border-b border-zinc-100 px-3 py-2 text-zinc-800">
+                  Lower
+                </td>
                 <td className="border-b border-zinc-100 px-3 py-2 text-zinc-800">No</td>
               </tr>
             </tbody>

@@ -33,7 +33,9 @@ function Outcome({
 }) {
   return (
     <text
-      className={tone === "safe" ? "fill-emerald-700 font-bold" : "fill-amber-700 font-bold"}
+      className={
+        tone === "safe" ? "fill-emerald-700 font-bold" : "fill-amber-700 font-bold"
+      }
       dominantBaseline="middle"
       fontFamily="monospace"
       textAnchor="middle"
@@ -326,7 +328,13 @@ export function HotUpdateDiagram() {
         x={190}
         y={242}
       />
-      <text className="fill-zinc-600" fontFamily="monospace" fontSize={9.5} x={210} y={251}>
+      <text
+        className="fill-zinc-600"
+        fontFamily="monospace"
+        fontSize={9.5}
+        x={210}
+        y={251}
+      >
         live tuple
       </text>
       <rect
@@ -339,7 +347,13 @@ export function HotUpdateDiagram() {
         x={330}
         y={242}
       />
-      <text className="fill-zinc-600" fontFamily="monospace" fontSize={9.5} x={350} y={251}>
+      <text
+        className="fill-zinc-600"
+        fontFamily="monospace"
+        fontSize={9.5}
+        x={350}
+        y={251}
+      >
         dead tuple (needs VACUUM)
       </text>
     </svg>
