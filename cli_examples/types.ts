@@ -101,8 +101,22 @@ export const SQL_EXAMPLE_IDS = {
   insertUpdateDeleteDeleteReturning: sqlExampleId(
     "insert-update-delete.delete-returning",
   ),
+  insertUpdateDeleteUpsert: sqlExampleId("insert-update-delete.upsert"),
+  insertUpdateDeleteDeactivateMales: sqlExampleId(
+    "insert-update-delete.deactivate-males",
+  ),
+  insertUpdateDeleteRefreshAfterDeleteInit: sqlExampleId(
+    "insert-update-delete.refresh-after-delete-init",
+  ),
+  insertUpdateDeleteRefreshDelete: sqlExampleId("insert-update-delete.refresh-delete"),
+  insertUpdateDeleteRefreshInsert: sqlExampleId("insert-update-delete.refresh-insert"),
+  insertUpdateDeleteRefreshUpsert: sqlExampleId("insert-update-delete.refresh-upsert"),
   insertUpdateDeleteExerciseInsert: sqlExampleId("insert-update-delete.insert-user"),
   insertUpdateDeleteExerciseUpdate: sqlExampleId("insert-update-delete.update-user"),
+  insertUpdateDeleteExerciseBulkDelete: sqlExampleId(
+    "insert-update-delete.exercise-bulk-delete",
+  ),
+  insertUpdateDeleteExerciseUpsert: sqlExampleId("insert-update-delete.exercise-upsert"),
   constraintsDatabaseInit: sqlExampleId("constraints.database-init"),
   constraintsInsertValidProduct: sqlExampleId("constraints.insert-valid-product"),
   constraintsListConstraints: sqlExampleId("constraints.list-constraints"),
