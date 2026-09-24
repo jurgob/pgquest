@@ -16,6 +16,7 @@
     "build-assets:pgexamples": "vite-node --config ./vite.cli.config.ts ./scripts/build-postgres-examples.ts",
     "build-assets:pgexamples:check": "./scripts/check-generated-asset.sh build-assets:pgexamples app/generated/postgres-examples.json",
     "config:check": "vite-node --config ./vite.cli.config.ts ./scripts/config-check.ts",
+    "notify": "vite-node --config ./vite.cli.config.ts ./scripts/notify.ts",
     "dev": "pnpm --silent config:check && turbo watch dev:pg dev:app build-assets:search-index build-assets:sitemap build-assets:pgexamples",
     "dev:app": "CHOKIDAR_USEPOLLING=1 react-router dev --port 9999",
     "dev:pg": "./scripts/dev-pg.sh",

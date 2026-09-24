@@ -8,10 +8,14 @@ import {
   toDotEnv,
 } from "../app/config/sops.server";
 import { loadDotEnvIfPresent } from "../app/config/dotenv.server";
-import { healthcheckEnvKeys, posthogEnvKeys } from "../app/config_schemas/envs";
+import {
+  healthcheckEnvKeys,
+  notifyEnvKeys,
+  posthogEnvKeys,
+} from "../app/config_schemas/envs";
 import { captureCliErrors, runCli } from "./config-cli";
 
-const allowedKeys = [...posthogEnvKeys, ...healthcheckEnvKeys];
+const allowedKeys = [...posthogEnvKeys, ...healthcheckEnvKeys, ...notifyEnvKeys];
 
 await runCli(() =>
   captureCliErrors(async () => {

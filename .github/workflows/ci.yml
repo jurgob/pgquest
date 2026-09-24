@@ -77,3 +77,37 @@ jobs:
       - run: flyctl deploy --remote-only
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+  notify:
+    name: Notify deploy result
+    needs:
+      - checks
+      - deploy
+    # Runs regardless of whether checks/deploy passed or failed — it decides which
+    # message to send itself, based on deploy's actual result below.
+    if: always()
+    runs-on: ubuntu-latest
+    # PGQUEST_SOPS_AGE_KEY is a Prod environment secret, not a repo secret — this
+    # job needs to be in that environment to see it, same as `deploy`.
+    environment: Prod
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: corepack enable pnpm
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - if: needs.deploy.result == 'success'
+        run: pnpm run notify success "🟢 pgquest deploy succeeded ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        env:
+          PGQUEST_SOPS_AGE_KEY: ${{ secrets.PGQUEST_SOPS_AGE_KEY }}
+
+      - if: needs.deploy.result != 'success'
+        run: pnpm run notify error "🔴 pgquest deploy failed ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        env:
+          PGQUEST_SOPS_AGE_KEY: ${{ secrets.PGQUEST_SOPS_AGE_KEY }}

@@ -35,3 +35,16 @@ export const healthcheckEnvSchema = z.object({
 });
 
 export type HealthcheckEnv = z.infer<typeof healthcheckEnvSchema>;
+
+// Separate from PGQUEST_HEALTHCHECK_PING_URL above, which is the deployed app's own
+// uptime check (pinged by app/routes/health.tsx on every /health hit). This one is a
+// dedicated healthchecks.io check for CI/deploy failures — see scripts/notify.ts,
+// invoked directly by .github/workflows/ci.yml, not part of the deployed app's
+// runtime ServerConfig.
+export const notifyEnvKeys = ["PGQUEST_NOTIFY_PING_URL"] as const;
+
+export const notifyEnvSchema = z.object({
+  PGQUEST_NOTIFY_PING_URL: z.url().optional(),
+});
+
+export type NotifyEnv = z.infer<typeof notifyEnvSchema>;
