@@ -103,11 +103,11 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - if: needs.deploy.result == 'success'
-        run: pnpm run notify success "🟢 pgquest deploy succeeded ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        run: pnpm run notify success "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
         env:
           PGQUEST_SOPS_AGE_KEY: ${{ secrets.PGQUEST_SOPS_AGE_KEY }}
 
       - if: needs.deploy.result != 'success'
-        run: pnpm run notify error "🔴 pgquest deploy failed ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        run: pnpm run notify error "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
         env:
           PGQUEST_SOPS_AGE_KEY: ${{ secrets.PGQUEST_SOPS_AGE_KEY }}
