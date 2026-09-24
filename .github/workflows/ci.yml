@@ -21,9 +21,24 @@ jobs:
           - typecheck
           - test
           - build
-          - build-assets:check
+          - build-assets:pgexamples:check
+          - build-assets:search-index:check
+          - build-assets:sitemap:check
+        # sitemap.xml's lastmod dates come from `git log` at build time; a
+        # shallow clone only has the latest commit's history, so every file's
+        # "last modified" commit would collapse to that one commit. Only `build`
+        # and build-assets:sitemap:check actually touch that, so only they pay
+        # for a full clone — same principle as only build-assets:pgexamples:check
+        # ever needing a live `pnpm run dev:pg`.
+        include:
+          - command: build
+            fetch-depth: 0
+          - command: build-assets:sitemap:check
+            fetch-depth: 0
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: ${{ matrix.fetch-depth || 1 }}
 
       - run: corepack enable pnpm
 

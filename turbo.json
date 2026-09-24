@@ -62,7 +62,15 @@
       ],
       "outputs": ["build/**"]
     },
-    "build-assets:check": {
+    "build-assets:pgexamples:check": {
+      "dependsOn": ["build"],
+      "cache": false
+    },
+    "build-assets:search-index:check": {
+      "dependsOn": ["build"],
+      "cache": false
+    },
+    "build-assets:sitemap:check": {
       "dependsOn": ["build"],
       "cache": false
     },
