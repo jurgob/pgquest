@@ -4,11 +4,12 @@
   "/search": "2026-09-20T16:09:03+01:00",
   "/feedback": "2026-09-20T16:09:03+01:00",
   "/license": "2026-09-21T23:39:57+01:00",
-  "/lessons/my-first-query": "2026-09-19T23:48:31+01:00",
+  "/lessons/my-first-query": "2026-09-24T00:55:35+01:00",
   "/lessons/introduction-to-join": "2026-09-17T23:21:47+01:00",
   "/lessons/schemas-tables-and-types": "2026-09-19T23:48:31+01:00",
-  "/lessons/introduction-to-indexes": "2026-09-19T23:48:31+01:00",
-  "/lessons/insert-update-delete": "2026-09-23T01:05:55+01:00",
+  "/lessons/introduction-to-indexes": "2026-09-24T00:55:35+01:00",
+  "/lessons/insert-update-delete": "2026-09-24T00:55:35+01:00",
+  "/lessons/mvcc": "2026-09-24T00:55:35+01:00",
   "/lessons/constraints": "2026-09-16T00:29:11+01:00",
   "/lessons/advanced-indexes": "2026-09-16T00:29:11+01:00",
   "/lessons/aggregation-intro": "2026-09-16T00:29:11+01:00",
@@ -22,5 +23,5 @@
   "/lessons/advanced-aggregation": "2026-09-16T00:29:11+01:00",
   "/lessons/vectors": "2026-09-16T00:29:11+01:00",
   "/lessons/concurrency-reservation-system": "2026-09-20T08:54:57+01:00",
-  "/lessons/transaction-isolation-levels": "2026-09-21T01:28:37+01:00"
+  "/lessons/transaction-isolation-levels": "2026-09-24T00:55:35+01:00"
 }
