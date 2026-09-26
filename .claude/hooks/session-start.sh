@@ -11,6 +11,20 @@ fi
 
 cd "$CLAUDE_PROJECT_DIR"
 
+# Node from .nvmrc (the image's default Node doesn't match it) and pnpm pinned by
+# package.json's packageManager, via corepack.
+export NVM_DIR="${NVM_DIR:-/opt/nvm}"
+set +u
+# shellcheck disable=SC1091
+. "$NVM_DIR/nvm.sh" --no-use
+nvm install >/dev/null
+nvm use >/dev/null
+set -u
+node_bin="$(dirname "$(command -v node)")"
+corepack enable pnpm
+corepack install
+echo "Using Node $(node --version), pnpm $(pnpm --version)."
+
 # Also runs the `prepare` script, which installs husky (core.hooksPath=.husky/_),
 # so .husky/pre-push gates every `git push` from the remote session on `pnpm all`.
 pnpm install
@@ -22,7 +36,7 @@ if [ -z "$pg_bin" ]; then
   exit 1
 fi
 if [ -n "${CLAUDE_ENV_FILE:-}" ]; then
-  echo "export PATH=\"$pg_bin:\$PATH\"" >> "$CLAUDE_ENV_FILE"
+  echo "export PATH=\"$node_bin:$pg_bin:\$PATH\"" >> "$CLAUDE_ENV_FILE"
 fi
 
 port="${PGQUEST_DEV_PG_PORT:-9998}"
