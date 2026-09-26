@@ -140,10 +140,10 @@
     ]
   },
   "postgres-locks.table-lock-transcript": {
-    "inputHash": "dd7280a0d588d235a786554a9042b0adc641a29ac91cc94d0308cd98d887f231",
+    "inputHash": "458d33f99f47c5d110673e5c6fc45a83f0f7a7196952333ed054d466961e0c6f",
     "steps": [
       {
-        "label": "Read accounts inside an open transaction",
+        "label": "Open a transaction and read accounts",
         "pgSessionId": "A",
         "query": "BEGIN;\n\nSELECT owner, balance FROM accounts ORDER BY id;",
         "output": {
@@ -159,45 +159,29 @@
             }
           ]
         },
-        "status": "done",
-        "observedBy": [
-          {
-            "label": "Which locks is anyone else holding?",
-            "pgSessionId": "B",
-            "query": "SELECT relation::regclass AS relation, mode, granted\nFROM pg_locks\nWHERE locktype = 'relation'\n  AND pid <> pg_backend_pid()\n  AND relation IN ('accounts'::regclass, 'transfers'::regclass)\nORDER BY relation::regclass::text, mode;",
-            "output": {
-              "plan": "Unavailable: plan not requested.",
-              "rows": [
-                {
-                  "relation": "accounts",
-                  "mode": "AccessShareLock",
-                  "granted": true
-                }
-              ]
-            },
-            "status": "done"
-          },
-          {
-            "label": "Update a row in the same table",
-            "pgSessionId": "B",
-            "query": "SET lock_timeout = '200ms';\nUPDATE accounts SET balance = balance + 10 WHERE owner = 'bob'\nRETURNING owner, balance;",
-            "output": {
-              "plan": "Unavailable for a multi-statement SQL example.",
-              "rows": [
-                {
-                  "owner": "bob",
-                  "balance": 510
-                }
-              ]
-            },
-            "status": "done"
-          }
-        ]
+        "status": "done"
       },
       {
-        "label": "Done reading",
-        "pgSessionId": "A",
-        "query": "COMMIT;",
+        "label": "Update a row in the same table",
+        "pgSessionId": "B",
+        "query": "UPDATE accounts SET balance = balance + 10 WHERE owner = 'bob'\nRETURNING owner, balance;",
+        "output": {
+          "plan": "Unavailable: plan not requested.",
+          "rows": [
+            {
+              "owner": "bob",
+              "balance": 510
+            }
+          ]
+        },
+        "status": "done"
+      },
+      {
+        "label": "Run a migration on the same table",
+        "pgSessionId": "B",
+        "query": "ALTER TABLE accounts ADD COLUMN note TEXT;",
+        "blocks": true,
+        "unblockedAfter": 6,
         "output": {
           "plan": "Unavailable: plan not requested.",
           "rows": []
@@ -205,77 +189,87 @@
         "status": "done"
       },
       {
-        "label": "Change the table's schema inside an open transaction",
-        "pgSessionId": "A",
-        "query": "BEGIN;\n\nALTER TABLE accounts ADD COLUMN note TEXT;",
+        "label": "Just read the table",
+        "pgSessionId": "C",
+        "query": "SELECT owner, balance FROM accounts ORDER BY id;",
+        "blocks": true,
+        "unblockedAfter": 6,
         "output": {
-          "plan": "Unavailable for a multi-statement SQL example.",
-          "rows": []
-        },
-        "status": "done",
-        "observedBy": [
-          {
-            "label": "Which locks is anyone else holding?",
-            "pgSessionId": "B",
-            "query": "SELECT relation::regclass AS relation, mode, granted\nFROM pg_locks\nWHERE locktype = 'relation'\n  AND pid <> pg_backend_pid()\n  AND relation IN ('accounts'::regclass, 'transfers'::regclass)\nORDER BY relation::regclass::text, mode;",
-            "output": {
-              "plan": "Unavailable: plan not requested.",
-              "rows": [
-                {
-                  "relation": "accounts",
-                  "mode": "AccessExclusiveLock",
-                  "granted": true
-                }
-              ]
+          "plan": "Unavailable: plan not requested.",
+          "rows": [
+            {
+              "owner": "alice",
+              "balance": 1000
             },
-            "status": "done"
-          },
-          {
-            "label": "Just read the table",
-            "pgSessionId": "B",
-            "query": "SET lock_timeout = '200ms';\nSELECT owner, balance FROM accounts ORDER BY id;",
-            "message": "canceling statement due to lock timeout",
-            "status": "error"
-          }
-        ]
+            {
+              "owner": "bob",
+              "balance": 510
+            }
+          ]
+        },
+        "status": "done"
       },
       {
-        "label": "Commit the schema change",
+        "label": "Look at the table locks",
+        "pgSessionId": "D",
+        "query": "SELECT activity.application_name AS session, lock.mode, lock.granted\nFROM pg_locks AS lock\nJOIN pg_stat_activity AS activity USING (pid)\nWHERE lock.locktype = 'relation'\n  AND lock.relation = 'accounts'::regclass\n  AND activity.pid <> pg_backend_pid()\nORDER BY session, lock.mode;",
+        "output": {
+          "plan": "Unavailable: plan not requested.",
+          "rows": [
+            {
+              "session": "Session A",
+              "mode": "AccessShareLock",
+              "granted": true
+            },
+            {
+              "session": "Session B",
+              "mode": "AccessExclusiveLock",
+              "granted": false
+            },
+            {
+              "session": "Session C",
+              "mode": "AccessShareLock",
+              "granted": false
+            }
+          ]
+        },
+        "status": "done"
+      },
+      {
+        "label": "Who is blocking whom?",
+        "pgSessionId": "D",
+        "query": "SELECT\n  waiting.application_name AS waiting_session,\n  blocker.application_name AS blocked_by,\n  waiting.query AS waiting_query\nFROM pg_stat_activity AS waiting\nJOIN pg_stat_activity AS blocker\n  ON blocker.pid = ANY (pg_blocking_pids(waiting.pid))\nORDER BY waiting_session, blocked_by;",
+        "output": {
+          "plan": "Unavailable: plan not requested.",
+          "rows": [
+            {
+              "waiting_session": "Session B",
+              "blocked_by": "Session A",
+              "waiting_query": "ALTER TABLE accounts ADD COLUMN note TEXT;"
+            },
+            {
+              "waiting_session": "Session C",
+              "blocked_by": "Session B",
+              "waiting_query": "SELECT owner, balance FROM accounts ORDER BY id;"
+            }
+          ]
+        },
+        "status": "done"
+      },
+      {
+        "label": "Commit",
         "pgSessionId": "A",
         "query": "COMMIT;",
         "output": {
           "plan": "Unavailable: plan not requested.",
           "rows": []
         },
-        "status": "done",
-        "observedBy": [
-          {
-            "label": "Read the table again",
-            "pgSessionId": "B",
-            "query": "SET lock_timeout = '200ms';\nSELECT owner, balance, note FROM accounts ORDER BY id;",
-            "output": {
-              "plan": "Unavailable for a multi-statement SQL example.",
-              "rows": [
-                {
-                  "owner": "alice",
-                  "balance": 1000,
-                  "note": null
-                },
-                {
-                  "owner": "bob",
-                  "balance": 510,
-                  "note": null
-                }
-              ]
-            },
-            "status": "done"
-          }
-        ]
+        "status": "done"
       }
     ]
   },
   "postgres-locks.row-lock-transcript": {
-    "inputHash": "37d5eca555e997aca2dd099cba8ce3d86248061679b3c2c86e096533178df2df",
+    "inputHash": "ec66d1cb886173d5cbe3931eb3428072748d101da2e9154c373fadcf078caabc",
     "steps": [
       {
         "label": "Update alice's row, not committed yet",
@@ -290,50 +284,93 @@
             }
           ]
         },
-        "status": "done",
-        "observedBy": [
-          {
-            "label": "Read both rows",
-            "pgSessionId": "B",
-            "query": "SELECT owner, balance FROM accounts ORDER BY id;",
-            "output": {
-              "plan": "Unavailable: plan not requested.",
-              "rows": [
-                {
-                  "owner": "alice",
-                  "balance": 1000
-                },
-                {
-                  "owner": "bob",
-                  "balance": 500
-                }
-              ]
+        "status": "done"
+      },
+      {
+        "label": "Read both rows",
+        "pgSessionId": "B",
+        "query": "SELECT owner, balance FROM accounts ORDER BY id;",
+        "output": {
+          "plan": "Unavailable: plan not requested.",
+          "rows": [
+            {
+              "owner": "alice",
+              "balance": 1000
             },
-            "status": "done"
-          },
-          {
-            "label": "Update bob's row",
-            "pgSessionId": "B",
-            "query": "SET lock_timeout = '200ms';\nUPDATE accounts SET balance = balance + 50 WHERE owner = 'bob'\nRETURNING owner, balance;",
-            "output": {
-              "plan": "Unavailable for a multi-statement SQL example.",
-              "rows": [
-                {
-                  "owner": "bob",
-                  "balance": 550
-                }
-              ]
+            {
+              "owner": "bob",
+              "balance": 500
+            }
+          ]
+        },
+        "status": "done"
+      },
+      {
+        "label": "Update bob's row",
+        "pgSessionId": "B",
+        "query": "UPDATE accounts SET balance = balance + 50 WHERE owner = 'bob'\nRETURNING owner, balance;",
+        "output": {
+          "plan": "Unavailable: plan not requested.",
+          "rows": [
+            {
+              "owner": "bob",
+              "balance": 550
+            }
+          ]
+        },
+        "status": "done"
+      },
+      {
+        "label": "Update alice's row",
+        "pgSessionId": "B",
+        "query": "UPDATE accounts SET balance = balance + 50 WHERE owner = 'alice'\nRETURNING owner, balance;",
+        "blocks": true,
+        "unblockedAfter": 5,
+        "output": {
+          "plan": "Unavailable: plan not requested.",
+          "rows": [
+            {
+              "owner": "alice",
+              "balance": 950
+            }
+          ]
+        },
+        "status": "done"
+      },
+      {
+        "label": "What is Session B waiting for?",
+        "pgSessionId": "C",
+        "query": "SELECT activity.application_name AS session, lock.locktype, lock.mode, lock.granted\nFROM pg_locks AS lock\nJOIN pg_stat_activity AS activity USING (pid)\nWHERE lock.locktype IN ('transactionid', 'tuple')\n  AND activity.pid <> pg_backend_pid()\nORDER BY session, lock.locktype, lock.granted DESC, lock.mode;",
+        "output": {
+          "plan": "Unavailable: plan not requested.",
+          "rows": [
+            {
+              "session": "Session A",
+              "locktype": "transactionid",
+              "mode": "ExclusiveLock",
+              "granted": true
             },
-            "status": "done"
-          },
-          {
-            "label": "Update alice's row",
-            "pgSessionId": "B",
-            "query": "SET lock_timeout = '200ms';\nUPDATE accounts SET balance = balance + 50 WHERE owner = 'alice'\nRETURNING owner, balance;",
-            "message": "canceling statement due to lock timeout",
-            "status": "error"
-          }
-        ]
+            {
+              "session": "Session B",
+              "locktype": "transactionid",
+              "mode": "ExclusiveLock",
+              "granted": true
+            },
+            {
+              "session": "Session B",
+              "locktype": "transactionid",
+              "mode": "ShareLock",
+              "granted": false
+            },
+            {
+              "session": "Session B",
+              "locktype": "tuple",
+              "mode": "ExclusiveLock",
+              "granted": true
+            }
+          ]
+        },
+        "status": "done"
       },
       {
         "label": "Commit",
@@ -343,29 +380,12 @@
           "plan": "Unavailable: plan not requested.",
           "rows": []
         },
-        "status": "done",
-        "observedBy": [
-          {
-            "label": "Update alice's row again",
-            "pgSessionId": "B",
-            "query": "SET lock_timeout = '200ms';\nUPDATE accounts SET balance = balance + 50 WHERE owner = 'alice'\nRETURNING owner, balance;",
-            "output": {
-              "plan": "Unavailable for a multi-statement SQL example.",
-              "rows": [
-                {
-                  "owner": "alice",
-                  "balance": 950
-                }
-              ]
-            },
-            "status": "done"
-          }
-        ]
+        "status": "done"
       }
     ]
   },
   "postgres-locks.row-lock-strength-transcript": {
-    "inputHash": "90438760f336d83b541dd3b8ed48b4df4075226313021758ca4dcc90c347ea09",
+    "inputHash": "7a011a44f04474c344905b41e4e653ee77cae160cb9707a278f10e08f4bda93c",
     "steps": [
       {
         "label": "Lock alice's row FOR UPDATE",
@@ -380,21 +400,30 @@
             }
           ]
         },
-        "status": "done",
-        "observedBy": [
-          {
-            "label": "Queue a new transfer for alice",
-            "pgSessionId": "B",
-            "query": "SET lock_timeout = '200ms';\nINSERT INTO transfers (account_id, amount) VALUES (1, 40)\nRETURNING id, account_id, amount;",
-            "message": "canceling statement due to lock timeout",
-            "status": "error"
-          }
-        ]
+        "status": "done"
       },
       {
-        "label": "Give the lock back",
+        "label": "Queue a new transfer for alice",
+        "pgSessionId": "B",
+        "query": "INSERT INTO transfers (account_id, amount) VALUES (1, 40)\nRETURNING id, account_id, amount;",
+        "blocks": true,
+        "unblockedAfter": 2,
+        "output": {
+          "plan": "Unavailable: plan not requested.",
+          "rows": [
+            {
+              "id": 4,
+              "account_id": 1,
+              "amount": 40
+            }
+          ]
+        },
+        "status": "done"
+      },
+      {
+        "label": "Commit",
         "pgSessionId": "A",
-        "query": "ROLLBACK;",
+        "query": "COMMIT;",
         "output": {
           "plan": "Unavailable: plan not requested.",
           "rows": []
@@ -414,25 +443,23 @@
             }
           ]
         },
-        "status": "done",
-        "observedBy": [
-          {
-            "label": "Queue the same transfer again",
-            "pgSessionId": "B",
-            "query": "SET lock_timeout = '200ms';\nINSERT INTO transfers (account_id, amount) VALUES (1, 40)\nRETURNING id, account_id, amount;",
-            "output": {
-              "plan": "Unavailable for a multi-statement SQL example.",
-              "rows": [
-                {
-                  "id": 5,
-                  "account_id": 1,
-                  "amount": 40
-                }
-              ]
-            },
-            "status": "done"
-          }
-        ]
+        "status": "done"
+      },
+      {
+        "label": "Queue another transfer for alice",
+        "pgSessionId": "B",
+        "query": "INSERT INTO transfers (account_id, amount) VALUES (1, 40)\nRETURNING id, account_id, amount;",
+        "output": {
+          "plan": "Unavailable: plan not requested.",
+          "rows": [
+            {
+              "id": 5,
+              "account_id": 1,
+              "amount": 40
+            }
+          ]
+        },
+        "status": "done"
       },
       {
         "label": "Commit",
@@ -447,7 +474,7 @@
     ]
   },
   "postgres-locks.queue-transcript": {
-    "inputHash": "1a065e0eb8f8ee79d3baad8576fb20d88fd815219a843359425ba27310e28414",
+    "inputHash": "e5a016d78eb5ccdce52aff55b374363012669dccbe30b9e16593a6da7468290b",
     "steps": [
       {
         "label": "Worker A claims the oldest pending transfer",
@@ -463,47 +490,131 @@
             }
           ]
         },
-        "status": "done",
-        "observedBy": [
-          {
-            "label": "Worker B, plain FOR UPDATE",
-            "pgSessionId": "B",
-            "query": "SET lock_timeout = '200ms';\nSELECT id, account_id, amount\nFROM transfers\nWHERE status = 'pending'\nORDER BY id\nLIMIT 1\nFOR UPDATE;",
-            "message": "canceling statement due to lock timeout",
-            "status": "error"
-          },
-          {
-            "label": "Worker B, FOR UPDATE NOWAIT",
-            "pgSessionId": "B",
-            "query": "SELECT id, account_id, amount\nFROM transfers\nWHERE status = 'pending'\nORDER BY id\nLIMIT 1\nFOR UPDATE NOWAIT;",
-            "message": "could not obtain lock on row in relation \"transfers\"",
-            "status": "error"
-          },
-          {
-            "label": "Worker B, FOR UPDATE SKIP LOCKED",
-            "pgSessionId": "B",
-            "query": "SELECT id, account_id, amount\nFROM transfers\nWHERE status = 'pending'\nORDER BY id\nLIMIT 1\nFOR UPDATE SKIP LOCKED;",
-            "output": {
-              "plan": "Unavailable: plan not requested.",
-              "rows": [
-                {
-                  "id": 2,
-                  "account_id": 1,
-                  "amount": 250
-                }
-              ]
-            },
-            "status": "done"
-          }
-        ]
+        "status": "done"
       },
       {
-        "label": "Finish the job and commit",
+        "label": "Worker B, FOR UPDATE SKIP LOCKED",
+        "pgSessionId": "B",
+        "query": "SELECT id, account_id, amount\nFROM transfers\nWHERE status = 'pending'\nORDER BY id\nLIMIT 1\nFOR UPDATE SKIP LOCKED;",
+        "output": {
+          "plan": "Unavailable: plan not requested.",
+          "rows": [
+            {
+              "id": 2,
+              "account_id": 1,
+              "amount": 250
+            }
+          ]
+        },
+        "status": "done"
+      },
+      {
+        "label": "Worker C, plain FOR UPDATE",
+        "pgSessionId": "C",
+        "query": "SELECT id, account_id, amount\nFROM transfers\nWHERE status = 'pending'\nORDER BY id\nLIMIT 1\nFOR UPDATE;",
+        "blocks": true,
+        "unblockedAfter": 4,
+        "output": {
+          "plan": "Unavailable: plan not requested.",
+          "rows": [
+            {
+              "id": 2,
+              "account_id": 1,
+              "amount": 250
+            }
+          ]
+        },
+        "status": "done"
+      },
+      {
+        "label": "Worker D, FOR UPDATE NOWAIT",
+        "pgSessionId": "D",
+        "query": "SELECT id, account_id, amount\nFROM transfers\nWHERE status = 'pending'\nORDER BY id\nLIMIT 1\nFOR UPDATE NOWAIT;",
+        "message": "could not obtain lock on row in relation \"transfers\"",
+        "status": "error"
+      },
+      {
+        "label": "Worker A finishes the job and commits",
         "pgSessionId": "A",
         "query": "UPDATE transfers SET status = 'done' WHERE id = 1;\n\nCOMMIT;",
         "output": {
           "plan": "Unavailable for a multi-statement SQL example.",
           "rows": []
+        },
+        "status": "done"
+      }
+    ]
+  },
+  "postgres-locks.deadlock-transcript": {
+    "inputHash": "e6363c527281d3d1ac12a45ea76a8781e428f49f0342717785b0128cc64046eb",
+    "steps": [
+      {
+        "label": "Transfer alice → bob: take 10 from alice",
+        "pgSessionId": "A",
+        "query": "BEGIN;\n\nUPDATE accounts SET balance = balance - 10 WHERE owner = 'alice';",
+        "output": {
+          "plan": "Unavailable for a multi-statement SQL example.",
+          "rows": []
+        },
+        "status": "done"
+      },
+      {
+        "label": "Transfer bob → alice: take 10 from bob",
+        "pgSessionId": "B",
+        "query": "BEGIN;\n\nUPDATE accounts SET balance = balance - 10 WHERE owner = 'bob';",
+        "output": {
+          "plan": "Unavailable for a multi-statement SQL example.",
+          "rows": []
+        },
+        "status": "done"
+      },
+      {
+        "label": "Give 10 to bob",
+        "pgSessionId": "A",
+        "query": "UPDATE accounts SET balance = balance + 10 WHERE owner = 'bob';",
+        "blocks": true,
+        "unblockedAfter": 3,
+        "message": "deadlock detected",
+        "status": "error"
+      },
+      {
+        "label": "Give 10 to alice",
+        "pgSessionId": "B",
+        "query": "UPDATE accounts SET balance = balance + 10 WHERE owner = 'alice';",
+        "blocks": true,
+        "unblockedAfter": 3,
+        "output": {
+          "plan": "Unavailable: plan not requested.",
+          "rows": []
+        },
+        "status": "done"
+      },
+      {
+        "label": "Session A's transaction is aborted",
+        "pgSessionId": "A",
+        "query": "ROLLBACK;",
+        "output": {
+          "plan": "Unavailable: plan not requested.",
+          "rows": []
+        },
+        "status": "done"
+      },
+      {
+        "label": "Session B's transfer goes through",
+        "pgSessionId": "B",
+        "query": "COMMIT;\n\nSELECT owner, balance FROM accounts ORDER BY id;",
+        "output": {
+          "plan": "Unavailable for a multi-statement SQL example.",
+          "rows": [
+            {
+              "owner": "alice",
+              "balance": 1010
+            },
+            {
+              "owner": "bob",
+              "balance": 490
+            }
+          ]
         },
         "status": "done"
       }

@@ -3,9 +3,9 @@ import { Link } from "react-router";
 import { SQL_EXAMPLE_IDS } from "../../cli_examples/types";
 import {
   alterTakesAccessExclusiveQuery,
+  blockingQuery,
   databaseInit,
   deadlockFixScript,
-  deadlockScript,
   exercises,
   migration,
   migrationWithLockTimeoutScript,
@@ -49,8 +49,8 @@ function transcriptSteps(
   ) as readonly PostgresExampleStepResultWithObservers<SessionId>[];
 }
 
-// Flattens a transcript into one in-order timeline: each Session A step followed by
-// its Session B checkpoints. `explanations` is keyed by position in that flat list.
+// Flattens a transcript into one in-order timeline (each step, then its observedBy
+// checkpoints, if any). `explanations` is keyed by position in that flat list.
 function flattenTranscript(
   id: SqlExampleId,
   explanations: Readonly<Record<number, string>>,
@@ -68,37 +68,51 @@ function flattenTranscript(
 const tableLockTimeline = flattenTranscript(
   SQL_EXAMPLE_IDS.postgresLocksTableLockTranscript,
   {
-    1: "Session B can see Session A's ACCESS SHARE lock on accounts. It stays held until Session A's transaction ends, not just while the SELECT runs.",
-    2: "ROW EXCLUSIVE (what an UPDATE needs) doesn't conflict with ACCESS SHARE, so Session B's update goes straight through.",
-    5: "ALTER TABLE took ACCESS EXCLUSIVE, the one lock mode that conflicts with every other mode.",
-    6: "Even a plain SELECT needs ACCESS SHARE, which conflicts with ACCESS EXCLUSIVE. Without lock_timeout Session B would sit here until Session A commits.",
-    8: "Once Session A commits, its lock is released and Session B reads the table, new column included.",
+    0: "Session A only reads, but its transaction keeps the ACCESS SHARE lock on accounts until it ends, not just while the SELECT runs.",
+    1: "An UPDATE needs ROW EXCLUSIVE, which doesn't conflict with ACCESS SHARE, so it goes straight through.",
+    2: "ALTER TABLE needs ACCESS EXCLUSIVE, which conflicts with every mode, including Session A's ACCESS SHARE. So Session B waits until Session A's transaction ends.",
+    3: "Session C only wants to read, and reading doesn't conflict with Session A. But it does conflict with the ACCESS EXCLUSIVE lock Session B is waiting for, and Postgres grants conflicting lock requests in the order they arrive. So Session C waits behind Session B.",
+    4: "granted = false is what waiting looks like in pg_locks: Session A holds its lock, Sessions B and C are queued.",
+    5: "pg_blocking_pids() shows the chain: C waits for B, which waits for A. Every new query on accounts would join the back of this queue.",
+    6: "Session A commits and releases its lock. Session B's ALTER TABLE runs, then Session C's SELECT: both finished right after this step.",
   },
 );
 
 const rowLockTimeline = flattenTranscript(
   SQL_EXAMPLE_IDS.postgresLocksRowLockTranscript,
   {
+    0: "Session A now holds a row lock on alice's row, until its transaction ends.",
     1: "Reading is never blocked by a row lock: Session B sees the last committed version of alice's row (1000), exactly as in the MVCC lesson.",
     2: "Same table, different row: no conflict. Row locks are per row.",
-    3: "Same row: Session B has to wait for Session A's transaction to end. lock_timeout turns that wait into an error.",
-    5: "After the commit the wait is over, and Session B's update starts from Session A's committed 900, not the 1000 it read earlier.",
+    3: "Same row: Session B waits for Session A's transaction to end. When it finally runs, it starts from Session A's committed 900, not the 1000 it read in step 2.",
+    4: "The row lock itself isn't in pg_locks, but waiting for it is: Session B waits (granted = false) for a ShareLock on Session A's transaction id, which Session A holds until it commits. The tuple lock marks Session B as first in line for alice's row. Session B's own transaction id lock is there because it already updated bob's row.",
+    5: "The commit releases Session A's transaction id lock, and Session B's update finishes.",
   },
 );
 
 const rowLockStrengthTimeline = flattenTranscript(
   SQL_EXAMPLE_IDS.postgresLocksRowLockStrengthTranscript,
   {
-    1: "Inserting a transfer for alice makes Postgres check the foreign key, which takes FOR KEY SHARE on alice's accounts row, and FOR KEY SHARE conflicts with FOR UPDATE.",
-    4: "FOR NO KEY UPDATE promises not to change alice's id, so the foreign-key check's FOR KEY SHARE is compatible with it. (The new transfer is id 5, not 4: the failed insert above had already used 4 from the sequence, and sequence values are never rolled back.)",
+    1: "Inserting a transfer for alice makes Postgres check the foreign key, which takes FOR KEY SHARE on alice's accounts row. FOR KEY SHARE conflicts with FOR UPDATE, so the insert waits for Session A to commit.",
+    4: "FOR NO KEY UPDATE promises not to change alice's id, so the foreign-key check's FOR KEY SHARE doesn't conflict with it, and the insert goes straight through.",
   },
 );
 
 const queueTimeline = flattenTranscript(SQL_EXAMPLE_IDS.postgresLocksQueueTranscript, {
-  1: "A naive worker asks for the same oldest row and waits behind Worker A. With many workers, they'd all queue on that one row.",
-  2: "NOWAIT fails immediately instead of waiting.",
-  3: "SKIP LOCKED skips any row someone else has locked and takes the next one. That's how you build a job queue on a plain table.",
+  1: "SKIP LOCKED skips any row someone else has locked and takes the next one. That's how you build a job queue on a plain table.",
+  2: "A plain FOR UPDATE waits for the locked row. When Worker A commits, transfer 1 is no longer pending, so Postgres re-checks the WHERE clause and moves on to transfer 2: Worker C waited only to end up with a different row.",
+  3: "NOWAIT fails immediately instead of waiting.",
 });
+
+const deadlockTimeline = flattenTranscript(
+  SQL_EXAMPLE_IDS.postgresLocksDeadlockTranscript,
+  {
+    2: "Session A needs bob's row, which Session B holds, so it waits.",
+    3: "Now Session B needs alice's row, which Session A holds: each waits for the other. After deadlock_timeout (1 second by default), Postgres finds the cycle and cancels Session A's statement with \"deadlock detected\". That releases alice's row, and Session B's update goes through.",
+    4: "An error aborts Session A's whole transaction, so all it can do is roll back, undoing its first update too.",
+    5: "Only Session B's transfer happened.",
+  },
+);
 
 // Postgres's table-level lock conflict matrix, from
 // https://www.postgresql.org/docs/current/explicit-locking.html#LOCKING-TABLES
@@ -521,16 +535,16 @@ export default function PostgresLocks() {
           <Title2 id="when-table-locks-collide">When table locks collide</Title2>
           <Paragraphs>
             <p>
-              Here are two real, concurrently-open connections to one real Postgres
-              server, like two <InlineCode>psql</InlineCode> windows, precomputed at build
-              time the same way as in the MVCC lesson. Session A holds a transaction open
-              while Session B tries to use the same table.
+              Each session below is a real, separate connection to one real Postgres
+              server, like several <InlineCode>psql</InlineCode> windows open side by
+              side, run at build time the same way as in the MVCC lesson. Session A holds
+              a transaction open while the others use the same table, and Session D looks
+              at what's going on.
             </p>
             <p className="mt-3">
-              Session B sets <InlineCode>lock_timeout</InlineCode> before each attempt.
-              Normally a blocked statement just waits, possibly forever; with a timeout,
-              that wait turns into an error after 200ms, so you can see exactly which
-              statements would have been stuck.
+              Some statements genuinely wait for a lock. Those steps are marked, and show
+              the result they returned once they finally got it, and after which step that
+              happened.
             </p>
           </Paragraphs>
         </div>
@@ -539,7 +553,7 @@ export default function PostgresLocks() {
           This is why schema migrations on busy tables are risky: while an{" "}
           <InlineCode>ALTER TABLE</InlineCode> holds or even just waits for{" "}
           <InlineCode>ACCESS EXCLUSIVE</InlineCode>, every new query on that table queues
-          behind it. See the{" "}
+          behind it, like Session C did. See the{" "}
           <a className={linkClassName} href="#not-waiting">
             lock_timeout
           </a>{" "}
@@ -652,10 +666,11 @@ export default function PostgresLocks() {
             <InlineCode>NOWAIT</InlineCode> and <InlineCode>SKIP LOCKED</InlineCode> only
             apply to row locks taken with <InlineCode>SELECT ... FOR ...</InlineCode>. For
             everything else, including table locks, there's{" "}
-            <InlineCode>lock_timeout</InlineCode>, the setting Session B has been using
-            all along. The most important place to use it is schema migrations, so a
-            migration stuck behind a long-running query gives up instead of blocking every
-            other query on the table:
+            <InlineCode>lock_timeout</InlineCode>: the longest a statement will wait for a
+            lock before failing. The most important place to use it is schema migrations,
+            so a migration stuck behind a long-running transaction, like Session B's{" "}
+            <InlineCode>ALTER TABLE</InlineCode> earlier, gives up instead of making every
+            other query on the table queue behind it:
           </p>
         </Paragraphs>
         <SqlCodeViewer code={migrationWithLockTimeoutScript} />
@@ -668,17 +683,17 @@ export default function PostgresLocks() {
             <p>
               Two transfers run at the same time, alice to bob and bob to alice. Each
               locks its first row, then waits for the row the other one already holds.
-              Neither can ever continue:
+              Neither can ever continue on its own:
             </p>
           </Paragraphs>
         </div>
-        <SqlCodeViewer code={deadlockScript} />
+        <Timeline entries={deadlockTimeline} />
         <Paragraphs>
           <p>
-            Postgres checks for this cycle after a lock wait lasts{" "}
-            <InlineCode>deadlock_timeout</InlineCode> (1 second by default), and cancels
-            one of the transactions with <InlineCode>ERROR: deadlock detected</InlineCode>
-            . The other one proceeds. Your application should retry the cancelled one.
+            A deadlock isn't a bug in Postgres, and it doesn't corrupt anything: one
+            transaction is cancelled, the other proceeds. Your application should catch{" "}
+            <InlineCode>deadlock detected</InlineCode> (SQLSTATE{" "}
+            <InlineCode>40P01</InlineCode>) and retry the cancelled transaction.
           </p>
           <p className="mt-3">
             The real fix is to make the cycle impossible: have every transaction lock the
@@ -687,6 +702,25 @@ export default function PostgresLocks() {
           </p>
         </Paragraphs>
         <SqlCodeViewer code={deadlockFixScript} />
+      </LessonSection>
+
+      <LessonSection>
+        <Title2 id="who-is-blocking-whom">Who is blocking whom?</Title2>
+        <Paragraph>
+          When queries pile up in production, this is the first query to run. It's the one
+          Session D ran earlier: for every session waiting on a lock, it shows which
+          sessions are in its way, using <InlineCode>pg_blocking_pids()</InlineCode>.
+        </Paragraph>
+        <SqlCodeViewer code={blockingQuery} />
+        <Paragraph>
+          Follow the chain to the session at its head, and check that session's{" "}
+          <InlineCode>state</InlineCode> in <InlineCode>pg_stat_activity</InlineCode>. The
+          classic culprit is <InlineCode>idle in transaction</InlineCode>: an application
+          that opened a transaction, took some locks, and never committed.{" "}
+          <InlineCode>pg_terminate_backend(pid)</InlineCode> ends it, and{" "}
+          <InlineCode>idle_in_transaction_session_timeout</InlineCode> stops it from
+          happening again.
+        </Paragraph>
       </LessonSection>
 
       <LessonSection>
@@ -755,8 +789,15 @@ function Timeline({ entries }: { entries: readonly TimelineEntry[] }) {
   );
 }
 
-// Session A's badge is dark, Session B's is blue. Every step is precomputed, static
-// data from app/generated/postgres-examples.json; nothing executes at render time.
+const SESSION_BADGE_CLASSNAMES: Record<SessionId, string> = {
+  A: "bg-zinc-950",
+  B: "bg-sky-700",
+  C: "bg-emerald-700",
+  D: "bg-violet-700",
+};
+
+// Every step is precomputed, static data from app/generated/postgres-examples.json;
+// nothing executes at render time.
 function TranscriptStep({
   explanation,
   step,
@@ -770,7 +811,7 @@ function TranscriptStep({
     <div className="border border-zinc-200 p-4">
       <div className="flex flex-wrap items-center gap-3">
         <span
-          className={`rounded-sm px-2 py-0.5 font-mono text-xs font-semibold uppercase text-white ${step.pgSessionId === "A" ? "bg-zinc-950" : "bg-sky-700"}`}
+          className={`rounded-sm px-2 py-0.5 font-mono text-xs font-semibold uppercase text-white ${SESSION_BADGE_CLASSNAMES[step.pgSessionId]}`}
         >
           Session {step.pgSessionId}
         </span>
@@ -778,6 +819,11 @@ function TranscriptStep({
           Step {stepNumber}
         </span>
         {step.label ? <span className="text-sm text-zinc-700">{step.label}</span> : null}
+        {step.blocks && step.unblockedAfter !== undefined ? (
+          <span className="rounded-sm border border-amber-300 bg-amber-50 px-2 py-0.5 font-mono text-xs font-semibold text-amber-800">
+            Waits for a lock · finished after step {step.unblockedAfter + 1}
+          </span>
+        ) : null}
       </div>
       <div className="mt-3">
         <SqlCodeViewer code={step.query} />

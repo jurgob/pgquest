@@ -48,14 +48,6 @@ WHERE locktype = 'relation'
   AND relation IN ('accounts'::regclass, 'transfers'::regclass)
 ORDER BY relation::regclass::text, mode;`;
 
-// The same view, but from a second session looking at everyone else's locks.
-const otherSessionsTableLocks = `SELECT relation::regclass AS relation, mode, granted
-FROM pg_locks
-WHERE locktype = 'relation'
-  AND pid <> pg_backend_pid()
-  AND relation IN ('accounts'::regclass, 'transfers'::regclass)
-ORDER BY relation::regclass::text, mode;`;
-
 export const selectTakesAccessShareQuery = `
 BEGIN;
 
@@ -146,78 +138,78 @@ RETURNING id, status;
   },
 ];
 
-// ---- Real two-session transcripts ----
+// ---- Real multi-session transcripts ----
 //
-// Session A's steps run in order on one connection; each step's `observedBy` runs on a
-// second, concurrently-open connection while Session A's transaction is still open (see
-// runConcurrentSessionSteps in app/sql/run-example.ts). Session B never actually waits
-// on Session A: the runner executes B's checkpoints only after A's step returns, so a
-// statement that would block forever uses lock_timeout or NOWAIT instead, turning
-// "would wait" into a real, immediate lock error.
+// Each session (A, B, C, D) is its own real connection to one real Postgres server,
+// open for the whole transcript (see runConcurrentSessionSteps in
+// app/sql/run-example.ts). Steps run in order; a `blocks: true` step genuinely waits
+// for a lock, and its result is recorded once a later step releases it. Every
+// connection's application_name is "Session <id>", so queries on pg_locks and
+// pg_stat_activity can say which session holds or waits for what.
 
-export const SESSION_IDS = ["A", "B"] as const;
+export const SESSION_IDS = ["A", "B", "C", "D"] as const;
 
 type SessionId = (typeof SESSION_IDS)[number];
 
-const LOCK_TIMEOUT = `SET lock_timeout = '200ms';`;
+type PostgresTranscriptStep = PostgresTranscript<SessionId>["queries"][number];
+
+// Who holds or waits for a table lock on accounts, by session.
+const accountsTableLocks = `SELECT activity.application_name AS session, lock.mode, lock.granted
+FROM pg_locks AS lock
+JOIN pg_stat_activity AS activity USING (pid)
+WHERE lock.locktype = 'relation'
+  AND lock.relation = 'accounts'::regclass
+  AND activity.pid <> pg_backend_pid()
+ORDER BY session, lock.mode;`;
+
+// The standard "who is blocking whom" query.
+export const blockingQuery = `SELECT
+  waiting.application_name AS waiting_session,
+  blocker.application_name AS blocked_by,
+  waiting.query AS waiting_query
+FROM pg_stat_activity AS waiting
+JOIN pg_stat_activity AS blocker
+  ON blocker.pid = ANY (pg_blocking_pids(waiting.pid))
+ORDER BY waiting_session, blocked_by;`;
 
 export const tableLockTranscript = [
   {
-    label: "Read accounts inside an open transaction",
-    observedBy: [
-      {
-        label: "Which locks is anyone else holding?",
-        pgSessionId: "B",
-        query: otherSessionsTableLocks,
-      },
-      {
-        label: "Update a row in the same table",
-        pgSessionId: "B",
-        query: `${LOCK_TIMEOUT}
-UPDATE accounts SET balance = balance + 10 WHERE owner = 'bob'
+    label: "Open a transaction and read accounts",
+    pgSessionId: "A",
+    query: `BEGIN;
+
+SELECT owner, balance FROM accounts ORDER BY id;`,
+  },
+  {
+    label: "Update a row in the same table",
+    pgSessionId: "B",
+    query: `UPDATE accounts SET balance = balance + 10 WHERE owner = 'bob'
 RETURNING owner, balance;`,
-      },
-    ],
-    pgSessionId: "A",
-    query: `BEGIN;
-
-SELECT owner, balance FROM accounts ORDER BY id;`,
   },
   {
-    label: "Done reading",
-    pgSessionId: "A",
-    query: `COMMIT;`,
+    blocks: true,
+    label: "Run a migration on the same table",
+    pgSessionId: "B",
+    query: `ALTER TABLE accounts ADD COLUMN note TEXT;`,
   },
   {
-    label: "Change the table's schema inside an open transaction",
-    observedBy: [
-      {
-        label: "Which locks is anyone else holding?",
-        pgSessionId: "B",
-        query: otherSessionsTableLocks,
-      },
-      {
-        label: "Just read the table",
-        pgSessionId: "B",
-        query: `${LOCK_TIMEOUT}
-SELECT owner, balance FROM accounts ORDER BY id;`,
-      },
-    ],
-    pgSessionId: "A",
-    query: `BEGIN;
-
-ALTER TABLE accounts ADD COLUMN note TEXT;`,
+    blocks: true,
+    label: "Just read the table",
+    pgSessionId: "C",
+    query: `SELECT owner, balance FROM accounts ORDER BY id;`,
   },
   {
-    label: "Commit the schema change",
-    observedBy: [
-      {
-        label: "Read the table again",
-        pgSessionId: "B",
-        query: `${LOCK_TIMEOUT}
-SELECT owner, balance, note FROM accounts ORDER BY id;`,
-      },
-    ],
+    label: "Look at the table locks",
+    pgSessionId: "D",
+    query: accountsTableLocks,
+  },
+  {
+    label: "Who is blocking whom?",
+    pgSessionId: "D",
+    query: blockingQuery,
+  },
+  {
+    label: "Commit",
     pgSessionId: "A",
     query: `COMMIT;`,
   },
@@ -226,27 +218,6 @@ SELECT owner, balance, note FROM accounts ORDER BY id;`,
 export const rowLockTranscript = [
   {
     label: "Update alice's row, not committed yet",
-    observedBy: [
-      {
-        label: "Read both rows",
-        pgSessionId: "B",
-        query: `SELECT owner, balance FROM accounts ORDER BY id;`,
-      },
-      {
-        label: "Update bob's row",
-        pgSessionId: "B",
-        query: `${LOCK_TIMEOUT}
-UPDATE accounts SET balance = balance + 50 WHERE owner = 'bob'
-RETURNING owner, balance;`,
-      },
-      {
-        label: "Update alice's row",
-        pgSessionId: "B",
-        query: `${LOCK_TIMEOUT}
-UPDATE accounts SET balance = balance + 50 WHERE owner = 'alice'
-RETURNING owner, balance;`,
-      },
-    ],
     pgSessionId: "A",
     query: `BEGIN;
 
@@ -254,58 +225,73 @@ UPDATE accounts SET balance = balance - 100 WHERE owner = 'alice'
 RETURNING owner, balance;`,
   },
   {
-    label: "Commit",
-    observedBy: [
-      {
-        label: "Update alice's row again",
-        pgSessionId: "B",
-        query: `${LOCK_TIMEOUT}
-UPDATE accounts SET balance = balance + 50 WHERE owner = 'alice'
+    label: "Read both rows",
+    pgSessionId: "B",
+    query: `SELECT owner, balance FROM accounts ORDER BY id;`,
+  },
+  {
+    label: "Update bob's row",
+    pgSessionId: "B",
+    query: `UPDATE accounts SET balance = balance + 50 WHERE owner = 'bob'
 RETURNING owner, balance;`,
-      },
-    ],
+  },
+  {
+    blocks: true,
+    label: "Update alice's row",
+    pgSessionId: "B",
+    query: `UPDATE accounts SET balance = balance + 50 WHERE owner = 'alice'
+RETURNING owner, balance;`,
+  },
+  {
+    label: "What is Session B waiting for?",
+    pgSessionId: "C",
+    query: `SELECT activity.application_name AS session, lock.locktype, lock.mode, lock.granted
+FROM pg_locks AS lock
+JOIN pg_stat_activity AS activity USING (pid)
+WHERE lock.locktype IN ('transactionid', 'tuple')
+  AND activity.pid <> pg_backend_pid()
+ORDER BY session, lock.locktype, lock.granted DESC, lock.mode;`,
+  },
+  {
+    label: "Commit",
     pgSessionId: "A",
     query: `COMMIT;`,
   },
 ] as const satisfies readonly PostgresTranscriptStep[];
 
-const insertAliceTransfer = `${LOCK_TIMEOUT}
-INSERT INTO transfers (account_id, amount) VALUES (1, 40)
+const insertAliceTransfer = `INSERT INTO transfers (account_id, amount) VALUES (1, 40)
 RETURNING id, account_id, amount;`;
 
 export const rowLockStrengthTranscript = [
   {
     label: "Lock alice's row FOR UPDATE",
-    observedBy: [
-      {
-        label: "Queue a new transfer for alice",
-        pgSessionId: "B",
-        query: insertAliceTransfer,
-      },
-    ],
     pgSessionId: "A",
     query: `BEGIN;
 
 SELECT owner, balance FROM accounts WHERE owner = 'alice' FOR UPDATE;`,
   },
   {
-    label: "Give the lock back",
+    blocks: true,
+    label: "Queue a new transfer for alice",
+    pgSessionId: "B",
+    query: insertAliceTransfer,
+  },
+  {
+    label: "Commit",
     pgSessionId: "A",
-    query: `ROLLBACK;`,
+    query: `COMMIT;`,
   },
   {
     label: "Lock alice's row FOR NO KEY UPDATE instead",
-    observedBy: [
-      {
-        label: "Queue the same transfer again",
-        pgSessionId: "B",
-        query: insertAliceTransfer,
-      },
-    ],
     pgSessionId: "A",
     query: `BEGIN;
 
 SELECT owner, balance FROM accounts WHERE owner = 'alice' FOR NO KEY UPDATE;`,
+  },
+  {
+    label: "Queue another transfer for alice",
+    pgSessionId: "B",
+    query: insertAliceTransfer,
   },
   {
     label: "Commit",
@@ -324,31 +310,29 @@ ${lockClause};`;
 export const queueTranscript = [
   {
     label: "Worker A claims the oldest pending transfer",
-    observedBy: [
-      {
-        label: "Worker B, plain FOR UPDATE",
-        pgSessionId: "B",
-        query: `${LOCK_TIMEOUT}
-${claimQuery("FOR UPDATE")}`,
-      },
-      {
-        label: "Worker B, FOR UPDATE NOWAIT",
-        pgSessionId: "B",
-        query: claimQuery("FOR UPDATE NOWAIT"),
-      },
-      {
-        label: "Worker B, FOR UPDATE SKIP LOCKED",
-        pgSessionId: "B",
-        query: claimQuery("FOR UPDATE SKIP LOCKED"),
-      },
-    ],
     pgSessionId: "A",
     query: `BEGIN;
 
 ${claimQuery("FOR UPDATE SKIP LOCKED")}`,
   },
   {
-    label: "Finish the job and commit",
+    label: "Worker B, FOR UPDATE SKIP LOCKED",
+    pgSessionId: "B",
+    query: claimQuery("FOR UPDATE SKIP LOCKED"),
+  },
+  {
+    blocks: true,
+    label: "Worker C, plain FOR UPDATE",
+    pgSessionId: "C",
+    query: claimQuery("FOR UPDATE"),
+  },
+  {
+    label: "Worker D, FOR UPDATE NOWAIT",
+    pgSessionId: "D",
+    query: claimQuery("FOR UPDATE NOWAIT"),
+  },
+  {
+    label: "Worker A finishes the job and commits",
     pgSessionId: "A",
     query: `UPDATE transfers SET status = 'done' WHERE id = 1;
 
@@ -356,28 +340,46 @@ COMMIT;`,
   },
 ] as const satisfies readonly PostgresTranscriptStep[];
 
-type PostgresTranscriptStep = PostgresTranscript<SessionId>["queries"][number];
+export const deadlockTranscript = [
+  {
+    label: "Transfer alice → bob: take 10 from alice",
+    pgSessionId: "A",
+    query: `BEGIN;
 
-export const deadlockScript = `-- SESSION A                                 -- SESSION B
-BEGIN;                                        BEGIN;
+UPDATE accounts SET balance = balance - 10 WHERE owner = 'alice';`,
+  },
+  {
+    label: "Transfer bob → alice: take 10 from bob",
+    pgSessionId: "B",
+    query: `BEGIN;
 
-UPDATE accounts SET balance = balance - 10
-WHERE owner = 'alice';
--- A holds alice's row
-                                              UPDATE accounts SET balance = balance - 10
-                                              WHERE owner = 'bob';
-                                              -- B holds bob's row
+UPDATE accounts SET balance = balance - 10 WHERE owner = 'bob';`,
+  },
+  {
+    blocks: true,
+    label: "Give 10 to bob",
+    pgSessionId: "A",
+    query: `UPDATE accounts SET balance = balance + 10 WHERE owner = 'bob';`,
+  },
+  {
+    blocks: true,
+    label: "Give 10 to alice",
+    pgSessionId: "B",
+    query: `UPDATE accounts SET balance = balance + 10 WHERE owner = 'alice';`,
+  },
+  {
+    label: "Session A's transaction is aborted",
+    pgSessionId: "A",
+    query: `ROLLBACK;`,
+  },
+  {
+    label: "Session B's transfer goes through",
+    pgSessionId: "B",
+    query: `COMMIT;
 
-UPDATE accounts SET balance = balance + 10
-WHERE owner = 'bob';
--- A waits for B...
-                                              UPDATE accounts SET balance = balance + 10
-                                              WHERE owner = 'alice';
-                                              -- ...and B waits for A.
-                                              -- After deadlock_timeout (1s by default)
-                                              -- Postgres cancels one of them:
-                                              -- ERROR: deadlock detected
-`;
+SELECT owner, balance FROM accounts ORDER BY id;`,
+  },
+] as const satisfies readonly PostgresTranscriptStep[];
 
 export const deadlockFixScript = `-- Both transfers lock their rows in the same order (lowest id first),
 -- so the second one simply waits for the first instead of deadlocking.
@@ -431,6 +433,12 @@ export const postgresTranscripts: readonly PostgresTranscript<SessionId>[] = [
     id: SQL_EXAMPLE_IDS.postgresLocksQueueTranscript,
     pgSessionIds: SESSION_IDS,
     queries: queueTranscript,
+    sqlLoad: databaseInit.query,
+  },
+  {
+    id: SQL_EXAMPLE_IDS.postgresLocksDeadlockTranscript,
+    pgSessionIds: SESSION_IDS,
+    queries: deadlockTranscript,
     sqlLoad: databaseInit.query,
   },
 ];

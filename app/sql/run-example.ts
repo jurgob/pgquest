@@ -293,8 +293,14 @@ export async function runConcurrentSessionSteps<SessionId extends string>({
     await admin.end();
   }
 
-  const connect = async () => {
-    const client = new Client({ ...config, database: databaseName });
+  // application_name lets a transcript's own pg_locks / pg_stat_activity queries say
+  // which session holds or waits for what, instead of showing per-build random pids.
+  const connect = async (applicationName = "pgquest transcript runner") => {
+    const client = new Client({
+      ...config,
+      application_name: applicationName,
+      database: databaseName,
+    });
     await client.connect();
     return client;
   };
@@ -310,7 +316,7 @@ export async function runConcurrentSessionSteps<SessionId extends string>({
     if (existing) {
       return existing;
     }
-    const client = await connect();
+    const client = await connect(`Session ${sessionId}`);
     const pidResult = await client.query<{ pid: number }>(
       "SELECT pg_backend_pid() AS pid",
     );

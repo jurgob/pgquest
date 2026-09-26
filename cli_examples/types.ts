@@ -280,6 +280,7 @@ export const SQL_EXAMPLE_IDS = {
     "postgres-locks.row-lock-strength-transcript",
   ),
   postgresLocksQueueTranscript: sqlExampleId("postgres-locks.queue-transcript"),
+  postgresLocksDeadlockTranscript: sqlExampleId("postgres-locks.deadlock-transcript"),
   emptyDatabase: sqlExampleId("empty-database.database-init"),
 } as const;
 
