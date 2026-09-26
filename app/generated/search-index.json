@@ -975,7 +975,7 @@
     "anchor": null,
     "heading": null,
     "lessonId": "postgres-locks",
-    "text": "Locks The MVCC lesson ended on a promise: readers never wait on writers, and writers never wait on readers. But two writers changing the same row can't both win, and nobody should drop a table while someone else is reading it. That's what locks are for. Postgres takes almost all of its locks automatically, so you rarely write a lock statement yourself. What matters is knowing which locks your statements take, and what they'll make other sessions wait for. Most of this lesson is about two scopes: table-level locks, which every statement takes, and row-level locks, which writes take on the rows they change."
+    "text": "Locks Draft The MVCC lesson ended on a promise: readers never wait on writers, and writers never wait on readers. But two writers changing the same row can't both win, and nobody should drop a table while someone else is reading it. That's what locks are for. Postgres takes almost all of its locks automatically, so you rarely write a lock statement yourself. What matters is knowing which locks your statements take, and what they'll make other sessions wait for. Most of this lesson is about two scopes: table-level locks, which every statement takes, and row-level locks, which writes take on the rows they change."
   },
   {
     "anchor": "what-postgres-can-lock",

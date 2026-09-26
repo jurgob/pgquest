@@ -312,6 +312,7 @@ export const lessons: readonly LessonCatalogItem[] = [
       "See which locks every statement takes, what blocks what, and how NOWAIT, SKIP LOCKED, and lock_timeout keep sessions from waiting forever.",
     meta: "TABLE LOCKS · ROW LOCKS · SKIP LOCKED",
     time: "25 min",
+    draft: true,
   },
 ] as const satisfies readonly LessonCatalogItem[];
 
