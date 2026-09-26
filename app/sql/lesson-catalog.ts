@@ -299,6 +299,20 @@ export const lessons: readonly LessonCatalogItem[] = [
     meta: "ISOLATION LEVELS · WRITE SKEW",
     time: "20 min",
   },
+  {
+    id: "postgres-locks",
+    label: "Lesson 21",
+    number: "21",
+    title: "Locks",
+    slug: "postgres-locks",
+    routeModule: "routes/postgres-locks.tsx",
+    cliExampleModule: "postgres-locks.sql.ts",
+    href: "/lessons/postgres-locks",
+    summary:
+      "See which locks every statement takes, what blocks what, and how NOWAIT, SKIP LOCKED, and lock_timeout keep sessions from waiting forever.",
+    meta: "TABLE LOCKS · ROW LOCKS · SKIP LOCKED",
+    time: "25 min",
+  },
 ] as const satisfies readonly LessonCatalogItem[];
 
 export const lessonSummaries = lessons.map(({ id, number, title, href }) => ({

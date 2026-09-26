@@ -262,6 +262,24 @@ export const SQL_EXAMPLE_IDS = {
   transactionIsolationLevelsExerciseSerializableShow: sqlExampleId(
     "transaction-isolation-levels.serializable-show",
   ),
+  postgresLocksDatabaseInit: sqlExampleId("postgres-locks.database-init"),
+  postgresLocksSelectTakesAccessShare: sqlExampleId(
+    "postgres-locks.select-takes-access-share",
+  ),
+  postgresLocksUpdateTakesRowExclusive: sqlExampleId(
+    "postgres-locks.update-takes-row-exclusive",
+  ),
+  postgresLocksAlterTakesAccessExclusive: sqlExampleId(
+    "postgres-locks.alter-takes-access-exclusive",
+  ),
+  postgresLocksExerciseDeleteLocks: sqlExampleId("postgres-locks.delete-locks"),
+  postgresLocksExerciseClaimTransfer: sqlExampleId("postgres-locks.claim-transfer"),
+  postgresLocksTableLockTranscript: sqlExampleId("postgres-locks.table-lock-transcript"),
+  postgresLocksRowLockTranscript: sqlExampleId("postgres-locks.row-lock-transcript"),
+  postgresLocksRowLockStrengthTranscript: sqlExampleId(
+    "postgres-locks.row-lock-strength-transcript",
+  ),
+  postgresLocksQueueTranscript: sqlExampleId("postgres-locks.queue-transcript"),
   emptyDatabase: sqlExampleId("empty-database.database-init"),
 } as const;
 

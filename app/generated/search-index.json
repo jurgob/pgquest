@@ -970,5 +970,89 @@
     "heading": "What We Learned",
     "lessonId": "transaction-isolation-levels",
     "text": "READ COMMITTED Postgres's default. Each statement gets a fresh view of committed data, even inside an open transaction. REPEATABLE READ The whole transaction sees one snapshot taken at its first query — later commits from other transactions stay invisible to it. SERIALIZABLE Adds real conflict detection on top of REPEATABLE READ's snapshot: if the result wouldn't match some one-at-a-time ordering of the transactions, Postgres rejects one of the commits instead of allowing it. Write skew Two transactions each read a shared fact, each act on what they read, and each commit successfully — but only because neither saw the other's change. Individually valid, together wrong. SQLSTATE 40001 The error code for a SERIALIZABLE conflict. An application using SERIALIZABLE is expected to catch it and retry the transaction. SET TRANSACTION ISOLATION LEVEL Sets the isolation level for the current transaction; also settable as BEGIN ISOLATION LEVEL ... ."
+  },
+  {
+    "anchor": null,
+    "heading": null,
+    "lessonId": "postgres-locks",
+    "text": "Locks The MVCC lesson ended on a promise: readers never wait on writers, and writers never wait on readers. But two writers changing the same row can't both win, and nobody should drop a table while someone else is reading it. That's what locks are for. Postgres takes almost all of its locks automatically, so you rarely write a lock statement yourself. What matters is knowing which locks your statements take, and what they'll make other sessions wait for. There are two layers: table-level locks, which every statement takes, and row-level locks, which writes take on the rows they change."
+  },
+  {
+    "anchor": "the-migration",
+    "heading": "The migration",
+    "lessonId": "postgres-locks",
+    "text": "Accounts, and a queue of transfers that reference them through a foreign key. That foreign key will matter later."
+  },
+  {
+    "anchor": "the-seed",
+    "heading": "The seed",
+    "lessonId": "postgres-locks",
+    "text": "Two accounts and three pending transfers."
+  },
+  {
+    "anchor": "every-statement-takes-a-table-lock",
+    "heading": "Every statement takes a table lock",
+    "lessonId": "postgres-locks",
+    "text": "The pg_locks view lists every lock in the database. Filtering it to your own session ( pid = pg_backend_pid() ) inside an open transaction shows exactly what your statements have taken so far. Even a plain SELECT takes a lock: Loaded Database: postgres-locks.database-init Each table gets the lock its statement needs, and the transaction keeps all of them until it commits or rolls back: Loaded Database: postgres-locks.database-init And a schema change takes the strongest one: Loaded Database: postgres-locks.database-init"
+  },
+  {
+    "anchor": "the-eight-table-lock-modes",
+    "heading": "The eight table lock modes",
+    "lessonId": "postgres-locks",
+    "text": "Every table-level lock is one of eight modes, from weakest to strongest. A lock only makes another session wait if the two modes conflict (✕ below). Most combinations don't: a thousand sessions can read and write the same table at once, because ACCESS SHARE and ROW EXCLUSIVE are compatible. Don't let the names mislead you: ROW SHARE and ROW EXCLUSIVE are table-level locks too. The names are historical. Mode Taken by AS RS RE SUE S SRE E AE ACCESS SHARE (AS) SELECT ✕ ROW SHARE (RS) SELECT ... FOR UPDATE / FOR SHARE ✕ ✕ ROW EXCLUSIVE (RE) INSERT, UPDATE, DELETE, MERGE ✕ ✕ ✕ ✕ SHARE UPDATE EXCLUSIVE (SUE) VACUUM, ANALYZE, CREATE INDEX CONCURRENTLY ✕ ✕ ✕ ✕ ✕ SHARE (S) CREATE INDEX ✕ ✕ ✕ ✕ ✕ SHARE ROW EXCLUSIVE (SRE) CREATE TRIGGER, ADD FOREIGN KEY ✕ ✕ ✕ ✕ ✕ ✕ EXCLUSIVE (E) REFRESH MATERIALIZED VIEW CONCURRENTLY ✕ ✕ ✕ ✕ ✕ ✕ ✕ ACCESS EXCLUSIVE (AE) Most ALTER TABLE, DROP, TRUNCATE, VACUUM FULL, LOCK TABLE ✕ ✕ ✕ ✕ ✕ ✕ ✕ ✕"
+  },
+  {
+    "anchor": "when-table-locks-collide",
+    "heading": "When table locks collide",
+    "lessonId": "postgres-locks",
+    "text": "Here are two real, concurrently-open connections to one real Postgres server, like two psql windows, precomputed at build time the same way as in the MVCC lesson. Session A holds a transaction open while Session B tries to use the same table. Session B sets lock_timeout before each attempt. Normally a blocked statement just waits, possibly forever; with a timeout, that wait turns into an error after 200ms, so you can see exactly which statements would have been stuck. Session A Step 1 Read accounts inside an open transaction owner balance alice 1000 bob 500 Session B Step 2 Which locks is anyone else holding? relation mode granted accounts AccessShareLock true Session B can see Session A's ACCESS SHARE lock on accounts. It stays held until Session A's transaction ends, not just while the SELECT runs. Session B Step 3 Update a row in the same table owner balance bob 510 ROW EXCLUSIVE (what an UPDATE needs) doesn't conflict with ACCESS SHARE, so Session B's update goes straight through. Session A Step 4 Done reading No rows Session A Step 5 Change the table's schema inside an open transaction No rows Session B Step 6 Which locks is anyone else holding? relation mode granted accounts AccessExclusiveLock true ALTER TABLE took ACCESS EXCLUSIVE, the one lock mode that conflicts with every other mode. Session B Step 7 Just read the table Even a plain SELECT needs ACCESS SHARE, which conflicts with ACCESS EXCLUSIVE. Without lock_timeout Session B would sit here until Session A commits. Session A Step 8 Commit the schema change No rows Session B Step 9 Read the table again owner balance note alice 1000 bob 510 Once Session A commits, its lock is released and Session B reads the table, new column included. This is why schema migrations on busy tables are risky: while an ALTER TABLE holds or even just waits for ACCESS EXCLUSIVE , every new query on that table queues behind it. See the lock_timeout section below for the standard defense."
+  },
+  {
+    "anchor": "row-level-locks",
+    "heading": "Row-level locks",
+    "lessonId": "postgres-locks",
+    "text": "Table locks alone can't stop two sessions from updating the same row at once: both only need the compatible ROW EXCLUSIVE . So every UPDATE and DELETE also locks each row it changes, until the transaction ends. Row locks don't show up in pg_locks . Postgres records them on the row itself, in the same xmax column you saw in the MVCC lesson, so it can lock millions of rows without running out of lock memory. Session A Step 1 Update alice's row, not committed yet owner balance alice 900 Session B Step 2 Read both rows owner balance alice 1000 bob 500 Reading is never blocked by a row lock: Session B sees the last committed version of alice's row (1000), exactly as in the MVCC lesson. Session B Step 3 Update bob's row owner balance bob 550 Same table, different row: no conflict. Row locks are per row. Session B Step 4 Update alice's row Same row: Session B has to wait for Session A's transaction to end. lock_timeout turns that wait into an error. Session A Step 5 Commit No rows Session B Step 6 Update alice's row again owner balance alice 950 After the commit the wait is over, and Session B's update starts from Session A's committed 900, not the 1000 it read earlier."
+  },
+  {
+    "anchor": "four-row-lock-strengths",
+    "heading": "Four strengths of row lock",
+    "lessonId": "postgres-locks",
+    "text": "Like table locks, row locks come in modes. You can take them explicitly with SELECT ... FOR ... , and writes take them automatically: Row lock Taken by Conflicts with FOR KEY SHARE Foreign-key checks on the referenced row FOR UPDATE FOR SHARE SELECT ... FOR SHARE FOR NO KEY UPDATE, FOR UPDATE FOR NO KEY UPDATE UPDATE that doesn't change a key column FOR SHARE, FOR NO KEY UPDATE, FOR UPDATE FOR UPDATE DELETE, UPDATE of a key column, SELECT ... FOR UPDATE All four The subtle one is FOR KEY SHARE . Every time you insert a transfer, Postgres checks that its account exists and locks that account row FOR KEY SHARE , so nobody can delete it before the insert commits. That makes FOR UPDATE on a parent row surprisingly expensive: it blocks inserts into every child table. Session A Step 1 Lock alice's row FOR UPDATE owner balance alice 1000 Session B Step 2 Queue a new transfer for alice Inserting a transfer for alice makes Postgres check the foreign key, which takes FOR KEY SHARE on alice's accounts row, and FOR KEY SHARE conflicts with FOR UPDATE. Session A Step 3 Give the lock back No rows Session A Step 4 Lock alice's row FOR NO KEY UPDATE instead owner balance alice 1000 Session B Step 5 Queue the same transfer again id account_id amount 5 1 40 FOR NO KEY UPDATE promises not to change alice's id, so the foreign-key check's FOR KEY SHARE is compatible with it. (The new transfer is id 5, not 4: the failed insert above had already used 4 from the sequence, and sequence values are never rolled back.) Session A Step 6 Commit No rows A plain UPDATE accounts SET balance = ... takes FOR NO KEY UPDATE automatically, since it doesn't touch the key. So when you lock rows yourself before updating them, prefer FOR NO KEY UPDATE over FOR UPDATE unless you're about to delete the row or change its key. This is the conflict the reservation system lesson mentions when it avoids locking the user row."
+  },
+  {
+    "anchor": "not-waiting",
+    "heading": "Not waiting: NOWAIT, SKIP LOCKED, lock_timeout",
+    "lessonId": "postgres-locks",
+    "text": "Waiting is the default, and it's usually right. But sometimes waiting is the bug. Take a queue of transfers processed by several workers: each worker grabs the oldest pending transfer and locks it while working on it. Session A Step 1 Worker A claims the oldest pending transfer id account_id amount 1 1 100 Session B Step 2 Worker B, plain FOR UPDATE A naive worker asks for the same oldest row and waits behind Worker A. With many workers, they'd all queue on that one row. Session B Step 3 Worker B, FOR UPDATE NOWAIT NOWAIT fails immediately instead of waiting. Session B Step 4 Worker B, FOR UPDATE SKIP LOCKED id account_id amount 2 1 250 SKIP LOCKED skips any row someone else has locked and takes the next one. That's how you build a job queue on a plain table. Session A Step 5 Finish the job and commit No rows NOWAIT and SKIP LOCKED only apply to row locks taken with SELECT ... FOR ... . For everything else, including table locks, there's lock_timeout , the setting Session B has been using all along. The most important place to use it is schema migrations, so a migration stuck behind a long-running query gives up instead of blocking every other query on the table:"
+  },
+  {
+    "anchor": "deadlocks",
+    "heading": "Deadlocks",
+    "lessonId": "postgres-locks",
+    "text": "Two transfers run at the same time, alice to bob and bob to alice. Each locks its first row, then waits for the row the other one already holds. Neither can ever continue: Postgres checks for this cycle after a lock wait lasts deadlock_timeout (1 second by default), and cancels one of the transactions with ERROR: deadlock detected . The other one proceeds. Your application should retry the cancelled one. The real fix is to make the cycle impossible: have every transaction lock the rows it needs in the same order. Then the second transfer waits for the first instead of deadlocking with it:"
+  },
+  {
+    "anchor": "advisory-locks",
+    "heading": "Advisory locks",
+    "lessonId": "postgres-locks",
+    "text": "Every lock so far protects a table or a row. Sometimes you need to protect an idea instead, like \"only one request at a time for this user and this event\", where there's no single row to lock. Advisory locks lock an arbitrary number that your application chooses the meaning of. The reservation system lesson uses one to close a real race condition."
+  },
+  {
+    "anchor": "rules-of-thumb",
+    "heading": "Rules of thumb",
+    "lessonId": "postgres-locks",
+    "text": "Keep transactions short. Every lock is held until the transaction ends, so a transaction left open while your app calls another service holds its locks the whole time. Set lock_timeout in migrations, and prefer CREATE INDEX CONCURRENTLY , which takes SHARE UPDATE EXCLUSIVE instead of SHARE and so doesn't block writes. Use FOR NO KEY UPDATE rather than FOR UPDATE unless you're deleting the row or changing its key. Lock rows in a consistent order to avoid deadlocks, and retry when one happens anyway. For work queues, use FOR UPDATE SKIP LOCKED . When something is stuck, pg_locks and pg_blocking_pids(pid) tell you who is waiting on whom. Try Yourself Loaded Database: postgres-locks.database-init The database for this lesson is already loaded. Write any query you want and run it directly in your browser."
+  },
+  {
+    "anchor": "exercises",
+    "heading": "Exercises",
+    "lessonId": "postgres-locks",
+    "text": "0 OF 2 DONE 1. Open a transaction, delete bob's pending transfer (account_id = 2), then list relation and mode of the table-level locks your session holds on accounts and transfers, ordered by relation and mode. 2. Claim the oldest pending transfer the way a queue worker would: mark it 'processing' using a subquery that picks it with FOR UPDATE SKIP LOCKED, and return its id and status."
+  },
+  {
+    "anchor": "what-we-learned",
+    "heading": "What We Learned",
+    "lessonId": "postgres-locks",
+    "text": "Table-level locks Every statement locks the tables it touches in one of eight modes, held until the transaction ends. Two sessions conflict only if their modes do. ACCESS EXCLUSIVE The lock most ALTER TABLE s take. It conflicts with everything, including plain SELECT s. Row-level locks FOR KEY SHARE , FOR SHARE , FOR NO KEY UPDATE , and FOR UPDATE . They block other writers and lockers of the same row, never plain readers. pg_locks A system view listing every lock currently held or awaited, by which session ( pid ), and whether it was granted. NOWAIT / SKIP LOCKED Instead of waiting for a locked row, fail immediately ( NOWAIT ) or skip it ( SKIP LOCKED ). lock_timeout The longest a statement will wait for a lock before failing. Essential for schema migrations on busy tables. Deadlock Two transactions each waiting for a lock the other holds. Postgres detects it and cancels one; locking rows in a consistent order prevents it."
   }
 ]

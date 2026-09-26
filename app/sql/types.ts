@@ -40,4 +40,5 @@ export type LessonId =
   | "advanced-aggregation"
   | "vectors"
   | "concurrency-reservation-system"
-  | "transaction-isolation-levels";
+  | "transaction-isolation-levels"
+  | "postgres-locks";
