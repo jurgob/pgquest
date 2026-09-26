@@ -277,7 +277,8 @@ export type SqlExample = {
 
 // A single statement within an ordered, multi-step "session" transcript — e.g. the
 // live BEGIN/UPDATE/COMMIT steps in the MVCC lesson. `pgSessionId` is display/narrative
-// metadata only; it never affects execution routing (see runMultiSessionSteps).
+// metadata in the browser (see runMultiSessionSteps); at build time each session gets its
+// own real connection (see runConcurrentSessionSteps).
 export type PostgresExampleStep<SessionId extends string = string> = {
   pgSessionId: SessionId;
   query: string;
@@ -289,6 +290,11 @@ export type PostgresExampleStep<SessionId extends string = string> = {
   // scripts/build-postgres-examples.ts's runConcurrentSessionSteps acts on this field;
   // the browser-side useLessonSqlExampleMultipleSession/runMultiSessionSteps ignore it.
   observedBy?: readonly PostgresExampleStep<SessionId>[];
+  // Build-time only: this statement is expected to wait for a lock held by another
+  // session. runConcurrentSessionSteps sends it, confirms Postgres reports it waiting,
+  // and moves on; its result is recorded once a later statement releases it. The build
+  // fails if it never waits, or is still waiting when the transcript ends.
+  blocks?: boolean;
 };
 
 // A registration of one such transcript, precomputed at build time by
