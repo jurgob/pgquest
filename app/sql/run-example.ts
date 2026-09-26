@@ -131,8 +131,12 @@ async function executeSqlQueryOnDatabase(
 export type PostgresExampleStepOutcome =
   { status: "done"; output: ExecutionOutput } | { status: "error"; message: string };
 
+// `unblockedAfter` is only set on a `blocks: true` step: the position (in transcript
+// order — each step, then its observedBy checkpoints) of the statement after which
+// it finished waiting, e.g. the other session's COMMIT that released its lock.
 export type PostgresExampleStepResult<SessionId extends string> =
-  PostgresExampleStep<SessionId> & PostgresExampleStepOutcome;
+  PostgresExampleStep<SessionId> &
+    PostgresExampleStepOutcome & { unblockedAfter?: number };
 
 // Plain `Omit` on a discriminated union collapses it to its common keys, dropping
 // `output`/`message` entirely (they're each only on one branch of
@@ -238,9 +242,9 @@ export async function runMultiSessionSteps<SessionId extends string>({
 
 /**
  * Build-time-only sibling of runMultiSessionSteps: connects to a REAL Postgres
- * server (see scripts/dev-pg.sh) instead of an embedded PGlite instance, so
- * `observedBy` checkpoints can use a genuinely separate, concurrently-open second
- * connection — real dirty-read-prevention semantics, not a workaround.
+ * server (see scripts/dev-pg.sh) instead of an embedded PGlite instance, so every
+ * `pgSessionId` gets its own genuinely separate, concurrently-open connection — real
+ * locking and visibility semantics, not a workaround.
  *
  * Two things were tried and rejected before this: PGlite's `.clone()`
  * (dumpDataDir + reload into a fresh instance) silently drops the `xmax` an
@@ -250,13 +254,22 @@ export async function runMultiSessionSteps<SessionId extends string>({
  * real second connection. A genuine second `pg` connection against a real running
  * Postgres sidesteps both — it's not a PGlite/browser limitation to work around.
  *
+ * Statements run in transcript order: each step, then its `observedBy` checkpoints,
+ * each on its own session's connection, which stays open for the whole transcript.
+ * A step marked `blocks: true` is expected to wait for a lock: it's sent without
+ * waiting for its result, the runner watches pg_stat_activity until Postgres reports
+ * it waiting, then carries on with the next statements. After every statement, it
+ * checks whether that released any waiting statement, and records where it finished
+ * (see settlePending) — so a blocked UPDATE's result shows the value the blocking
+ * transaction committed, and a deadlock shows Postgres's real error.
+ *
  * Each call gets a fresh, disposable database (`CREATE DATABASE`, dropped in a
  * `finally`) on the dev Postgres server so concurrent builds/re-runs never collide.
  * Requires `pnpm run dev:pg` running locally — see getDevPgConfig for the
  * connection details and connectWithRetry for how connection timing is handled.
  * Node-only (`pg` is dynamically imported so it's never bundled for the browser);
  * the live, browser-side `useLessonSqlExampleMultipleSession` uses
- * `runMultiSessionSteps` instead, which ignores `observedBy` entirely.
+ * `runMultiSessionSteps` instead, which ignores `observedBy` and `blocks` entirely.
  */
 export async function runConcurrentSessionSteps<SessionId extends string>({
   queries,
@@ -280,62 +293,239 @@ export async function runConcurrentSessionSteps<SessionId extends string>({
     await admin.end();
   }
 
-  const primary = new Client({ ...config, database: databaseName });
-  await primary.connect();
+  // application_name lets a transcript's own pg_locks / pg_stat_activity queries say
+  // which session holds or waits for what, instead of showing per-build random pids.
+  const connect = async (applicationName = "pgquest transcript runner") => {
+    const client = new Client({
+      ...config,
+      application_name: applicationName,
+      database: databaseName,
+    });
+    await client.connect();
+    return client;
+  };
 
-  try {
-    await primary.query(sqlLoad);
+  // Watches the sessions' lock waits; never runs a transcript statement itself.
+  const monitor = await connect();
+  const sessions = new Map<SessionId, PgSession>();
+  const pending: PendingStatement<SessionId>[] = [];
+  let position = 0;
 
-    const results: PostgresExampleStepResultWithObservers<SessionId>[] = [];
+  const sessionFor = async (sessionId: SessionId): Promise<PgSession> => {
+    const existing = sessions.get(sessionId);
+    if (existing) {
+      return existing;
+    }
+    const client = await connect(`Session ${sessionId}`);
+    const pidResult = await client.query<{ pid: number }>(
+      "SELECT pg_backend_pid() AS pid",
+    );
+    const session = { client, pid: pidResult.rows[0]!.pid };
+    sessions.set(sessionId, session);
+    return session;
+  };
 
-    for (const step of queries) {
-      const outcome = await runPgStatement(primary, step.query, runExplain);
-      const result: PostgresExampleStepResultWithObservers<SessionId> = {
-        ...(step.label !== undefined ? { label: step.label } : {}),
-        pgSessionId: step.pgSessionId,
-        query: step.query,
-        ...outcome,
-      };
-
-      if (step.observedBy && step.observedBy.length > 0) {
-        // A real second connection to the same database — genuinely concurrent
-        // with `primary`'s still-open transaction, not a simulation of one.
-        const observer = new Client({ ...config, database: databaseName });
-        await observer.connect();
-        try {
-          const observed: PostgresExampleStepResult<SessionId>[] = [];
-          for (const observerStep of step.observedBy) {
-            const observerOutcome = await runPgStatement(
-              observer,
-              observerStep.query,
-              runExplain,
-            );
-            observed.push({
-              ...(observerStep.label !== undefined ? { label: observerStep.label } : {}),
-              pgSessionId: observerStep.pgSessionId,
-              query: observerStep.query,
-              ...observerOutcome,
-            });
-          }
-          result.observedBy = observed;
-        } finally {
-          await observer.end();
-        }
-      }
-
-      results.push(result);
+  const runStep = async (
+    step: PostgresExampleStep<SessionId>,
+  ): Promise<StepRecord<SessionId>> => {
+    const index = position;
+    position += 1;
+    const session = await sessionFor(step.pgSessionId);
+    const busy = pending.find((statement) => statement.session === session);
+    if (busy) {
+      throw new Error(
+        `Transcript statement ${index + 1} runs on session ${step.pgSessionId}, which is still waiting for a lock since statement ${busy.index + 1}.`,
+      );
     }
 
-    return results;
+    const record: StepRecord<SessionId> = { step };
+
+    if (!step.blocks) {
+      record.outcome = await runPgStatement(session.client, step.query, runExplain);
+      await settlePending(monitor, pending, index);
+      return record;
+    }
+
+    const statement: PendingStatement<SessionId> = { index, record, session };
+    void runPgStatement(session.client, step.query, runExplain).then((outcome) => {
+      statement.outcome = outcome;
+    });
+    await pollUntil(
+      async () =>
+        statement.outcome !== undefined ||
+        (await readLockWaits(monitor, [session.pid])).some((wait) => wait.waiting),
+      `Transcript statement ${index + 1} (session ${step.pgSessionId}, blocks: true) never started waiting for a lock.`,
+    );
+    if (statement.outcome !== undefined) {
+      throw new Error(
+        `Transcript statement ${index + 1} (session ${step.pgSessionId}) is marked blocks: true but finished without waiting for a lock.`,
+      );
+    }
+    pending.push(statement);
+    // This statement may have closed a deadlock cycle.
+    await settlePending(monitor, pending, index);
+    return record;
+  };
+
+  try {
+    await monitor.query(sqlLoad);
+
+    const records: StepRecord<SessionId>[] = [];
+    for (const step of queries) {
+      const record = await runStep(step);
+      if (step.observedBy && step.observedBy.length > 0) {
+        record.observedBy = [];
+        for (const observerStep of step.observedBy) {
+          record.observedBy.push(await runStep(observerStep));
+        }
+      }
+      records.push(record);
+    }
+
+    const stillWaiting = pending[0];
+    if (stillWaiting) {
+      throw new Error(
+        `Transcript statement ${stillWaiting.index + 1} (session ${stillWaiting.record.step.pgSessionId}) was still waiting for a lock when the transcript ended.`,
+      );
+    }
+
+    return records.map((record) => ({
+      ...toStepResult(record),
+      ...(record.observedBy ? { observedBy: record.observedBy.map(toStepResult) } : {}),
+    }));
   } finally {
-    await primary.end();
+    await Promise.allSettled([
+      monitor.end(),
+      ...[...sessions.values()].map((session) => session.client.end()),
+    ]);
     const cleanup = new Client({ ...config, database: "postgres" });
     await cleanup.connect();
     try {
-      await cleanup.query(`DROP DATABASE IF EXISTS "${databaseName}";`);
+      // FORCE: a failed transcript can leave a session still connected.
+      await cleanup.query(`DROP DATABASE IF EXISTS "${databaseName}" WITH (FORCE);`);
     } finally {
       await cleanup.end();
     }
+  }
+}
+
+type PgSession = { client: PgClient; pid: number };
+
+type StepRecord<SessionId extends string> = {
+  step: PostgresExampleStep<SessionId>;
+  outcome?: PostgresExampleStepOutcome;
+  unblockedAfter?: number;
+  observedBy?: StepRecord<SessionId>[];
+};
+
+type PendingStatement<SessionId extends string> = {
+  index: number;
+  outcome?: PostgresExampleStepOutcome;
+  record: StepRecord<SessionId>;
+  session: PgSession;
+};
+
+function toStepResult<SessionId extends string>(
+  record: StepRecord<SessionId>,
+): DistributiveOmit<PostgresExampleStepResult<SessionId>, "observedBy"> {
+  const { step, outcome } = record;
+  if (!outcome) {
+    throw new Error(`Transcript step never finished: ${step.query}`);
+  }
+  return {
+    ...(step.label !== undefined ? { label: step.label } : {}),
+    pgSessionId: step.pgSessionId,
+    query: step.query,
+    ...(step.blocks ? { blocks: true } : {}),
+    ...(record.unblockedAfter !== undefined
+      ? { unblockedAfter: record.unblockedAfter }
+      : {}),
+    ...outcome,
+  };
+}
+
+type LockWait = { blockers: number[]; pid: number; waiting: boolean };
+
+async function readLockWaits(monitor: PgClient, pids: readonly number[]) {
+  const result = await monitor.query<LockWait>(
+    `SELECT pid, wait_event_type IS NOT DISTINCT FROM 'Lock' AS waiting,
+       pg_blocking_pids(pid) AS blockers
+     FROM pg_stat_activity
+     WHERE pid = ANY($1::int[])`,
+    [pids],
+  );
+  return result.rows;
+}
+
+// Called after statement `afterIndex` returns: waits until every still-pending
+// statement has either finished (recording `afterIndex` as where it was released) or
+// is stably waiting — Postgres reports it waiting AND it has a blocker. A statement
+// whose lock was just granted can still show a Lock wait for a moment, but its
+// blocker list is already empty; checking both keeps the result deterministic.
+// Statements that only wait on each other are a deadlock: keep polling until
+// Postgres's deadlock detector (after deadlock_timeout) cancels one of them.
+async function settlePending<SessionId extends string>(
+  monitor: PgClient,
+  pending: PendingStatement<SessionId>[],
+  afterIndex: number,
+) {
+  await pollUntil(
+    async () => {
+      for (let index = pending.length - 1; index >= 0; index -= 1) {
+        const statement = pending[index]!;
+        if (statement.outcome !== undefined) {
+          statement.record.outcome = statement.outcome;
+          statement.record.unblockedAfter = afterIndex;
+          pending.splice(index, 1);
+        }
+      }
+      if (pending.length === 0) {
+        return true;
+      }
+
+      const waits = await readLockWaits(
+        monitor,
+        pending.map((statement) => statement.session.pid),
+      );
+      const stablyWaiting =
+        waits.length === pending.length &&
+        waits.every((wait) => wait.waiting && wait.blockers.length > 0);
+      return stablyWaiting && !hasDeadlock(waits);
+    },
+    `Statements pending after transcript statement ${afterIndex + 1} never finished or settled into a lock wait.`,
+  );
+}
+
+// A set of waiting statements none of which can progress: each is blocked only by
+// others in the set. Repeatedly drop any statement with a blocker outside the set
+// (that blocker can still finish and release it); whatever is left is a cycle.
+function hasDeadlock(waits: readonly LockWait[]): boolean {
+  let stuck = new Set(waits.map((wait) => wait.pid));
+  for (;;) {
+    const next = new Set(
+      waits
+        .filter((wait) => stuck.has(wait.pid))
+        .filter((wait) => wait.blockers.every((blocker) => stuck.has(blocker)))
+        .map((wait) => wait.pid),
+    );
+    if (next.size === stuck.size) {
+      return next.size > 0;
+    }
+    stuck = next;
+  }
+}
+
+async function pollUntil(
+  check: () => Promise<boolean>,
+  timeoutMessage: string,
+  timeoutMs = 10_000,
+) {
+  const deadline = Date.now() + timeoutMs;
+  while (!(await check())) {
+    if (Date.now() > deadline) {
+      throw new Error(timeoutMessage);
+    }
+    await new Promise((resolve) => setTimeout(resolve, 10));
   }
 }
 

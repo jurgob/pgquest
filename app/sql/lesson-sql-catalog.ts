@@ -78,6 +78,10 @@ import {
   database_inits as exampleEighteenDatabaseInits,
   exercises as exampleEighteenExercises,
 } from "../../cli_examples/transaction-isolation-levels.sql";
+import {
+  database_inits as exampleNineteenDatabaseInits,
+  exercises as exampleNineteenExercises,
+} from "../../cli_examples/postgres-locks.sql";
 import type { SqlExample } from "../../cli_examples/types";
 import { lessons } from "./lesson-catalog";
 import type { LessonId } from "./types";
@@ -172,6 +176,10 @@ const lessonSqlById = {
   "transaction-isolation-levels": {
     databaseInits: exampleEighteenDatabaseInits,
     exercises: exampleEighteenExercises,
+  },
+  "postgres-locks": {
+    databaseInits: exampleNineteenDatabaseInits,
+    exercises: exampleNineteenExercises,
   },
 } as const satisfies Record<
   LessonId,

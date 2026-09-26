@@ -49,12 +49,14 @@ for (const transcript of transcripts) {
     continue;
   }
 
-  // A transcript with any `observedBy` checkpoint needs a real second session
-  // (runConcurrentSessionSteps' clone-based approach) — everything else uses the
-  // simpler, browser-compatible replay-per-step approach.
-  const needsConcurrentSession = transcript.queries.some(
-    (step) => (step.observedBy?.length ?? 0) > 0,
-  );
+  // A transcript with more than one session, an `observedBy` checkpoint, or a
+  // `blocks` step needs real concurrent connections (runConcurrentSessionSteps) —
+  // everything else uses the simpler, browser-compatible replay-per-step approach.
+  const needsConcurrentSession =
+    new Set(transcript.queries.map((step) => step.pgSessionId)).size > 1 ||
+    transcript.queries.some(
+      (step) => (step.observedBy?.length ?? 0) > 0 || step.blocks === true,
+    );
   const steps = needsConcurrentSession
     ? await runConcurrentSessionSteps({
         queries: transcript.queries,
