@@ -14,7 +14,7 @@ cd "$CLAUDE_PROJECT_DIR"
 # Commit as the repo owner rather than the remote image's default
 # "Claude <noreply@anthropic.com>" identity (repo-local config wins over global).
 git config user.name "Jurgo Boemo"
-git config user.email "jurgo.boemo@grantify.io"
+git config user.email "jurgo.boemo@gmail.com"
 
 # Node from .nvmrc (the image's default Node doesn't match it) and pnpm pinned by
 # package.json's packageManager, via corepack.
