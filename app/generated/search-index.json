@@ -975,7 +975,13 @@
     "anchor": null,
     "heading": null,
     "lessonId": "postgres-locks",
-    "text": "Locks The MVCC lesson ended on a promise: readers never wait on writers, and writers never wait on readers. But two writers changing the same row can't both win, and nobody should drop a table while someone else is reading it. That's what locks are for. Postgres takes almost all of its locks automatically, so you rarely write a lock statement yourself. What matters is knowing which locks your statements take, and what they'll make other sessions wait for. There are two layers: table-level locks, which every statement takes, and row-level locks, which writes take on the rows they change."
+    "text": "Locks The MVCC lesson ended on a promise: readers never wait on writers, and writers never wait on readers. But two writers changing the same row can't both win, and nobody should drop a table while someone else is reading it. That's what locks are for. Postgres takes almost all of its locks automatically, so you rarely write a lock statement yourself. What matters is knowing which locks your statements take, and what they'll make other sessions wait for. Most of this lesson is about two scopes: table-level locks, which every statement takes, and row-level locks, which writes take on the rows they change."
+  },
+  {
+    "anchor": "what-postgres-can-lock",
+    "heading": "What Postgres can lock",
+    "lessonId": "postgres-locks",
+    "text": "Locks come in different scopes. Each one shows up in pg_locks , the system view that lists every lock currently held or awaited, under its own locktype (except row locks, as you'll see). Scope What gets locked Taken by Notes Table (relation) A whole table, and also indexes, sequences, and views Every statement, automatically; or LOCK TABLE Eight modes, from ACCESS SHARE to ACCESS EXCLUSIVE. Visible in pg_locks. Row One row UPDATE, DELETE, SELECT ... FOR UPDATE / SHARE, foreign-key checks Four strengths. Stored on the row itself (in xmax), not in pg_locks, so Postgres can lock millions of rows cheaply. Transaction ID (transactionid) A running transaction Every transaction that writes, on itself How waiting on a row actually works: a session blocked on a row waits for the holder's transaction id lock, released at commit or rollback. Advisory (advisory) A number your application chooses Only your code: pg_advisory_xact_lock() and friends Postgres gives it no meaning. Held until the end of the transaction, or of the session. Predicate (SIReadLock) Rows, pages, or tables a SERIALIZABLE transaction has read SERIALIZABLE transactions, automatically Never blocks anyone: it's bookkeeping for detecting write skew (see the isolation levels lesson). Almost every lock lasts until its transaction ends; statements can't release them early. The one exception is session-level advisory locks ( pg_advisory_lock ), which last until you release them or disconnect."
   },
   {
     "anchor": "the-migration",
@@ -993,7 +999,7 @@
     "anchor": "every-statement-takes-a-table-lock",
     "heading": "Every statement takes a table lock",
     "lessonId": "postgres-locks",
-    "text": "The pg_locks view lists every lock in the database. Filtering it to your own session ( pid = pg_backend_pid() ) inside an open transaction shows exactly what your statements have taken so far. Even a plain SELECT takes a lock: Loaded Database: postgres-locks.database-init Each table gets the lock its statement needs, and the transaction keeps all of them until it commits or rolls back: Loaded Database: postgres-locks.database-init And a schema change takes the strongest one: Loaded Database: postgres-locks.database-init"
+    "text": "Filtering pg_locks to your own session ( pid = pg_backend_pid() ) inside an open transaction shows exactly what your statements have taken so far. Even a plain SELECT takes a lock: Loaded Database: postgres-locks.database-init Each table gets the lock its statement needs, and the transaction keeps all of them until it commits or rolls back: Loaded Database: postgres-locks.database-init And a schema change takes the strongest one: Loaded Database: postgres-locks.database-init"
   },
   {
     "anchor": "the-eight-table-lock-modes",

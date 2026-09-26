@@ -153,6 +153,51 @@ const TABLE_LOCK_MODES: readonly {
   },
 ];
 
+// The lock scopes worth knowing, keyed by pg_locks.locktype where there is one. See
+// https://www.postgresql.org/docs/current/view-pg-locks.html for the full list,
+// which also includes internal ones (page, tuple, extend, object, virtualxid).
+const LOCK_SCOPES: readonly {
+  locks: string;
+  notes: string;
+  scope: string;
+  takenBy: string;
+}[] = [
+  {
+    scope: "Table (relation)",
+    locks: "A whole table, and also indexes, sequences, and views",
+    takenBy: "Every statement, automatically; or LOCK TABLE",
+    notes: "Eight modes, from ACCESS SHARE to ACCESS EXCLUSIVE. Visible in pg_locks.",
+  },
+  {
+    scope: "Row",
+    locks: "One row",
+    takenBy: "UPDATE, DELETE, SELECT ... FOR UPDATE / SHARE, foreign-key checks",
+    notes:
+      "Four strengths. Stored on the row itself (in xmax), not in pg_locks, so Postgres can lock millions of rows cheaply.",
+  },
+  {
+    scope: "Transaction ID (transactionid)",
+    locks: "A running transaction",
+    takenBy: "Every transaction that writes, on itself",
+    notes:
+      "How waiting on a row actually works: a session blocked on a row waits for the holder's transaction id lock, released at commit or rollback.",
+  },
+  {
+    scope: "Advisory (advisory)",
+    locks: "A number your application chooses",
+    takenBy: "Only your code: pg_advisory_xact_lock() and friends",
+    notes:
+      "Postgres gives it no meaning. Held until the end of the transaction, or of the session.",
+  },
+  {
+    scope: "Predicate (SIReadLock)",
+    locks: "Rows, pages, or tables a SERIALIZABLE transaction has read",
+    takenBy: "SERIALIZABLE transactions, automatically",
+    notes:
+      "Never blocks anyone: it's bookkeeping for detecting write skew (see the isolation levels lesson).",
+  },
+];
+
 const ROW_LOCK_MODES: readonly {
   conflicts: string;
   mode: string;
@@ -296,11 +341,65 @@ export default function PostgresLocks() {
         <p className="mt-3">
           Postgres takes almost all of its locks automatically, so you rarely write a lock
           statement yourself. What matters is knowing which locks your statements take,
-          and what they'll make other sessions wait for. There are two layers: table-level
-          locks, which every statement takes, and row-level locks, which writes take on
-          the rows they change.
+          and what they'll make other sessions wait for. Most of this lesson is about two
+          scopes: table-level locks, which every statement takes, and row-level locks,
+          which writes take on the rows they change.
         </p>
       </Paragraphs>
+
+      <Section>
+        <Title2 id="what-postgres-can-lock">What Postgres can lock</Title2>
+        <Paragraph>
+          Locks come in different scopes. Each one shows up in{" "}
+          <InlineCode>pg_locks</InlineCode>, the system view that lists every lock
+          currently held or awaited, under its own <InlineCode>locktype</InlineCode>{" "}
+          (except row locks, as you'll see).
+        </Paragraph>
+        <div className="mt-3 overflow-auto">
+          <table className="w-full border-collapse text-left text-sm">
+            <thead>
+              <tr>
+                <th className="border-b border-zinc-300 px-3 py-2 font-bold text-zinc-950">
+                  Scope
+                </th>
+                <th className="border-b border-zinc-300 px-3 py-2 font-bold text-zinc-950">
+                  What gets locked
+                </th>
+                <th className="border-b border-zinc-300 px-3 py-2 font-bold text-zinc-950">
+                  Taken by
+                </th>
+                <th className="border-b border-zinc-300 px-3 py-2 font-bold text-zinc-950">
+                  Notes
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {LOCK_SCOPES.map((row) => (
+                <tr key={row.scope}>
+                  <td className="whitespace-nowrap border-b border-zinc-100 px-3 py-2 align-top font-mono">
+                    {row.scope}
+                  </td>
+                  <td className="border-b border-zinc-100 px-3 py-2 align-top text-zinc-800">
+                    {row.locks}
+                  </td>
+                  <td className="border-b border-zinc-100 px-3 py-2 align-top text-zinc-800">
+                    {row.takenBy}
+                  </td>
+                  <td className="border-b border-zinc-100 px-3 py-2 align-top text-zinc-800">
+                    {row.notes}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <Paragraph>
+          Almost every lock lasts until its transaction ends; statements can't release
+          them early. The one exception is session-level advisory locks (
+          <InlineCode>pg_advisory_lock</InlineCode>), which last until you release them or
+          disconnect.
+        </Paragraph>
+      </Section>
 
       <Section>
         <Title2 id="the-migration">The migration</Title2>
@@ -327,8 +426,7 @@ export default function PostgresLocks() {
         </Title2>
         <Paragraphs>
           <p>
-            The <InlineCode>pg_locks</InlineCode> view lists every lock in the database.
-            Filtering it to your own session (
+            Filtering <InlineCode>pg_locks</InlineCode> to your own session (
             <InlineCode>pid = pg_backend_pid()</InlineCode>) inside an open transaction
             shows exactly what your statements have taken so far. Even a plain{" "}
             <InlineCode>SELECT</InlineCode> takes a lock:
