@@ -6,14 +6,22 @@ import { lessons } from "../app/sql/lesson-catalog";
 // Sitemap lastmod dates come from git history, so they need real history —
 // a shallow checkout (CI's default) only has the latest commit, in which
 // case we just omit lastmod for files that predate it rather than fail.
+//
+// Reads the raw Unix timestamp (%ct) and formats it here, always in UTC, rather
+// than using git's ISO output (%cI): that keeps the committer's timezone offset, and
+// git versions disagree on how to print UTC ("+00:00" vs "Z"), so the generated
+// file differed between machines. Uniform UTC strings also compare correctly as
+// strings in mostRecent below.
 function lastCommitDate(filePath: string): string | undefined {
   try {
-    const output = execFileSync("git", ["log", "-1", "--format=%cI", "--", filePath], {
+    const output = execFileSync("git", ["log", "-1", "--format=%ct", "--", filePath], {
       cwd: root,
       encoding: "utf8",
     }).trim();
 
-    return output.length > 0 ? output : undefined;
+    return output.length > 0
+      ? new Date(Number(output) * 1000).toISOString().replace(".000Z", "Z")
+      : undefined;
   } catch {
     return undefined;
   }
