@@ -324,8 +324,8 @@ export const lessons: readonly LessonCatalogItem[] = [
     cliExampleModule: "slow-queries.sql.ts",
     href: "/lessons/slow-queries",
     summary:
-      "Track which queries cost the most with pg_stat_statements, read their plans with EXPLAIN ANALYZE, and fix them with the right index.",
-    meta: "PG_STAT_STATEMENTS · EXPLAIN ANALYZE",
+      "Profile an app's queries with pg_stat_statements, find why the slowest are slow with EXPLAIN ANALYZE, and fix them with a trigram index and keyset pagination.",
+    meta: "PG_STAT_STATEMENTS · EXPLAIN ANALYZE · PG_TRGM",
     time: "25 min",
   },
 ] as const satisfies readonly LessonCatalogItem[];

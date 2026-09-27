@@ -1,299 +1,300 @@
 import { SQL_EXAMPLE_IDS, type SqlExample } from "./types";
 
 export const migration = `
-CREATE TABLE customers (
+CREATE TABLE products (
   id SERIAL PRIMARY KEY,
   name TEXT NOT NULL,
-  email TEXT NOT NULL UNIQUE
-);
-
-CREATE TABLE orders (
-  id SERIAL PRIMARY KEY,
-  customer_id INTEGER NOT NULL REFERENCES customers (id),
-  status TEXT NOT NULL,
-  total_cents INTEGER NOT NULL,
-  created_at TIMESTAMP NOT NULL
+  category TEXT NOT NULL,
+  price_cents INTEGER NOT NULL
 );
 `;
 
 export const seed = `
-INSERT INTO customers (name, email)
-SELECT 'Customer ' || n, 'customer' || n || '@example.com'
-FROM generate_series(1, 5000) AS n;
-
-INSERT INTO orders (customer_id, status, total_cents, created_at)
+-- 100,000 products like 'blue lamp 41', in 10 categories.
+INSERT INTO products (name, category, price_cents)
 SELECT
-  n % 5000 + 1,
-  CASE
-    WHEN n % 10 < 7 THEN 'paid'
-    WHEN n % 10 < 9 THEN 'pending'
-    ELSE 'refunded'
-  END,
-  500 + (n * 7919) % 20000,
-  TIMESTAMP '2026-01-01' + n * INTERVAL '7 minutes'
-FROM generate_series(1, 60000) AS n;
+  (ARRAY['red', 'blue', 'green', 'black', 'white',
+         'small', 'large', 'vintage', 'modern', 'wooden'])[n % 10 + 1]
+  || ' ' ||
+  (ARRAY['lamp', 'chair', 'table', 'sofa', 'desk', 'shelf', 'rug',
+         'mirror', 'clock', 'vase', 'bed', 'stool', 'bench', 'cabinet',
+         'frame', 'pillow', 'blanket', 'curtain', 'basket', 'candle'])[n % 20 + 1]
+  || ' ' || n,
+  (ARRAY['living', 'bedroom', 'kitchen', 'office', 'garden',
+         'kids', 'bath', 'outdoor', 'decor', 'storage'])[n / 10 % 10 + 1],
+  500 + n * 7919 % 50000
+FROM generate_series(1, 100000) AS n;
 
-ANALYZE;
+ANALYZE products;
 `;
 
-// The two fixes the lesson arrives at, one per slow query.
-export const recentOrdersIndex = `CREATE INDEX orders_customer_id_created_at_idx
-  ON orders (customer_id, created_at DESC);`;
+// pg_stat_statements is preloaded into every PGlite database (see
+// app/sql/pglite-extensions.ts); on a real server it also needs
+// shared_preload_libraries.
+export const tracking = `
+CREATE EXTENSION pg_stat_statements;
 
-export const lowerEmailIndex = `CREATE INDEX customers_lower_email_idx
-  ON customers (lower(email));`;
+-- Also track statements run inside functions: the app's queries run in timed().
+SET pg_stat_statements.track = 'all';
 
-// Loaded into every PGlite database (see app/sql/pglite-extensions.ts), so all this
-// lesson's databases need is CREATE EXTENSION. On a real server it also needs
-// shared_preload_libraries; see trackingSetupScript below.
-const enableTracking = `CREATE EXTENSION pg_stat_statements;`;
+-- Every request is logged with its real query and duration,
+-- like an APM tool or log_min_duration_statement would.
+CREATE TABLE request_log (
+  id SERIAL PRIMARY KEY,
+  endpoint TEXT NOT NULL,
+  query TEXT NOT NULL,
+  duration_ms NUMERIC NOT NULL
+);
 
-// Forget the migration and seed, so pg_stat_statements only describes the application
-// traffic that follows. (pg_stat_reset() can't do the same for pg_stat_user_tables
-// here: the whole database init runs as one query string, and a backend only flushes
-// its table counters to the shared statistics once it goes idle, after the reset.)
-const resetStatistics = `SELECT pg_stat_statements_reset();`;
+-- Runs a query, returns how long it took in milliseconds.
+CREATE FUNCTION timed(query TEXT) RETURNS NUMERIC AS $$
+DECLARE
+  started TIMESTAMPTZ := clock_timestamp();
+BEGIN
+  EXECUTE query;
+  RETURN round(extract(epoch FROM clock_timestamp() - started)::numeric * 1000, 2);
+END;
+$$ LANGUAGE plpgsql;
 
-export type TrafficQuery = {
-  calls: number;
-  endpoint: string;
-  sql: (call: number) => string;
-};
+SELECT pg_stat_statements_reset();
+`;
 
-// What the application sends to the database, one entry per kind of request.
-// `sql` gets the call's index (0, 1, 2, ...) and bakes a different constant into each
-// call, the way an application with bound parameters would.
-export const trafficQueries: readonly TrafficQuery[] = [
-  {
-    calls: 200,
-    endpoint: "Order page",
-    sql: (call) =>
-      `SELECT id, customer_id, status, total_cents FROM orders WHERE id = ${((call * 293) % 60000) + 1};`,
-  },
-  {
-    calls: 40,
-    endpoint: "Customer's recent orders",
-    sql: (call) =>
-      `SELECT id, status, total_cents, created_at FROM orders WHERE customer_id = ${((call * 37) % 5000) + 1} ORDER BY created_at DESC LIMIT 10;`,
-  },
-  {
-    calls: 40,
-    endpoint: "Log in",
-    sql: (call) =>
-      `SELECT id, name FROM customers WHERE lower(email) = lower('Customer${((call * 53 + 17) % 5000) + 1}@Example.com');`,
-  },
-  {
-    calls: 2,
-    endpoint: "Monthly revenue report",
-    sql: () =>
-      `SELECT date_trunc('month', created_at) AS month, count(*) AS orders, sum(total_cents) AS revenue_cents FROM orders WHERE status = 'paid' GROUP BY 1 ORDER BY 1;`,
-  },
-];
+const offsetListQuery = `format(
+    'SELECT id, name, price_cents FROM products WHERE category = %L ORDER BY id LIMIT 20 OFFSET %s',
+    'kitchen', page * 20)`;
 
-// Interleaves the requests over TRAFFIC_STEPS steps: a query with N calls runs every
-// TRAFFIC_STEPS / N steps, so the order page runs on every step and the report twice.
-const TRAFFIC_STEPS = 200;
+// Kitchen products are 10 in every 100 ids, so a page of 20 spans 200 ids.
+const keysetListQuery = `format(
+    'SELECT id, name, price_cents FROM products WHERE category = %L AND id > %s ORDER BY id LIMIT 20',
+    'kitchen', page * 200)`;
 
-export const traffic = Array.from({ length: TRAFFIC_STEPS }, (_, step) =>
-  trafficQueries.flatMap((trafficQuery) => {
-    const every = TRAFFIC_STEPS / trafficQuery.calls;
-    return step % every === 0 ? [trafficQuery.sql(step / every)] : [];
-  }),
-)
-  .flat()
-  .join("\n");
+function trafficSql(listQuery: string) {
+  return `
+-- POST /products, 200 times
+INSERT INTO request_log (endpoint, query, duration_ms)
+SELECT 'create', q, timed(q)
+FROM generate_series(1, 200) AS n,
+  format(
+    'INSERT INTO products (name, category, price_cents) VALUES (%L, %L, %s)',
+    'new lamp ' || n, 'garden', 1000 + n) AS q;
 
-function databaseSql(indexes: readonly string[]) {
-  return [migration, ...indexes, seed, enableTracking, resetStatistics, traffic].join(
-    "\n",
-  );
+-- GET /products?category=kitchen&page=..., 200 times, pages 0 to 99
+INSERT INTO request_log (endpoint, query, duration_ms)
+SELECT 'list', q, timed(q)
+FROM generate_series(1, 200) AS n,
+  LATERAL (SELECT n % 100 AS page) AS p,
+  ${listQuery} AS q;
+
+-- DELETE /products/:id, 100 times
+INSERT INTO request_log (endpoint, query, duration_ms)
+SELECT 'delete', q, timed(q)
+FROM generate_series(1, 100) AS n,
+  format('DELETE FROM products WHERE id = %s', n * 97) AS q;
+
+-- GET /products/search?q=..., 10 search terms, 5 times each
+INSERT INTO request_log (endpoint, query, duration_ms)
+SELECT 'search', q, timed(q)
+FROM unnest(ARRAY['lamp', 'oak', 'blue sofa', 'mirror 42', 'candle',
+                  'rug', 'velvet', 'desk 7', 'wooden bench', 'clock']) AS term,
+  generate_series(1, 5),
+  format(
+    'SELECT id, name FROM products WHERE name ILIKE %L ORDER BY name LIMIT 20',
+    '%' || term || '%') AS q;
+`;
 }
+
+export const traffic = trafficSql(offsetListQuery);
+
+export const trigramIndex = `-- pg_trgm splits text into 3-letter chunks: 'lamp' -> ' la', 'lam', 'amp'...
+-- A GIN index on them can answer ILIKE '%...%', which a B-tree can't.
+CREATE EXTENSION pg_trgm;
+CREATE INDEX products_name_trgm_idx ON products USING gin (name gin_trgm_ops);
+`;
+
+export const keysetPagination = `-- Before: skip 1,980 rows to show page 99.
+SELECT id, name, price_cents FROM products
+WHERE category = 'kitchen' ORDER BY id LIMIT 20 OFFSET 1980;
+
+-- After: the app remembers the last id it showed and continues from there.
+SELECT id, name, price_cents FROM products
+WHERE category = 'kitchen' AND id > 19800 ORDER BY id LIMIT 20;
+`;
+
+export const fixedTraffic = trafficSql(keysetListQuery);
 
 export const databaseInit: SqlExample = {
   id: SQL_EXAMPLE_IDS.slowQueriesDatabaseInit,
   name: "Lesson 22 database",
   description:
-    "Customers and 60,000 orders, with pg_stat_statements enabled and a burst of application traffic already run against it.",
-  query: databaseSql([]),
+    "100,000 products, after 550 requests to the app's four endpoints, tracked by pg_stat_statements and a request log.",
+  query: [migration, seed, tracking, traffic].join("\n"),
 };
 
 export const fixedDatabaseInit: SqlExample = {
   id: SQL_EXAMPLE_IDS.slowQueriesFixedDatabaseInit,
-  name: "Lesson 22 database, with both fixes",
+  name: "Lesson 22 database, fixed",
   description:
-    "The same database and the same traffic, but with the two indexes that fix the slowest queries.",
-  query: databaseSql([recentOrdersIndex, lowerEmailIndex]),
+    "The same products and requests, with a trigram index for search and keyset pagination for list.",
+  query: [migration, seed, trigramIndex, tracking, fixedTraffic].join("\n"),
 };
 
 export const database_inits = [databaseInit, fixedDatabaseInit] as const;
 
-// Monitoring queries on pg_stat_statements show up in pg_stat_statements too, so
-// every query below filters them (and the reset call) out.
-export const topByTotalTimeQuery = `
+export const topByTypeQuery = `
+-- One row per query shape: constants become $1, $2...
+-- NOT toplevel: only the app's queries, the ones run inside timed().
 SELECT
   query,
   calls,
   round(total_exec_time::numeric, 1) AS total_ms,
-  round((100 * total_exec_time / sum(total_exec_time) OVER ())::numeric, 1) AS percent,
-  round(mean_exec_time::numeric, 2) AS mean_ms
-FROM pg_stat_statements
-WHERE query NOT LIKE '%pg_stat%'
-ORDER BY total_exec_time DESC
-LIMIT 5;
-`;
-
-export const topByMeanTimeQuery = `
-SELECT
-  query,
-  calls,
   round(mean_exec_time::numeric, 2) AS mean_ms,
-  rows / calls AS rows_per_call,
-  (shared_blks_hit + shared_blks_read) / calls AS blocks_per_call
+  shared_blks_hit + shared_blks_read AS blocks
 FROM pg_stat_statements
-WHERE query NOT LIKE '%pg_stat%'
-ORDER BY mean_exec_time DESC
+WHERE NOT toplevel
+ORDER BY total_exec_time DESC;
+`;
+
+export const slowestCallsQuery = `
+-- The actual calls, with their real values.
+SELECT endpoint, query, duration_ms
+FROM request_log
+ORDER BY duration_ms DESC
 LIMIT 5;
 `;
 
-export const tableScansQuery = `
-SELECT relname, seq_scan, seq_tup_read, seq_tup_read / seq_scan AS rows_per_scan
-FROM pg_stat_user_tables
-ORDER BY seq_tup_read DESC;
+export const slowestListCallsQuery = `
+-- Same query shape, very different cost: it depends on the page.
+SELECT query, duration_ms
+FROM request_log
+WHERE endpoint = 'list'
+ORDER BY duration_ms DESC
+LIMIT 3;
 `;
 
-export const recentOrdersQuery = `SELECT id, status, total_cents, created_at
-FROM orders
-WHERE customer_id = 42
-ORDER BY created_at DESC
-LIMIT 10;`;
+export const explainSearchQuery = `
+-- ANALYZE runs the query for real. BUFFERS counts the 8 kB blocks it touched.
+--
+-- Seq Scan: every row is read and tested.
+-- Rows Removed by Filter: ~100,000 rows thrown away to keep a handful.
+-- A B-tree index on name wouldn't help: '%mirror 42%' can start anywhere.
 
-export const loginQuery = `SELECT id, name
-FROM customers
-WHERE lower(email) = lower('Customer42@Example.com');`;
-
-export const explainRecentOrdersQuery = `EXPLAIN (ANALYZE, BUFFERS)
-${recentOrdersQuery}`;
-
-export const explainLoginQuery = `EXPLAIN (ANALYZE, BUFFERS)
-${loginQuery}`;
-
-export const explainWriteScript = `BEGIN;
-
--- EXPLAIN ANALYZE really runs the statement, so this UPDATE really
--- changes rows. Rolling back undoes it and keeps the measurement.
 EXPLAIN (ANALYZE, BUFFERS)
-UPDATE orders SET status = 'paid' WHERE customer_id = 42 AND status = 'pending';
-
-ROLLBACK;
+SELECT id, name FROM products WHERE name ILIKE '%mirror 42%' ORDER BY name LIMIT 20;
 `;
 
-export const trackingSetupScript = `-- pg_stat_statements has to be loaded when the server starts:
-ALTER SYSTEM SET shared_preload_libraries = 'pg_stat_statements';
--- ...then restart Postgres, and in each database you want to query it from:
-CREATE EXTENSION pg_stat_statements;
+export const explainSearchFixedQuery = `
+-- Bitmap Index Scan on products_name_trgm_idx: the index knows which rows
+-- contain 'mir', 'irr', 'rro'..., so only those are read.
+-- Compare Buffers and Execution Time with the plan above.
 
--- Log every statement slower than 250 ms, with its real parameter values:
-ALTER SYSTEM SET log_min_duration_statement = '250ms';
-SELECT pg_reload_conf();
-
--- Start a fresh measurement window, e.g. right after a deploy:
-SELECT pg_stat_statements_reset();
+EXPLAIN (ANALYZE, BUFFERS)
+SELECT id, name FROM products WHERE name ILIKE '%mirror 42%' ORDER BY name LIMIT 20;
 `;
 
-export const runningNowQuery = `SELECT pid, now() - query_start AS running_for, state, query
-FROM pg_stat_activity
-WHERE state <> 'idle'
-  AND pid <> pg_backend_pid()
-ORDER BY running_for DESC;`;
+export const explainListQuery = `
+-- Page 99. Postgres walks the primary key in id order, drops the other
+-- categories (Rows Removed by Filter), produces 2,000 kitchen rows,
+-- then throws the first 1,980 away. OFFSET never skips work.
+
+EXPLAIN (ANALYZE, BUFFERS)
+SELECT id, name, price_cents FROM products
+WHERE category = 'kitchen' ORDER BY id LIMIT 20 OFFSET 1980;
+`;
+
+export const explainListFixedQuery = `
+-- Index Cond: (id > 19800): the primary key index starts right after the
+-- last id seen. About 130 rows read instead of 20,000, on any page.
+
+EXPLAIN (ANALYZE, BUFFERS)
+SELECT id, name, price_cents FROM products
+WHERE category = 'kitchen' AND id > 19800 ORDER BY id LIMIT 20;
+`;
 
 export const examples: SqlExample[] = [
   {
-    id: SQL_EXAMPLE_IDS.slowQueriesTopByTotalTime,
-    name: "Top queries by total time",
-    description:
-      "Rank every statement pg_stat_statements has seen by the total time Postgres spent running it.",
+    id: SQL_EXAMPLE_IDS.slowQueriesTopByType,
+    name: "Slowest query types",
+    description: "The app's query shapes, by total execution time.",
     database_init: databaseInit,
-    query: topByTotalTimeQuery,
+    query: topByTypeQuery,
   },
   {
-    id: SQL_EXAMPLE_IDS.slowQueriesTopByMeanTime,
-    name: "Top queries by mean time",
-    description:
-      "Rank the same statements by how long one call takes on average, with the rows and buffer blocks each call handles.",
+    id: SQL_EXAMPLE_IDS.slowQueriesSlowestCalls,
+    name: "Slowest actual calls",
+    description: "The slowest individual requests, with their real values.",
     database_init: databaseInit,
-    query: topByMeanTimeQuery,
+    query: slowestCallsQuery,
   },
   {
-    id: SQL_EXAMPLE_IDS.slowQueriesTableScans,
-    name: "Sequential scans per table",
-    description:
-      "See how often each table was read end to end, and how many rows those scans went through.",
+    id: SQL_EXAMPLE_IDS.slowQueriesSlowestListCalls,
+    name: "Slowest list calls",
+    description: "The slowest pages of the list endpoint.",
     database_init: databaseInit,
-    query: tableScansQuery,
+    query: slowestListCallsQuery,
   },
   {
-    id: SQL_EXAMPLE_IDS.slowQueriesExplainRecentOrders,
-    name: "EXPLAIN ANALYZE the recent orders query",
-    description:
-      "Run the slowest query for one real customer and see what the plan actually did.",
+    id: SQL_EXAMPLE_IDS.slowQueriesExplainSearch,
+    name: "EXPLAIN the search",
+    description: "Why search is slow.",
     database_init: databaseInit,
-    query: explainRecentOrdersQuery,
+    query: explainSearchQuery,
   },
   {
-    id: SQL_EXAMPLE_IDS.slowQueriesExplainRecentOrdersFixed,
-    name: "EXPLAIN ANALYZE the recent orders query, with an index",
-    description: "The same query once an index on (customer_id, created_at DESC) exists.",
+    id: SQL_EXAMPLE_IDS.slowQueriesExplainSearchFixed,
+    name: "EXPLAIN the search, with a trigram index",
+    description: "The same search, with a trigram index.",
     database_init: fixedDatabaseInit,
-    query: explainRecentOrdersQuery,
+    query: explainSearchFixedQuery,
   },
   {
-    id: SQL_EXAMPLE_IDS.slowQueriesExplainLogin,
-    name: "EXPLAIN ANALYZE the login query",
-    description:
-      "The login lookup scans every customer, even though email has a unique index.",
+    id: SQL_EXAMPLE_IDS.slowQueriesExplainList,
+    name: "EXPLAIN a deep page",
+    description: "Why deep pages are slow.",
     database_init: databaseInit,
-    query: explainLoginQuery,
+    query: explainListQuery,
   },
   {
-    id: SQL_EXAMPLE_IDS.slowQueriesExplainLoginFixed,
-    name: "EXPLAIN ANALYZE the login query, with an expression index",
-    description: "The same lookup once an index on lower(email) exists.",
+    id: SQL_EXAMPLE_IDS.slowQueriesExplainListFixed,
+    name: "EXPLAIN a deep page, with keyset pagination",
+    description: "The same page, with keyset pagination.",
     database_init: fixedDatabaseInit,
-    query: explainLoginQuery,
+    query: explainListFixedQuery,
   },
   {
-    id: SQL_EXAMPLE_IDS.slowQueriesTopByTotalTimeFixed,
-    name: "Top queries by total time, after the fixes",
-    description: "The same traffic, replayed against the database with both indexes.",
+    id: SQL_EXAMPLE_IDS.slowQueriesTopByTypeFixed,
+    name: "Slowest query types, after the fixes",
+    description: "The same traffic, after both fixes.",
     database_init: fixedDatabaseInit,
-    query: topByTotalTimeQuery,
+    query: topByTypeQuery,
   },
 ];
 
 export const exercises: SqlExample[] = [
   {
-    id: SQL_EXAMPLE_IDS.slowQueriesExerciseTopByBlocks,
+    id: SQL_EXAMPLE_IDS.slowQueriesExerciseBlocksByType,
     name: "Exercise 1",
     description:
-      "Timings change from run to run, but the amount of data a query touches doesn't. From pg_stat_statements, return query, calls, and the total number of buffer blocks each statement touched (shared_blks_hit + shared_blks_read) as blocks, for the 3 statements with the most blocks, most first.",
+      "Timings vary between runs, buffer blocks don't. From pg_stat_statements, return query, calls, and shared_blks_hit + shared_blks_read AS blocks for the app's queries (NOT toplevel), most blocks first.",
     database_init: databaseInit,
     query: `
 SELECT query, calls, shared_blks_hit + shared_blks_read AS blocks
 FROM pg_stat_statements
-ORDER BY blocks DESC
-LIMIT 3;
+WHERE NOT toplevel
+ORDER BY blocks DESC;
 `,
   },
   {
-    id: SQL_EXAMPLE_IDS.slowQueriesExerciseLoginWithIndex,
+    id: SQL_EXAMPLE_IDS.slowQueriesExerciseKeysetPage,
     name: "Exercise 2",
     description:
-      "This database has the customers_lower_email_idx index on lower(email). Find the id and name of the customer who types their email as 'CUSTOMER2048@example.com', ignoring case, with a query that uses that index.",
+      "With keyset pagination, return id, name, and price_cents of the 20 'office' products after id 50000, in id order.",
     database_init: fixedDatabaseInit,
     query: `
-SELECT id, name
-FROM customers
-WHERE lower(email) = lower('CUSTOMER2048@example.com');
+SELECT id, name, price_cents
+FROM products
+WHERE category = 'office' AND id > 50000
+ORDER BY id
+LIMIT 20;
 `,
   },
 ];
