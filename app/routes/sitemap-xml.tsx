@@ -3,7 +3,14 @@ import { lessons } from "../sql/lesson-catalog";
 
 const SITE_URL = "https://pgquest.dev";
 
-const STATIC_PATHS = ["/", "/playground", "/search", "/feedback", "/license"];
+const STATIC_PATHS = [
+  "/",
+  "/playground",
+  "/search",
+  "/feedback",
+  "/license",
+  "/changelog",
+];
 
 export function loader() {
   const paths = [...STATIC_PATHS, ...lessons.map((lesson) => lesson.href)];

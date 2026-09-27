@@ -51,6 +51,22 @@ export function SiteHeader({ activeLesson }: SiteHeaderProps) {
             >
               <FeedbackIcon />
             </NavLink>
+            <NavLink
+              aria-label="Changelog"
+              className={navSquareClass}
+              title="Changelog"
+              to="/changelog"
+            >
+              <ChangelogIcon />
+            </NavLink>
+            <NavLink
+              aria-label="License"
+              className={navSquareClass}
+              title="License"
+              to="/license"
+            >
+              <LicenseIcon />
+            </NavLink>
           </div>
 
           <div aria-hidden="true" className="w-px bg-zinc-700" />
@@ -144,6 +160,35 @@ function FeedbackIcon() {
     <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24">
       <path
         d="M4 5h16v11H8l-4 4V5Z"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.8"
+      />
+    </svg>
+  );
+}
+
+function ChangelogIcon() {
+  return (
+    <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8" />
+      <path
+        d="M12 7v5l3 2"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.8"
+      />
+    </svg>
+  );
+}
+
+function LicenseIcon() {
+  return (
+    <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24">
+      <path
+        d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8l-5-5Zm0 0v5h5M9 13h6M9 17h6"
         stroke="currentColor"
         strokeLinecap="round"
         strokeLinejoin="round"

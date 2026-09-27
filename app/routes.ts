@@ -8,6 +8,7 @@ export default [
   route("search", "routes/search.tsx"),
   route("feedback", "routes/feedback.tsx"),
   route("license", "routes/license.tsx"),
+  route("changelog", "routes/changelog.tsx"),
   route("llms.txt", "routes/llms-txt.tsx"),
   route("sitemap.xml", "routes/sitemap-xml.tsx"),
   route("dbviewer", "routes/dbviewer.tsx", { id: "dbviewer" }),

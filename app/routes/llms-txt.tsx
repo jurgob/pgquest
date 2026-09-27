@@ -23,6 +23,7 @@ export function loader() {
     `- [Search](${SITE_URL}/search): Full-text search across every lesson.`,
     `- [Feedback](${SITE_URL}/feedback): Report bugs, suggest lessons, or ask about a company training.`,
     `- [License](${SITE_URL}/license): Content and code licensing terms.`,
+    `- [Changelog](${SITE_URL}/changelog): New lessons, features, and fixes.`,
     "",
   ];
 
