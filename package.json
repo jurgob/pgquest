@@ -11,7 +11,7 @@
     "cli": "vite-node --config ./vite.cli.config.ts ./scripts/run-cli-examples.ts",
     "build-assets:search-index": "vite-node --config ./vite.cli.config.ts ./scripts/build-search-index.tsx",
     "build-assets:search-index:check": "./scripts/check-generated-asset.sh build-assets:search-index app/generated/search-index.json",
-    "build:static-preview": "pnpm run build-assets:lesson-sql-results && vite-node --config ./vite.cli.config.ts --options.transformMode.ssr='\\.md$' ./scripts/build-static-preview.tsx",
+    "build:static-preview": "pnpm run build-assets:lesson-sql-results && vite-node --config ./vite.preview.config.ts --options.transformMode.ssr='\\.md$' ./scripts/build-static-preview.tsx",
     "build-assets:sitemap": "vite-node --config ./vite.cli.config.ts ./scripts/build-sitemap-lastmod.ts",
     "build-assets:sitemap:check": "./scripts/check-generated-asset.sh build-assets:sitemap app/generated/sitemap-lastmod.json",
     "build-assets:pgexamples": "vite-node --config ./vite.cli.config.ts ./scripts/build-postgres-examples.ts",
