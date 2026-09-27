@@ -327,6 +327,7 @@ export const lessons: readonly LessonCatalogItem[] = [
       "Profile an app's queries with pg_stat_statements, find why the slowest are slow with EXPLAIN ANALYZE, and fix them with a trigram index and keyset pagination.",
     meta: "PG_STAT_STATEMENTS · EXPLAIN ANALYZE · PG_TRGM",
     time: "25 min",
+    draft: true,
   },
 ] as const satisfies readonly LessonCatalogItem[];
 

@@ -175,7 +175,7 @@ export default function SlowQueries() {
           <SqlResult execution={topByType} />
         </div>
         <Paragraph>
-          Search: 50 calls, most of the total time. Timings are real, measured in your
+          Search: 20 calls, most of the total time. Timings are real, measured in your
           browser.
         </Paragraph>
       </LessonSection>

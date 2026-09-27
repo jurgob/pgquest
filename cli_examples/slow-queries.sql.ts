@@ -31,8 +31,8 @@ SET default_statistics_target = 400;
 ANALYZE products;
 `;
 
-// pg_stat_statements is preloaded into every PGlite database (see
-// app/sql/pglite-extensions.ts); on a real server it also needs
+// CREATE EXTENSION also makes PGlite preload pg_stat_statements for this database
+// (see app/sql/pglite-extensions.ts). On a real server it needs
 // shared_preload_libraries.
 export const tracking = `
 CREATE EXTENSION pg_stat_statements;
@@ -94,12 +94,12 @@ SELECT 'delete', q, timed(q)
 FROM generate_series(1, 100) AS n,
   format('DELETE FROM products WHERE id = %s', n * 97) AS q;
 
--- GET /products/search?q=..., 10 search terms, 5 times each
+-- GET /products/search?q=..., 10 search terms, twice each
 INSERT INTO request_log (endpoint, query, duration_ms)
 SELECT 'search', q, timed(q)
 FROM unnest(ARRAY['lamp', 'oak', 'blue sofa', 'mirror 42', 'candle',
                   'rug', 'velvet', 'desk 7', 'wooden bench', 'clock']) AS term,
-  generate_series(1, 5),
+  generate_series(1, 2),
   format(
     'SELECT id, name FROM products WHERE name ILIKE %L ORDER BY name LIMIT 20',
     '%' || term || '%') AS q;
@@ -129,7 +129,7 @@ export const databaseInit: SqlExample = {
   id: SQL_EXAMPLE_IDS.slowQueriesDatabaseInit,
   name: "Lesson 22 database",
   description:
-    "100,000 products, after 550 requests to the app's four endpoints, tracked by pg_stat_statements and a request log.",
+    "100,000 products, after 520 requests to the app's four endpoints, tracked by pg_stat_statements and a request log.",
   query: [migration, seed, tracking, traffic].join("\n"),
 };
 

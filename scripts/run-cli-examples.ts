@@ -3,7 +3,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import type { SqlExample } from "../cli_examples/types";
 import { lessons } from "../app/sql/lesson-catalog";
-import { pgliteExtensions } from "../app/sql/pglite-extensions";
+import { pgliteExtensionsFor } from "../app/sql/pglite-extensions";
 
 const root = process.cwd();
 const examplesDir = path.join(root, "cli_examples");
@@ -35,7 +35,9 @@ type QueryRow = Record<string, SqlValue>;
 type ExplainRow = { "QUERY PLAN": string };
 
 async function runExample(file: string, example: SqlExample) {
-  const db = new PGlite({ extensions: pgliteExtensions });
+  const db = new PGlite({
+    extensions: pgliteExtensionsFor(example.database_init?.query ?? ""),
+  });
 
   try {
     if (example.database_init) {

@@ -1071,7 +1071,7 @@
     "anchor": null,
     "heading": null,
     "lessonId": "slow-queries",
-    "text": "Finding and fixing slow queries An app is slow. Find which queries are to blame, understand why, fix them, and check that the fix worked."
+    "text": "Finding and fixing slow queries Draft An app is slow. Find which queries are to blame, understand why, fix them, and check that the fix worked."
   },
   {
     "anchor": "the-app",
@@ -1083,7 +1083,7 @@
     "anchor": "slowest-query-types",
     "heading": "Slowest query types",
     "lessonId": "slow-queries",
-    "text": "Loaded Database: slow-queries.database-init Search: 50 calls, most of the total time. Timings are real, measured in your browser."
+    "text": "Loaded Database: slow-queries.database-init Search: 20 calls, most of the total time. Timings are real, measured in your browser."
   },
   {
     "anchor": "slowest-actual-calls",
