@@ -254,6 +254,56 @@
     },
     "status": "done"
   },
+  "037fb91f54d381": {
+    "output": {
+      "rows": [
+        {
+          "QUERY PLAN": "Limit  (cost=2048.74..2048.77 rows=10 width=22) (actual time=67.638..67.658 rows=20.00 loops=1)"
+        },
+        {
+          "QUERY PLAN": "  Buffers: shared hit=797"
+        },
+        {
+          "QUERY PLAN": "  ->  Sort  (cost=2048.74..2048.77 rows=10 width=22) (actual time=67.634..67.642 rows=20.00 loops=1)"
+        },
+        {
+          "QUERY PLAN": "        Sort Key: name"
+        },
+        {
+          "QUERY PLAN": "        Sort Method: top-N heapsort  Memory: 18kB"
+        },
+        {
+          "QUERY PLAN": "        Buffers: shared hit=797"
+        },
+        {
+          "QUERY PLAN": "        ->  Seq Scan on products  (cost=0.00..2048.57 rows=10 width=22) (actual time=0.352..67.554 rows=56.00 loops=1)"
+        },
+        {
+          "QUERY PLAN": "              Filter: (name ~~* '%mirror 42%'::text)"
+        },
+        {
+          "QUERY PLAN": "              Rows Removed by Filter: 100044"
+        },
+        {
+          "QUERY PLAN": "              Buffers: shared hit=797"
+        },
+        {
+          "QUERY PLAN": "Planning:"
+        },
+        {
+          "QUERY PLAN": "  Buffers: shared hit=24"
+        },
+        {
+          "QUERY PLAN": "Planning Time: 0.529 ms"
+        },
+        {
+          "QUERY PLAN": "Execution Time: 67.739 ms"
+        }
+      ],
+      "plan": "Unavailable: plan not requested."
+    },
+    "status": "done"
+  },
   "03da2cdc26ff9f": {
     "output": {
       "rows": [
@@ -333,6 +383,50 @@
           "id": 2,
           "name": "savings",
           "balance": 5000
+        }
+      ],
+      "plan": "Unavailable: plan not requested."
+    },
+    "status": "done"
+  },
+  "04d5c8242dcd7a": {
+    "output": {
+      "rows": [
+        {
+          "QUERY PLAN": "Limit  (cost=0.29..8.11 rows=20 width=26) (actual time=0.026..0.081 rows=20.00 loops=1)"
+        },
+        {
+          "QUERY PLAN": "  Buffers: shared hit=4"
+        },
+        {
+          "QUERY PLAN": "  ->  Index Scan using products_pkey on products  (cost=0.29..3137.31 rows=8030 width=26) (actual time=0.024..0.064 rows=20.00 loops=1)"
+        },
+        {
+          "QUERY PLAN": "        Index Cond: (id > 19800)"
+        },
+        {
+          "QUERY PLAN": "        Filter: (category = 'kitchen'::text)"
+        },
+        {
+          "QUERY PLAN": "        Rows Removed by Filter: 109"
+        },
+        {
+          "QUERY PLAN": "        Index Searches: 1"
+        },
+        {
+          "QUERY PLAN": "        Buffers: shared hit=4"
+        },
+        {
+          "QUERY PLAN": "Planning:"
+        },
+        {
+          "QUERY PLAN": "  Buffers: shared hit=62"
+        },
+        {
+          "QUERY PLAN": "Planning Time: 0.291 ms"
+        },
+        {
+          "QUERY PLAN": "Execution Time: 0.114 ms"
         }
       ],
       "plan": "Unavailable: plan not requested."
@@ -749,6 +843,26 @@
     },
     "status": "done"
   },
+  "0f4d923897905a": {
+    "output": {
+      "rows": [
+        {
+          "query": "SELECT id, name, price_cents FROM products WHERE category = 'kitchen' ORDER BY id LIMIT 20 OFFSET 1520",
+          "duration_ms": "4.00"
+        },
+        {
+          "query": "SELECT id, name, price_cents FROM products WHERE category = 'kitchen' ORDER BY id LIMIT 20 OFFSET 1620",
+          "duration_ms": "4.00"
+        },
+        {
+          "query": "SELECT id, name, price_cents FROM products WHERE category = 'kitchen' ORDER BY id LIMIT 20 OFFSET 1640",
+          "duration_ms": "4.00"
+        }
+      ],
+      "plan": "Unavailable: plan not requested."
+    },
+    "status": "done"
+  },
   "0f93f6a2ce1116": {
     "output": {
       "rows": [
@@ -788,6 +902,47 @@
   "0fa8e2f8050c62": {
     "output": {
       "rows": [],
+      "plan": "Unavailable: plan not requested."
+    },
+    "status": "done"
+  },
+  "101f0b20f25d97": {
+    "output": {
+      "rows": [
+        {
+          "QUERY PLAN": "Limit  (cost=723.28..730.58 rows=20 width=26) (actual time=5.709..5.744 rows=20.00 loops=1)"
+        },
+        {
+          "QUERY PLAN": "  Buffers: shared hit=241"
+        },
+        {
+          "QUERY PLAN": "  ->  Index Scan using products_pkey on products  (cost=0.29..3656.50 rows=10013 width=26) (actual time=0.030..5.032 rows=2000.00 loops=1)"
+        },
+        {
+          "QUERY PLAN": "        Filter: (category = 'kitchen'::text)"
+        },
+        {
+          "QUERY PLAN": "        Rows Removed by Filter: 17929"
+        },
+        {
+          "QUERY PLAN": "        Index Searches: 1"
+        },
+        {
+          "QUERY PLAN": "        Buffers: shared hit=241"
+        },
+        {
+          "QUERY PLAN": "Planning:"
+        },
+        {
+          "QUERY PLAN": "  Buffers: shared hit=32"
+        },
+        {
+          "QUERY PLAN": "Planning Time: 0.291 ms"
+        },
+        {
+          "QUERY PLAN": "Execution Time: 5.793 ms"
+        }
+      ],
       "plan": "Unavailable: plan not requested."
     },
     "status": "done"
@@ -937,6 +1092,75 @@
     },
     "status": "done"
   },
+  "11f1830b021b0f": {
+    "output": {
+      "rows": [
+        {
+          "endpoint": "search",
+          "query": "SELECT id, name FROM products WHERE name ILIKE '%oak%' ORDER BY name LIMIT 20",
+          "duration_ms": "88.00"
+        },
+        {
+          "endpoint": "search",
+          "query": "SELECT id, name FROM products WHERE name ILIKE '%oak%' ORDER BY name LIMIT 20",
+          "duration_ms": "87.00"
+        },
+        {
+          "endpoint": "search",
+          "query": "SELECT id, name FROM products WHERE name ILIKE '%velvet%' ORDER BY name LIMIT 20",
+          "duration_ms": "79.00"
+        },
+        {
+          "endpoint": "search",
+          "query": "SELECT id, name FROM products WHERE name ILIKE '%mirror 42%' ORDER BY name LIMIT 20",
+          "duration_ms": "76.00"
+        },
+        {
+          "endpoint": "search",
+          "query": "SELECT id, name FROM products WHERE name ILIKE '%wooden bench%' ORDER BY name LIMIT 20",
+          "duration_ms": "75.00"
+        }
+      ],
+      "plan": "Unavailable: plan not requested."
+    },
+    "status": "done"
+  },
+  "1223c679a614ae": {
+    "output": {
+      "rows": [
+        {
+          "query": "SELECT id, name FROM products WHERE name ILIKE $1 ORDER BY name LIMIT $2",
+          "calls": 20,
+          "total_ms": "1334.6",
+          "mean_ms": "66.73",
+          "blocks": 15940
+        },
+        {
+          "query": "SELECT id, name, price_cents FROM products WHERE category = $1 ORDER BY id LIMIT $2 OFFSET $3",
+          "calls": 200,
+          "total_ms": "461.1",
+          "mean_ms": "2.31",
+          "blocks": 21562
+        },
+        {
+          "query": "INSERT INTO products (name, category, price_cents) VALUES ($1, $2, $3)",
+          "calls": 200,
+          "total_ms": "1.3",
+          "mean_ms": "0.01",
+          "blocks": 806
+        },
+        {
+          "query": "DELETE FROM products WHERE id = $1",
+          "calls": 100,
+          "total_ms": "0.7",
+          "mean_ms": "0.01",
+          "blocks": 400
+        }
+      ],
+      "plan": "Unavailable: plan not requested."
+    },
+    "status": "done"
+  },
   "12460b8da68e2a": {
     "output": {
       "rows": [],
@@ -986,6 +1210,68 @@
         }
       ],
       "plan": "Limit  (cost=0.29..1.70 rows=5 width=22)\n  ->  Index Scan using orders_status_created_at_idx on orders  (cost=0.29..305.54 rows=1080 width=22)\n        Index Cond: (status = 'pending'::text)"
+    },
+    "status": "done"
+  },
+  "133181847df811": {
+    "output": {
+      "rows": [
+        {
+          "QUERY PLAN": "Limit  (cost=135.76..135.79 rows=10 width=22) (actual time=0.525..0.545 rows=20.00 loops=1)"
+        },
+        {
+          "QUERY PLAN": "  Buffers: shared hit=41"
+        },
+        {
+          "QUERY PLAN": "  ->  Sort  (cost=135.76..135.79 rows=10 width=22) (actual time=0.523..0.531 rows=20.00 loops=1)"
+        },
+        {
+          "QUERY PLAN": "        Sort Key: name"
+        },
+        {
+          "QUERY PLAN": "        Sort Method: top-N heapsort  Memory: 18kB"
+        },
+        {
+          "QUERY PLAN": "        Buffers: shared hit=41"
+        },
+        {
+          "QUERY PLAN": "        ->  Bitmap Heap Scan on products  (cost=98.83..135.59 rows=10 width=22) (actual time=0.387..0.483 rows=56.00 loops=1)"
+        },
+        {
+          "QUERY PLAN": "              Recheck Cond: (name ~~* '%mirror 42%'::text)"
+        },
+        {
+          "QUERY PLAN": "              Heap Blocks: exact=12"
+        },
+        {
+          "QUERY PLAN": "              Buffers: shared hit=41"
+        },
+        {
+          "QUERY PLAN": "              ->  Bitmap Index Scan on products_name_trgm_idx  (cost=0.00..98.83 rows=10 width=0) (actual time=0.327..0.328 rows=56.00 loops=1)"
+        },
+        {
+          "QUERY PLAN": "                    Index Cond: (name ~~* '%mirror 42%'::text)"
+        },
+        {
+          "QUERY PLAN": "                    Index Searches: 1"
+        },
+        {
+          "QUERY PLAN": "                    Buffers: shared hit=29"
+        },
+        {
+          "QUERY PLAN": "Planning:"
+        },
+        {
+          "QUERY PLAN": "  Buffers: shared hit=65"
+        },
+        {
+          "QUERY PLAN": "Planning Time: 0.542 ms"
+        },
+        {
+          "QUERY PLAN": "Execution Time: 0.595 ms"
+        }
+      ],
+      "plan": "Unavailable: plan not requested."
     },
     "status": "done"
   },
@@ -1118,6 +1404,42 @@
         }
       ],
       "plan": "Sort  (cost=33.82..34.32 rows=200 width=48)\n  Sort Key: city\n  ->  HashAggregate  (cost=24.18..26.18 rows=200 width=48)\n        Group Key: city\n        ->  Seq Scan on orders  (cost=0.00..18.10 rows=810 width=36)"
+    },
+    "status": "done"
+  },
+  "162b153394a8da": {
+    "output": {
+      "rows": [
+        {
+          "query": "SELECT id, name FROM products WHERE name ILIKE $1 ORDER BY name LIMIT $2",
+          "calls": 20,
+          "total_ms": "53.5",
+          "mean_ms": "2.67",
+          "blocks": 7080
+        },
+        {
+          "query": "SELECT id, name, price_cents FROM products WHERE category = $1 AND id > $2 ORDER BY id LIMIT $3",
+          "calls": 200,
+          "total_ms": "7.5",
+          "mean_ms": "0.04",
+          "blocks": 868
+        },
+        {
+          "query": "INSERT INTO products (name, category, price_cents) VALUES ($1, $2, $3)",
+          "calls": 200,
+          "total_ms": "3.7",
+          "mean_ms": "0.02",
+          "blocks": 1206
+        },
+        {
+          "query": "DELETE FROM products WHERE id = $1",
+          "calls": 100,
+          "total_ms": "0.5",
+          "mean_ms": "0.01",
+          "blocks": 400
+        }
+      ],
+      "plan": "Unavailable: plan not requested."
     },
     "status": "done"
   },

@@ -1083,13 +1083,13 @@
     "anchor": "slowest-query-types",
     "heading": "Slowest query types",
     "lessonId": "slow-queries",
-    "text": "Loaded Database: slow-queries.database-init Search: 20 calls, most of the total time. Timings are real, measured in your browser."
+    "text": "Loaded Database: slow-queries.database-init query calls total_ms mean_ms blocks SELECT id, name FROM products WHERE name ILIKE $1 ORDER BY name LIMIT $2 20 1334.6 66.73 15940 SELECT id, name, price_cents FROM products WHERE category = $1 ORDER BY id LIMIT $2 OFFSET $3 200 461.1 2.31 21562 INSERT INTO products (name, category, price_cents) VALUES ($1, $2, $3) 200 1.3 0.01 806 DELETE FROM products WHERE id = $1 100 0.7 0.01 400 Search: 20 calls, most of the total time. Timings are real, measured in your browser."
   },
   {
     "anchor": "slowest-actual-calls",
     "heading": "Slowest actual calls",
     "lessonId": "slow-queries",
-    "text": "Loaded Database: slow-queries.database-init Loaded Database: slow-queries.database-init"
+    "text": "Loaded Database: slow-queries.database-init endpoint query duration_ms search SELECT id, name FROM products WHERE name ILIKE '%oak%' ORDER BY name LIMIT 20 88.00 search SELECT id, name FROM products WHERE name ILIKE '%oak%' ORDER BY name LIMIT 20 87.00 search SELECT id, name FROM products WHERE name ILIKE '%velvet%' ORDER BY name LIMIT 20 79.00 search SELECT id, name FROM products WHERE name ILIKE '%mirror 42%' ORDER BY name LIMIT 20 76.00 search SELECT id, name FROM products WHERE name ILIKE '%wooden bench%' ORDER BY name LIMIT 20 75.00 Loaded Database: slow-queries.database-init query duration_ms SELECT id, name, price_cents FROM products WHERE category = 'kitchen' ORDER BY id LIMIT 20 OFFSET 1520 4.00 SELECT id, name, price_cents FROM products WHERE category = 'kitchen' ORDER BY id LIMIT 20 OFFSET 1620 4.00 SELECT id, name, price_cents FROM products WHERE category = 'kitchen' ORDER BY id LIMIT 20 OFFSET 1640 4.00"
   },
   {
     "anchor": "why-is-search-slow",
@@ -1119,7 +1119,7 @@
     "anchor": "verify",
     "heading": "Verify",
     "lessonId": "slow-queries",
-    "text": "Same traffic, before and after both fixes. Before After Search and list are fixed. INSERT now touches more blocks: every new row also updates the trigram index. Indexes aren't free. Try Yourself Loaded Database: slow-queries.database-init The database for this lesson is already loaded. Write any query you want and run it directly in your browser."
+    "text": "Same traffic, before and after both fixes. Before query calls total_ms mean_ms blocks SELECT id, name FROM products WHERE name ILIKE $1 ORDER BY name LIMIT $2 20 1334.6 66.73 15940 SELECT id, name, price_cents FROM products WHERE category = $1 ORDER BY id LIMIT $2 OFFSET $3 200 461.1 2.31 21562 INSERT INTO products (name, category, price_cents) VALUES ($1, $2, $3) 200 1.3 0.01 806 DELETE FROM products WHERE id = $1 100 0.7 0.01 400 After query calls total_ms mean_ms blocks SELECT id, name FROM products WHERE name ILIKE $1 ORDER BY name LIMIT $2 20 53.5 2.67 7080 SELECT id, name, price_cents FROM products WHERE category = $1 AND id > $2 ORDER BY id LIMIT $3 200 7.5 0.04 868 INSERT INTO products (name, category, price_cents) VALUES ($1, $2, $3) 200 3.7 0.02 1206 DELETE FROM products WHERE id = $1 100 0.5 0.01 400 Search and list are fixed. INSERT now touches more blocks: every new row also updates the trigram index. Indexes aren't free. Try Yourself Loaded Database: slow-queries.database-init The database for this lesson is already loaded. Write any query you want and run it directly in your browser."
   },
   {
     "anchor": "exercises",
