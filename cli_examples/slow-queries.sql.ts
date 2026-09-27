@@ -25,6 +25,9 @@ SELECT
   500 + n * 7919 % 50000
 FROM generate_series(1, 100000) AS n;
 
+-- ANALYZE samples 300 rows per statistics target: 400 covers every row,
+-- so the planner's estimates are the same on every run.
+SET default_statistics_target = 400;
 ANALYZE products;
 `;
 
