@@ -86,6 +86,10 @@ import {
   database_inits as exampleTwentyDatabaseInits,
   exercises as exampleTwentyExercises,
 } from "../../cli_examples/slow-queries.sql";
+import {
+  database_inits as exampleTwentyOneDatabaseInits,
+  exercises as exampleTwentyOneExercises,
+} from "../../cli_examples/postgres-job-queue.sql";
 import type { SqlExample } from "../../cli_examples/types";
 import { lessons } from "./lesson-catalog";
 import type { LessonId } from "./types";
@@ -188,6 +192,10 @@ const lessonSqlById = {
   "slow-queries": {
     databaseInits: exampleTwentyDatabaseInits,
     exercises: exampleTwentyExercises,
+  },
+  "postgres-job-queue": {
+    databaseInits: exampleTwentyOneDatabaseInits,
+    exercises: exampleTwentyOneExercises,
   },
 } as const satisfies Record<
   LessonId,

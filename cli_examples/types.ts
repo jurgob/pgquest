@@ -293,6 +293,17 @@ export const SQL_EXAMPLE_IDS = {
   slowQueriesTopByTypeFixed: sqlExampleId("slow-queries.top-by-type-fixed"),
   slowQueriesExerciseBlocksByType: sqlExampleId("slow-queries.blocks-by-type"),
   slowQueriesExerciseKeysetPage: sqlExampleId("slow-queries.keyset-page"),
+  postgresJobQueueDatabaseInit: sqlExampleId("postgres-job-queue.database-init"),
+  postgresJobQueueExerciseClaimJob: sqlExampleId("postgres-job-queue.claim-job"),
+  postgresJobQueueExerciseEnqueueOrder: sqlExampleId("postgres-job-queue.enqueue-order"),
+  postgresJobQueueNaiveTranscript: sqlExampleId("postgres-job-queue.naive-transcript"),
+  postgresJobQueueSkipLockedTranscript: sqlExampleId(
+    "postgres-job-queue.skip-locked-transcript",
+  ),
+  postgresJobQueueLeaseTranscript: sqlExampleId("postgres-job-queue.lease-transcript"),
+  postgresJobQueueExactlyOnceTranscript: sqlExampleId(
+    "postgres-job-queue.exactly-once-transcript",
+  ),
   emptyDatabase: sqlExampleId("empty-database.database-init"),
 } as const;
 

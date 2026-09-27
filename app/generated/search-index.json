@@ -1053,7 +1053,7 @@
     "anchor": "rules-of-thumb",
     "heading": "Rules of thumb",
     "lessonId": "postgres-locks",
-    "text": "Keep transactions short. Every lock is held until the transaction ends, so a transaction left open while your app calls another service holds its locks the whole time. Set lock_timeout in migrations, and prefer CREATE INDEX CONCURRENTLY , which takes SHARE UPDATE EXCLUSIVE instead of SHARE and so doesn't block writes. Use FOR NO KEY UPDATE rather than FOR UPDATE unless you're deleting the row or changing its key. Lock rows in a consistent order to avoid deadlocks, and retry when one happens anyway. For work queues, use FOR UPDATE SKIP LOCKED . When something is stuck, pg_locks and pg_blocking_pids(pid) tell you who is waiting on whom. Try Yourself Loaded Database: postgres-locks.database-init The database for this lesson is already loaded. Write any query you want and run it directly in your browser."
+    "text": "Keep transactions short. Every lock is held until the transaction ends, so a transaction left open while your app calls another service holds its locks the whole time. Set lock_timeout in migrations, and prefer CREATE INDEX CONCURRENTLY , which takes SHARE UPDATE EXCLUSIVE instead of SHARE and so doesn't block writes. Use FOR NO KEY UPDATE rather than FOR UPDATE unless you're deleting the row or changing its key. Lock rows in a consistent order to avoid deadlocks, and retry when one happens anyway. For work queues, use FOR UPDATE SKIP LOCKED . The job queue lesson builds a complete one. When something is stuck, pg_locks and pg_blocking_pids(pid) tell you who is waiting on whom. Try Yourself Loaded Database: postgres-locks.database-init The database for this lesson is already loaded. Write any query you want and run it directly in your browser."
   },
   {
     "anchor": "exercises",
@@ -1132,5 +1132,113 @@
     "heading": "What We Learned",
     "lessonId": "slow-queries",
     "text": "pg_stat_statements Groups every statement by its shape and keeps running totals: calls, time, rows, buffer blocks. EXPLAIN (ANALYZE, BUFFERS) Runs the query and shows what each step of the plan really did. pg_trgm Trigram indexes: make ILIKE '%...%' use an index. Keyset pagination WHERE id > last_id instead of OFFSET : every page costs the same."
+  },
+  {
+    "anchor": null,
+    "heading": null,
+    "lessonId": "postgres-job-queue",
+    "text": "Building a job queue with Postgres Draft Some work shouldn't happen while a user waits: sending an email, calling a webhook, rendering a PDF. The usual answer is a job queue. The web request records what needs doing, and background workers pick the jobs up and do them. You don't need a message broker for that. A table is enough, and the locks lesson already showed the key ingredient, FOR UPDATE SKIP LOCKED . But a queue people can rely on needs more than one clever query: a job must never go to two workers at once, a worker crashing must not lose its job, failing jobs need retries and a place to end up, and you need to know exactly what happens when something dies halfway. This lesson builds all of that."
+  },
+  {
+    "anchor": "what-queues-are-for",
+    "heading": "What queues are for",
+    "lessonId": "postgres-job-queue",
+    "text": "Use case Example Slow work after a request Send the receipt email after checkout, without making the customer wait. Calls to other services Deliver webhooks, charge a card, sync a customer to the CRM. Heavy work Resize uploaded images, render PDFs, generate reports. Scheduled and delayed work Send a reminder 24 hours before a booking; retry a failed call in a minute. Absorbing spikes A flash sale creates 50,000 jobs in a minute; workers get through them at their own pace. Plenty of production systems run their queue in Postgres. These popular libraries all use the technique in this lesson: Solid Queue : Ruby on Rails' default job backend since Rails 8. Oban : The standard job queue for Elixir. River : Go. graphile-worker : Node.js, woken up with LISTEN/NOTIFY. pg-boss : Node.js. pgmq : A Postgres extension with an SQS-like API."
+  },
+  {
+    "anchor": "what-a-queue-must-guarantee",
+    "heading": "What a queue must guarantee",
+    "lessonId": "postgres-job-queue",
+    "text": "Picture one queue and N workers pulling from it. Each job should be handled by one worker, not all of them (a pattern called competing consumers). While a worker holds a job, no other worker may get it. And the queue has to decide what happens when a worker crashes halfway through. That decision is the queue's delivery guarantee: Guarantee How If the worker crashes mid-job At most once Mark the job done, then do the work. The job is lost. Fine for things like refreshing a cache. At least once Do the work, then mark the job done. The job runs again, even if the work had actually finished. The usual choice. Exactly once Impossible over a network, as explained below. —"
+  },
+  {
+    "anchor": "exactly-once-delivery",
+    "heading": "Exactly-once delivery: nobody can do it",
+    "lessonId": "postgres-job-queue",
+    "text": "Everyone wants the third row. No queue can provide it: not Postgres, not Kafka, not SQS, not RabbitMQ. Say a worker sends a receipt email, then tells the queue \"done\". If that message never arrives, the queue can't tell \"the worker sent the email and then crashed\" from \"the worker crashed before sending it\". Both look the same from where the queue is: silence. So it must choose between handing the job out again, risking a second email (at-least-once), or dropping it, risking no email (at-most-once). Waiting longer doesn't help, and neither does asking the worker to confirm its confirmation, because that message can get lost too. This is the Two Generals' Problem , proved unsolvable in the 1970s: two parties that talk over a channel that can lose messages can never be certain they agree. Its better-known cousin, the Byzantine Generals Problem , is harder still, because some participants may also lie. Products that advertise \"exactly-once\" mean something narrower: deduplicating messages within a time window, or exactly-once processing inside their own transactions. Tyler Treat's You Cannot Have Exactly-Once Delivery explains it well. What you can have, and what this lesson builds: At-least-once delivery plus idempotent work , where doing a job twice has the same effect as doing it once. The result is often called effectively-once. Exactly-once processing , when the job's work is a write to the same Postgres database as the queue. This is something a separate broker can't offer."
+  },
+  {
+    "anchor": "the-migration",
+    "heading": "The migration",
+    "lessonId": "postgres-job-queue",
+    "text": "A jobs table is the queue. status tracks each job's life, attempts and max_attempts drive retries, run_at lets a job wait until later, and locked_until is used for leases, later in the lesson. The partial index only contains pending jobs, so it stays small however many finished jobs pile up. orders and invoices are the application's own data. Loaded Database: postgres-job-queue.database-init"
+  },
+  {
+    "anchor": "the-seed",
+    "heading": "The seed",
+    "lessonId": "postgres-job-queue",
+    "text": "Three orders, three pending jobs, and two jobs whose workers died ten minutes ago."
+  },
+  {
+    "anchor": "the-naive-queue",
+    "heading": "The naive queue",
+    "lessonId": "postgres-job-queue",
+    "text": "The obvious worker loop: find the oldest pending job, mark it running, do it. Each session below is a separate worker with its own real connection to one Postgres server, recorded at build time as in the locks lesson. Session A Step 1 Worker A looks for the next job id kind payload 1 send_receipt [object Object] Session B Step 2 Worker B looks for the next job id kind payload 1 send_receipt [object Object] Worker B reads before Worker A has claimed anything, so both see job 1 as the next one. Session A Step 3 Worker A claims job 1 id status 1 running Session B Step 4 Worker B claims job 1 too id status 1 running No error, no waiting: Worker B's UPDATE simply overwrites 'running' with 'running'. Both workers now believe they own job 1, and alice gets two receipts. Adding AND status = 'pending' to the UPDATE would make Worker B's claim update nothing, so only one worker would win. But all the workers would still race for the same first row, and all but one would have to start over, again and again, under load."
+  },
+  {
+    "anchor": "claiming-with-skip-locked",
+    "heading": "Claiming jobs with SKIP LOCKED",
+    "lessonId": "postgres-job-queue",
+    "text": "Instead, each worker locks the job it picks with FOR UPDATE SKIP LOCKED . Rows another worker has locked are skipped rather than waited for, so four workers get four different jobs in one round trip each. Here, each worker keeps its transaction open while it works, so the row lock is the claim: Session A Step 1 Worker A claims a job id kind payload attempts 1 send_receipt [object Object] 1 The subquery locks job 1 with FOR UPDATE, and the UPDATE counts the attempt. The row lock is the claim: it lasts as long as Worker A's transaction. Session B Step 2 Worker B claims a job id kind payload attempts 2 send_receipt [object Object] 1 Job 1 is locked, so SKIP LOCKED moves on to job 2 instead of waiting. No two workers can ever hold the same job. Session C Step 3 Worker C claims a job id kind payload attempts 3 create_invoice [object Object] 1 Worker C gets job 3. Session D Step 4 Worker D claims a job No rows Every pending job is locked, so Worker D gets nothing, immediately. A real worker would sleep for a moment, or wait for a notification, and try again. Session A Step 5 Worker A finishes job 1 No rows Worker A did the work, marks job 1 done, and commits, which releases its lock. Session B Step 6 Worker B crashes No rows A worker that crashes mid-job never commits. When its connection drops, Postgres rolls its transaction back, which is what this ROLLBACK does. Session D Step 7 Worker D tries again id kind payload attempts 2 send_receipt [object Object] 1 Job 2 is available again, so no job is lost when a worker dies. But look at attempts: it's back to 1, because the crash rolled back the attempt counter too. This is a correct at-least-once queue in one query, and for short jobs it's a good design. Worker B may already have sent bob's receipt when it crashed, so bob may get it twice: that's the at-least-once part. Holding the transaction open has two costs, though: A job that crashes its worker every time (a \"poison\" job) is retried forever, because the crash also rolls back the attempt counter. A 10-minute job means a transaction open for 10 minutes, holding a database connection the whole time and keeping vacuum from cleaning up dead rows (see the MVCC lesson )."
+  },
+  {
+    "anchor": "leases",
+    "heading": "Leases: claim, commit, then work",
+    "lessonId": "postgres-job-queue",
+    "text": "The fix is to commit the claim right away and record how long it lasts. The job is marked running with a locked_until deadline, and the worker does the work outside any transaction. If the worker doesn't report back before the deadline, the job is considered abandoned. SQS calls this a visibility timeout. Something now has to notice expired leases. Any worker can run this before claiming, or a scheduled task can run it every few seconds: Session A Step 1 Worker A claims a job with a 5-minute lease id kind payload attempts 1 send_receipt [object Object] 1 This time the claim commits straight away: job 1 is 'running' and belongs to Worker A for the next 5 minutes. No transaction stays open while Worker A works. Session B Step 2 Which running jobs have an expired lease? id kind attempts lease_expired 1 send_receipt 1 false 4 send_receipt 1 true 5 sync_crm 3 true Jobs 4 and 5 were claimed ten minutes ago by workers that died, and their 5-minute leases have run out. Session B Step 3 Reclaim the expired leases id kind status attempts 4 send_receipt pending 1 5 sync_crm failed 3 Job 4 goes back to 'pending' to be tried again. Job 5 has already used its 3 attempts, so it goes to 'failed' instead: that's the dead-letter queue, where a person looks at it. Session C Step 4 Worker C claims a job id kind payload attempts 4 send_receipt [object Object] 2 Job 4 is due earliest, so Worker C gets it, as its second attempt. The counter survived its first worker's crash because the claim was committed. Session D Step 5 Job 4's original worker wakes up and reports it done No rows Job 4's first worker wasn't dead after all, just very slow. It tries to report the job done, but the attempts = 1 check matches nothing, because job 4 is now on attempt 2. The worker learns that it lost the job, and Worker C's claim stays intact. Session A Step 6 Worker A reports job 1 done id status 1 done Worker A still holds attempt 1 of job 1, so its report goes through. Step 5 is the subtle one. A lease can expire while its worker is still alive: a long garbage-collection pause, a slow network, a job that took longer than expected. Without the attempts = 1 check, the slow worker would mark job 4 done while Worker C is still working on it. Using the attempt number this way is called a fencing token: every report names the claim it belongs to, and reports about an old claim are ignored. When a job fails with an error instead of a crash, the worker puts it back with a delay that doubles each time (exponential backoff), so a service that's down isn't hammered with retries:"
+  },
+  {
+    "anchor": "exactly-once-processing",
+    "heading": "Exactly-once processing, inside Postgres",
+    "lessonId": "postgres-job-queue",
+    "text": "Delivery can't be exactly-once, but processing can be, if the job's work is a write to the same database. Then the work and the \"done\" go into one transaction, and they commit or roll back together. Holding the transaction open is the right choice here, since the work is a few quick writes. Session A Step 1 Worker A claims the invoice job id kind payload attempts 3 create_invoice [object Object] 1 Session A Step 2 Worker A writes the invoice order_id total_cents 3 9900 The job's work is itself a database write, in the same transaction as the claim. Session A Step 3 Worker A crashes before committing No rows Worker A crashes after doing the work but before committing. The invoice disappears together with the claim. Session B Step 4 Worker B claims the invoice job id kind payload attempts 3 create_invoice [object Object] 1 Session B Step 5 Worker B writes the invoice order_id total_cents 3 9900 Worker B does the same work again. This is a second delivery, and it's harmless: nothing Worker A did survived. Session B Step 6 Worker B marks the job done and commits No rows The invoice and the job's 'done' become visible together, or not at all. Session C Step 7 How many invoices for order 3? order_id total_cents job_status 3 9900 done However many workers tried, order 3 has exactly one invoice, and the job is done. The job was delivered twice, and the invoice was created once. For work outside the database, like an email, a payment, or a webhook, no transaction can take it back. There, make the work idempotent: pass the job id as an idempotency key to APIs that support one ( Stripe does ), or record what you've done under a unique constraint and skip it the second time."
+  },
+  {
+    "anchor": "enqueueing",
+    "heading": "Enqueueing in the same transaction",
+    "lessonId": "postgres-job-queue",
+    "text": "The same idea works in the other direction. If orders go into Postgres and jobs go to a separate broker, the order can commit while the message is lost, or the message can be sent for an order that then rolls back. With the queue in the same database, both are one transaction: Teams using a separate broker end up with this pattern anyway: they write events to an outbox table in the same transaction, and a relay process forwards them to the broker. The outbox is a Postgres queue."
+  },
+  {
+    "anchor": "listen-notify",
+    "heading": "Waking workers up: LISTEN and NOTIFY",
+    "lessonId": "postgres-job-queue",
+    "text": "Idle workers find new jobs by polling, which wastes queries when the queue is empty and adds delay when it isn't. LISTEN and NOTIFY let the producer wake them up instead. Notifications are sent only when the transaction commits, so a worker is never woken up for a job it can't see yet: A notification is only a hint. It's lost if no worker is listening at that moment, so workers still poll every few seconds as a safety net. The table is always the source of truth."
+  },
+  {
+    "anchor": "fan-out",
+    "heading": "One event, many consumers",
+    "lessonId": "postgres-job-queue",
+    "text": "So far each job goes to exactly one worker. Sometimes one event must reach several independent consumers instead: a new order needs a receipt, an invoice, and a CRM update. The simplest way is one job per consumer, created together: The alternative is Kafka's model: keep one append-only table of events and let each consumer remember the last id it read. It's harder to get right than it looks. Ids come from a sequence when a row is inserted, not when it commits, so a transaction holding id 7 can commit after id 8 is already visible. A consumer that has moved past 8 never sees 7."
+  },
+  {
+    "anchor": "keeping-it-healthy",
+    "heading": "Keeping the queue healthy",
+    "lessonId": "postgres-job-queue",
+    "text": "Every claim and every status change creates a new row version. A busy queue produces dead rows quickly, so make sure autovacuum keeps up with the jobs table, and watch n_dead_tup in pg_stat_user_tables . Delete finished jobs regularly, or partition the table by time and drop old partitions, which leaves nothing for vacuum to clean up. Keep an index that covers only what workers search for, like the partial index on pending jobs in the migration. Look at failed jobs. The dead-letter queue is only useful if someone reads it."
+  },
+  {
+    "anchor": "postgres-or-a-broker",
+    "heading": "Postgres or a message broker?",
+    "lessonId": "postgres-job-queue",
+    "text": "Comparing queue technologies isn't the goal of this lesson, and each of these deserves a lesson of its own. This is just a high-level idea of where each one fits: Postgres Jobs are enqueued in the same transaction as the data they're about, there's nothing new to run, and you can inspect the queue with SQL. Comfortable up to a few thousand jobs per second; beyond that, dead rows and vacuum become the bottleneck. Redis Lists make a very fast, very simple queue; Streams add consumer groups and redelivery of unacknowledged messages. Data lives in memory, and how much survives a crash depends on how persistence is configured. RabbitMQ A classic message broker: acknowledgements, routing, priorities, and dead-letter exchanges built in, and it pushes messages to consumers instead of being polled. One more cluster to run. Kafka A replayable log rather than a queue: huge throughput, ordering within a partition, and any number of consumer groups reading the same events. Retrying or delaying one message is awkward, and it's heavy to operate. SQS / SNS Fully managed. SQS has visibility timeouts and dead-letter queues built in, and SNS fans a message out to many queues. Standard queues are at-least-once and unordered, and you're tied to AWS. A reasonable default: start with Postgres when jobs belong to your data and volume is moderate, and move to a dedicated system when you need very high throughput, event replay, or many teams consuming the same stream."
+  },
+  {
+    "anchor": "rules-of-thumb",
+    "heading": "Rules of thumb",
+    "lessonId": "postgres-job-queue",
+    "text": "Claim jobs with FOR UPDATE SKIP LOCKED , never with a separate SELECT and UPDATE. Assume every job can run more than once, and make the work idempotent. Exactly-once delivery doesn't exist. For short jobs whose work is in the database, claim, work, and mark done in one transaction: that's exactly-once processing. For long jobs or external calls, commit the claim with a lease, and check the attempt number when reporting back. Limit attempts, back off between them, and send jobs that keep failing to a dead-letter status. Enqueue jobs in the same transaction as the data they're about. Try Yourself Loaded Database: postgres-job-queue.database-init The database for this lesson is already loaded. Write any query you want and run it directly in your browser."
+  },
+  {
+    "anchor": "exercises",
+    "heading": "Exercises",
+    "lessonId": "postgres-job-queue",
+    "text": "0 OF 2 DONE 1. Claim the next job with a lease: using a subquery with FOR UPDATE SKIP LOCKED that picks the oldest due pending job (by run_at, then id), set its status to 'running', add 1 to attempts, and set locked_until to 5 minutes from now. Return id, kind, and attempts. 2. In a single statement, insert order 4 for dave with total_cents 2500 and enqueue a 'send_receipt' job whose payload is {\"order_id\": 4}. Use a data-modifying CTE so both rows are written or neither is, and return the job's id, kind, and payload."
+  },
+  {
+    "anchor": "what-we-learned",
+    "heading": "What We Learned",
+    "lessonId": "postgres-job-queue",
+    "text": "FOR UPDATE SKIP LOCKED Lets many workers claim jobs from the same table at once: each skips the rows others have locked, so no job is handed to two workers. Delivery guarantees At-most-once or at-least-once, depending on whether you mark a job done before or after doing it. Exactly-once delivery is impossible. Leases and fencing A claim that expires ( locked_until ) lets another worker take over a dead worker's job; checking the attempt number when reporting back stops a slow worker from overwriting the new claim. Exactly-once processing When a job's work is a write to the same database, doing it and marking the job done in one transaction makes it happen exactly once. Transactional enqueue (outbox) Insert the job in the same transaction as the data it's about, so there's never an order without its job, or a job without its order. LISTEN / NOTIFY Wakes up idle workers when a job is committed, so they don't have to poll the table constantly."
   }
 ]
