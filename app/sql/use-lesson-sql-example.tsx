@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import type { PostgresExampleStep } from "../../cli_examples/types";
+import { getPrecomputedLessonSqlResult } from "./lesson-sql-results";
 import { runMultiSessionSteps, runSqlQuery } from "./run-example";
 import type { ExecutionOutput, SqlExecutionInput } from "./types";
 import {
@@ -18,8 +19,16 @@ export type LessonSqlState =
 export function useLessonSqlExample(input: SqlExecutionInput): LessonSqlState {
   const [state, setState] = useState<LessonSqlState>({ status: "loading" });
   const stableInput = useMemo(() => input, [input.query, input.sqlLoad]);
+  const precomputed = useMemo(
+    () => getPrecomputedLessonSqlResult(stableInput),
+    [stableInput],
+  );
 
   useEffect(() => {
+    if (precomputed) {
+      return;
+    }
+
     let isCurrent = true;
     const controller = new AbortController();
 
@@ -40,9 +49,9 @@ export function useLessonSqlExample(input: SqlExecutionInput): LessonSqlState {
       isCurrent = false;
       controller.abort();
     };
-  }, [stableInput]);
+  }, [stableInput, precomputed]);
 
-  return state;
+  return precomputed ?? state;
 }
 
 export function SqlResult({ execution }: { execution: LessonSqlState }) {

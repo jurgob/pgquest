@@ -7,6 +7,7 @@ import { lessons } from "./lesson-catalog";
 import { SiteHeader } from "./site-header";
 import type { LessonId } from "./types";
 import { SqlEditor } from "./sql-editor";
+import { useIsStaticPreview } from "./static-preview";
 
 export type WhatWeLearnedItem = {
   concept: string;
@@ -188,8 +189,9 @@ export function TryYourself({
       exercise: activeExercise,
       lessonId: storageKey,
     });
+  const isStaticPreview = useIsStaticPreview();
 
-  if (!sqlLoad || !defaultQuery) {
+  if (!sqlLoad || !defaultQuery || isStaticPreview) {
     return null;
   }
 
