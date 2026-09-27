@@ -48,6 +48,7 @@ const routeSources: { path: string; routeModule: string }[] = [
   { path: "/", routeModule: "routes/home.tsx" },
   ...lessons.map((lesson) => ({ path: lesson.href, routeModule: lesson.routeModule })),
   { path: "/license", routeModule: "routes/license.tsx" },
+  { path: "/changelog", routeModule: "routes/changelog.tsx" },
 ];
 const pageKeys = new Map(
   routeSources.map((source) => [source.path, pageKey(source.path)]),

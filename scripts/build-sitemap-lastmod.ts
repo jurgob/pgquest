@@ -46,6 +46,7 @@ const staticPages: { path: string; routeFile: string }[] = [
   { path: "/search", routeFile: "app/routes/search.tsx" },
   { path: "/feedback", routeFile: "app/routes/feedback.tsx" },
   { path: "/license", routeFile: "app/routes/license.tsx" },
+  { path: "/changelog", routeFile: "CHANGELOG.md" },
 ];
 
 const lastmodByPath: Record<string, string> = {};
