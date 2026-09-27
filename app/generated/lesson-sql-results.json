@@ -1,0 +1,1558 @@
+{
+  "00afe3483722d6": {
+    "output": {
+      "rows": [
+        {
+          "title": "Vector search notes"
+        }
+      ],
+      "plan": "Seq Scan on articles  (cost=0.00..22.75 rows=1 width=32)\n  Filter: (lower(body) ~~ '%search%'::text)"
+    },
+    "status": "done"
+  },
+  "00c659062ab777": {
+    "output": {
+      "rows": [
+        {
+          "paid_orders": 10800
+        }
+      ],
+      "plan": "Aggregate  (cost=277.00..277.01 rows=1 width=8)\n  ->  Seq Scan on orders  (cost=0.00..250.00 rows=10800 width=0)\n        Filter: (status = 'paid'::text)"
+    },
+    "status": "done"
+  },
+  "010462e83be2b1": {
+    "output": {
+      "rows": [
+        {
+          "id": 4,
+          "name": "Katherine Johnson",
+          "email": "katherine@example.com",
+          "gender": "female",
+          "active": false
+        }
+      ],
+      "plan": "Insert on users  (cost=0.00..0.01 rows=1 width=101)\n  Conflict Resolution: UPDATE\n  Conflict Arbiter Indexes: users_email_key\n  ->  Result  (cost=0.00..0.01 rows=1 width=101)"
+    },
+    "status": "done"
+  },
+  "01377c3ab6e085": {
+    "output": {
+      "rows": [
+        {
+          "id": 1,
+          "book_id": 1,
+          "borrower_name": "Nnedi Okorafor",
+          "borrowed_at": "2026-09-01T09:00:00.000Z",
+          "returned_at": null
+        },
+        {
+          "id": 2,
+          "book_id": 2,
+          "borrower_name": "Ursula K. Le Guin",
+          "borrowed_at": "2026-09-05T14:30:00.000Z",
+          "returned_at": "2026-09-12T11:00:00.000Z"
+        }
+      ],
+      "plan": "Unavailable for a multi-statement SQL example."
+    },
+    "status": "done"
+  },
+  "014224bbdbb1f5": {
+    "output": {
+      "rows": [
+        {
+          "name": "Agatha Christie",
+          "title": null
+        },
+        {
+          "name": "Isaac Asimov",
+          "title": "I, Robot"
+        },
+        {
+          "name": "J.R.R. Tolkien",
+          "title": "The Fellowship of the Ring"
+        },
+        {
+          "name": "J.R.R. Tolkien",
+          "title": "The Two Towers"
+        }
+      ],
+      "plan": "Unavailable: plan not requested."
+    },
+    "status": "done"
+  },
+  "01d58c8cff980b": {
+    "output": {
+      "rows": [
+        {
+          "schema_name": "information_schema"
+        },
+        {
+          "schema_name": "public"
+        }
+      ],
+      "plan": "Unavailable: plan not requested."
+    },
+    "status": "done"
+  },
+  "0260e7de74c6d4": {
+    "output": {
+      "rows": [
+        {
+          "name": "Isaac Asimov",
+          "title": "I, Robot"
+        },
+        {
+          "name": "J.R.R. Tolkien",
+          "title": "The Fellowship of the Ring"
+        },
+        {
+          "name": "J.R.R. Tolkien",
+          "title": "The Two Towers"
+        }
+      ],
+      "plan": "Unavailable: plan not requested."
+    },
+    "status": "done"
+  },
+  "02641074236ab8": {
+    "output": {
+      "rows": [
+        {
+          "id": 1,
+          "user_id": 1,
+          "amount": "42.00"
+        },
+        {
+          "id": 2,
+          "user_id": 1,
+          "amount": "15.50"
+        },
+        {
+          "id": 3,
+          "user_id": 2,
+          "amount": "9.99"
+        }
+      ],
+      "plan": "Seq Scan on \"Order\"  (cost=0.00..1.03 rows=3 width=14)"
+    },
+    "status": "done"
+  },
+  "03445364b8f304": {
+    "output": {
+      "rows": [
+        {
+          "title": "SQL join guide"
+        }
+      ],
+      "plan": "Seq Scan on articles  (cost=0.00..20.62 rows=4 width=32)\n  Filter: (title ~~ 'SQL%'::text)"
+    },
+    "status": "done"
+  },
+  "03592998a99171": {
+    "output": {
+      "rows": [
+        {
+          "table_schema": "lending",
+          "table_name": "loans",
+          "column_name": "id",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": "nextval('lending.loans_id_seq'::regclass)"
+        },
+        {
+          "table_schema": "lending",
+          "table_name": "loans",
+          "column_name": "book_id",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "table_schema": "lending",
+          "table_name": "loans",
+          "column_name": "borrower_name",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "table_schema": "lending",
+          "table_name": "loans",
+          "column_name": "borrowed_at",
+          "data_type": "timestamp without time zone",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "table_schema": "lending",
+          "table_name": "loans",
+          "column_name": "returned_at",
+          "data_type": "timestamp without time zone",
+          "is_nullable": "YES",
+          "column_default": null
+        },
+        {
+          "table_schema": "library",
+          "table_name": "authors",
+          "column_name": "id",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": "nextval('library.authors_id_seq'::regclass)"
+        },
+        {
+          "table_schema": "library",
+          "table_name": "authors",
+          "column_name": "name",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "table_schema": "library",
+          "table_name": "authors",
+          "column_name": "country",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "table_schema": "library",
+          "table_name": "books",
+          "column_name": "id",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": "nextval('library.books_id_seq'::regclass)"
+        },
+        {
+          "table_schema": "library",
+          "table_name": "books",
+          "column_name": "author_id",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "table_schema": "library",
+          "table_name": "books",
+          "column_name": "title",
+          "data_type": "text",
+          "is_nullable": "NO",
+          "column_default": null
+        },
+        {
+          "table_schema": "library",
+          "table_name": "books",
+          "column_name": "published_year",
+          "data_type": "integer",
+          "is_nullable": "NO",
+          "column_default": null
+        }
+      ],
+      "plan": "Unavailable: plan not requested."
+    },
+    "status": "done"
+  },
+  "03da2cdc26ff9f": {
+    "output": {
+      "rows": [
+        {
+          "title": "Vector search",
+          "distance": 0.0024999999999999935
+        },
+        {
+          "title": "JSON documents",
+          "distance": 0.7300000000000002
+        },
+        {
+          "title": "JOIN patterns",
+          "distance": 0.8475000000000001
+        },
+        {
+          "title": "SQL indexes",
+          "distance": 1.1400000000000001
+        }
+      ],
+      "plan": "Sort  (cost=76.86..78.98 rows=850 width=40)\n  Sort Key: (((power((embedding[1] - '0.1'::double precision), '2'::double precision) + power((embedding[2] - '0.2'::double precision), '2'::double precision)) + power((embedding[3] - '0.9'::double precision), '2'::double precision)))\n  ->  Seq Scan on documents  (cost=0.00..35.50 rows=850 width=40)"
+    },
+    "status": "done"
+  },
+  "046432ba77f4c8": {
+    "output": {
+      "rows": [
+        {
+          "id": 9,
+          "name": "Radia Perlman",
+          "email": "radia@example.com",
+          "gender": "female",
+          "active": true
+        }
+      ],
+      "plan": "Insert on users  (cost=0.00..0.01 rows=1 width=101)\n  ->  Result  (cost=0.00..0.01 rows=1 width=101)"
+    },
+    "status": "done"
+  },
+  "046f171e3bb940": {
+    "output": {
+      "rows": [
+        {
+          "xmin": "753",
+          "xmax": "0",
+          "name": "checking",
+          "balance": 900
+        }
+      ],
+      "plan": "Unavailable: plan not requested."
+    },
+    "status": "done"
+  },
+  "04b60a9fa9e38d": {
+    "output": {
+      "rows": [
+        {
+          "id": 3,
+          "sku": "TEE-001",
+          "name": "PgQuest T-shirt",
+          "price_cents": 3200
+        }
+      ],
+      "plan": "Insert on products  (cost=0.00..0.01 rows=1 width=72)\n  ->  Result  (cost=0.00..0.01 rows=1 width=72)"
+    },
+    "status": "done"
+  },
+  "04b7c4240ed4b7": {
+    "output": {
+      "rows": [
+        {
+          "id": 1,
+          "name": "checking",
+          "balance": 1000
+        },
+        {
+          "id": 2,
+          "name": "savings",
+          "balance": 5000
+        }
+      ],
+      "plan": "Unavailable: plan not requested."
+    },
+    "status": "done"
+  },
+  "04fe4a3c4110f2": {
+    "output": {
+      "rows": [],
+      "plan": "Result  (cost=0.00..0.00 rows=0 width=0)\n  One-Time Filter: false"
+    },
+    "status": "done"
+  },
+  "050d2a2b3d5f1f": {
+    "output": {
+      "rows": [
+        {
+          "QUERY PLAN": "Delete on users  (cost=0.15..8.17 rows=0 width=0) (actual time=0.325..0.336 rows=0.00 loops=1)"
+        },
+        {
+          "QUERY PLAN": "  Buffers: shared hit=3"
+        },
+        {
+          "QUERY PLAN": "  ->  Index Scan using users_email_key on users  (cost=0.15..8.17 rows=1 width=6) (actual time=0.040..0.046 rows=1.00 loops=1)"
+        },
+        {
+          "QUERY PLAN": "        Index Cond: (email = 'katherine@example.com'::text)"
+        },
+        {
+          "QUERY PLAN": "        Index Searches: 1"
+        },
+        {
+          "QUERY PLAN": "        Buffers: shared hit=2"
+        },
+        {
+          "QUERY PLAN": "Planning:"
+        },
+        {
+          "QUERY PLAN": "  Buffers: shared hit=49 read=1"
+        },
+        {
+          "QUERY PLAN": "Planning Time: 0.277 ms"
+        },
+        {
+          "QUERY PLAN": "Execution Time: 0.587 ms"
+        }
+      ],
+      "plan": "Unavailable: plan not requested."
+    },
+    "status": "done"
+  },
+  "0525812b5f6f58": {
+    "output": {
+      "rows": [
+        {
+          "team": "Core",
+          "project": "PgQuest"
+        },
+        {
+          "team": "Core",
+          "project": "Website"
+        },
+        {
+          "team": "Data",
+          "project": "Warehouse"
+        }
+      ],
+      "plan": "Sort  (cost=125.11..128.11 rows=1200 width=64)\n  Sort Key: teams.name, projects.name\n  ->  Hash Join  (cost=38.58..63.74 rows=1200 width=64)\n        Hash Cond: (projects.team_id = teams.id)\n        ->  Seq Scan on projects  (cost=0.00..22.00 rows=1200 width=36)\n        ->  Hash  (cost=22.70..22.70 rows=1270 width=36)\n              ->  Seq Scan on teams  (cost=0.00..22.70 rows=1270 width=36)"
+    },
+    "status": "done"
+  },
+  "063f68faaecd7f": {
+    "output": {
+      "rows": [
+        {
+          "name": "Index workshop",
+          "starts_at": "2026-01-03T09:00:00.000Z"
+        },
+        {
+          "name": "Schema review",
+          "starts_at": "2026-01-02T09:00:00.000Z"
+        }
+      ],
+      "plan": "Limit  (cost=1.11..1.12 rows=2 width=21)\n  ->  Sort  (cost=1.11..1.12 rows=5 width=21)\n        Sort Key: starts_at DESC\n        ->  Seq Scan on events  (cost=0.00..1.05 rows=5 width=21)"
+    },
+    "status": "done"
+  },
+  "06acda3a00c30c": {
+    "output": {
+      "rows": [
+        {
+          "schema_name": "information_schema"
+        },
+        {
+          "schema_name": "lending"
+        },
+        {
+          "schema_name": "library"
+        },
+        {
+          "schema_name": "public"
+        }
+      ],
+      "plan": "Unavailable: plan not requested."
+    },
+    "status": "done"
+  },
+  "06b11f686f8fcf": {
+    "output": {
+      "rows": [
+        {
+          "name": "Join clinic",
+          "starts_at": "2026-01-05T09:00:00.000Z"
+        },
+        {
+          "name": "Aggregation lab",
+          "starts_at": "2026-01-04T09:00:00.000Z"
+        },
+        {
+          "name": "Index workshop",
+          "starts_at": "2026-01-03T09:00:00.000Z"
+        },
+        {
+          "name": "Schema review",
+          "starts_at": "2026-01-02T09:00:00.000Z"
+        },
+        {
+          "name": "Kickoff",
+          "starts_at": "2026-01-01T09:00:00.000Z"
+        }
+      ],
+      "plan": "Sort  (cost=1.11..1.12 rows=5 width=21)\n  Sort Key: starts_at DESC\n  ->  Seq Scan on events  (cost=0.00..1.05 rows=5 width=21)"
+    },
+    "status": "done"
+  },
+  "06e2a0e205b44e": {
+    "output": {
+      "rows": [
+        {
+          "relation": "accounts",
+          "mode": "AccessExclusiveLock"
+        }
+      ],
+      "plan": "Unavailable for a multi-statement SQL example."
+    },
+    "status": "done"
+  },
+  "06eabc0da3236b": {
+    "output": {
+      "rows": [
+        {
+          "QUERY PLAN": "Insert on users  (cost=0.00..0.01 rows=0 width=0) (actual time=0.099..0.101 rows=0.00 loops=1)"
+        },
+        {
+          "QUERY PLAN": "  Conflict Resolution: UPDATE"
+        },
+        {
+          "QUERY PLAN": "  Conflict Arbiter Indexes: users_email_key"
+        },
+        {
+          "QUERY PLAN": "  Tuples Inserted: 0"
+        },
+        {
+          "QUERY PLAN": "  Conflicting Tuples: 1"
+        },
+        {
+          "QUERY PLAN": "  Buffers: shared hit=31"
+        },
+        {
+          "QUERY PLAN": "  ->  Result  (cost=0.00..0.01 rows=1 width=101) (actual time=0.030..0.032 rows=1.00 loops=1)"
+        },
+        {
+          "QUERY PLAN": "        Buffers: shared hit=14"
+        },
+        {
+          "QUERY PLAN": "Planning:"
+        },
+        {
+          "QUERY PLAN": "  Buffers: shared hit=25"
+        },
+        {
+          "QUERY PLAN": "Planning Time: 0.078 ms"
+        },
+        {
+          "QUERY PLAN": "Execution Time: 0.249 ms"
+        }
+      ],
+      "plan": "Unavailable: plan not requested."
+    },
+    "status": "done"
+  },
+  "07cba151ff23d8": {
+    "output": {
+      "rows": [
+        {
+          "name": "Join clinic",
+          "starts_at": "2026-01-05T09:00:00.000Z"
+        }
+      ],
+      "plan": "Limit  (cost=1.07..1.08 rows=1 width=21)\n  ->  Sort  (cost=1.07..1.09 rows=5 width=21)\n        Sort Key: starts_at DESC\n        ->  Seq Scan on events  (cost=0.00..1.05 rows=5 width=21)"
+    },
+    "status": "done"
+  },
+  "084cbef6368c9f": {
+    "output": {
+      "rows": [
+        {
+          "table_schema": "lending",
+          "table_name": "loans",
+          "column_name": "id"
+        },
+        {
+          "table_schema": "library",
+          "table_name": "authors",
+          "column_name": "id"
+        },
+        {
+          "table_schema": "library",
+          "table_name": "books",
+          "column_name": "id"
+        }
+      ],
+      "plan": "Unavailable: plan not requested."
+    },
+    "status": "done"
+  },
+  "0a7aaeb4b37798": {
+    "output": {
+      "rows": [
+        {
+          "name": "Ada",
+          "balance_cents": 4000
+        },
+        {
+          "name": "Grace",
+          "balance_cents": 4000
+        }
+      ],
+      "plan": "Unavailable for a multi-statement SQL example."
+    },
+    "status": "done"
+  },
+  "0b57d5d5c67698": {
+    "output": {
+      "rows": [
+        {
+          "id": 2,
+          "name": "Grace Hopper",
+          "email": "grace@example.com",
+          "gender": "female",
+          "active": true
+        }
+      ],
+      "plan": "Delete on users  (cost=0.15..8.17 rows=1 width=6)\n  ->  Index Scan using users_email_key on users  (cost=0.15..8.17 rows=1 width=6)\n        Index Cond: (email = 'grace@example.com'::text)"
+    },
+    "status": "done"
+  },
+  "0c6cc002d3957a": {
+    "output": {
+      "rows": [
+        {
+          "status": "paid",
+          "orders": 3
+        }
+      ],
+      "plan": "Sort  (cost=26.68..26.85 rows=67 width=40)\n  Sort Key: status\n  ->  HashAggregate  (cost=22.15..24.65 rows=67 width=40)\n        Group Key: status\n        Filter: (count(*) > 1)\n        ->  Seq Scan on orders  (cost=0.00..18.10 rows=810 width=32)"
+    },
+    "status": "done"
+  },
+  "0c6db2d296d650": {
+    "output": {
+      "rows": [
+        {
+          "email": "ada@example.com"
+        }
+      ],
+      "plan": "Seq Scan on accounts  (cost=0.00..24.88 rows=4 width=32)\n  Filter: (((profile -> 'settings'::text) ->> 'email'::text) = 'true'::text)"
+    },
+    "status": "done"
+  },
+  "0e5d512e17f42c": {
+    "output": {
+      "rows": [
+        {
+          "title": "SQL indexes"
+        },
+        {
+          "title": "JOIN patterns"
+        }
+      ],
+      "plan": "Limit  (cost=44.00..44.01 rows=2 width=40)\n  ->  Sort  (cost=44.00..46.12 rows=850 width=40)\n        Sort Key: (((power((embedding[1] - '0.85'::double precision), '2'::double precision) + power((embedding[2] - '0.15'::double precision), '2'::double precision)) + power((embedding[3] - '0.2'::double precision), '2'::double precision)))\n        ->  Seq Scan on documents  (cost=0.00..35.50 rows=850 width=40)"
+    },
+    "status": "done"
+  },
+  "0ec65bbccbfb07": {
+    "output": {
+      "rows": [
+        {
+          "email": "ada@example.com"
+        },
+        {
+          "email": "linus@example.com"
+        }
+      ],
+      "plan": "Seq Scan on accounts  (cost=0.00..20.62 rows=8 width=32)\n  Filter: (profile @> '{\"plan\": \"pro\"}'::jsonb)"
+    },
+    "status": "done"
+  },
+  "0ecd862e5808d4": {
+    "output": {
+      "rows": [
+        {
+          "id": 1,
+          "title": "The Fellowship of the Ring",
+          "author_id": 1
+        },
+        {
+          "id": 2,
+          "title": "The Two Towers",
+          "author_id": 1
+        },
+        {
+          "id": 3,
+          "title": "I, Robot",
+          "author_id": 2
+        },
+        {
+          "id": 4,
+          "title": "Beowulf",
+          "author_id": null
+        }
+      ],
+      "plan": "Unavailable: plan not requested."
+    },
+    "status": "done"
+  },
+  "0f07723d5fe91c": {
+    "output": {
+      "rows": [
+        {
+          "xmin": "752",
+          "xmax": "0",
+          "ctid": "(0,1)",
+          "id": 1,
+          "name": "checking",
+          "balance": 1000
+        },
+        {
+          "xmin": "752",
+          "xmax": "0",
+          "ctid": "(0,2)",
+          "id": 2,
+          "name": "savings",
+          "balance": 5000
+        }
+      ],
+      "plan": "Unavailable: plan not requested."
+    },
+    "status": "done"
+  },
+  "0f418f42205e96": {
+    "output": {
+      "rows": [
+        {
+          "name": "Agatha Christie",
+          "title": "Beowulf"
+        },
+        {
+          "name": "Agatha Christie",
+          "title": "I, Robot"
+        },
+        {
+          "name": "Agatha Christie",
+          "title": "The Fellowship of the Ring"
+        },
+        {
+          "name": "Agatha Christie",
+          "title": "The Two Towers"
+        },
+        {
+          "name": "Isaac Asimov",
+          "title": "Beowulf"
+        },
+        {
+          "name": "Isaac Asimov",
+          "title": "I, Robot"
+        },
+        {
+          "name": "Isaac Asimov",
+          "title": "The Fellowship of the Ring"
+        },
+        {
+          "name": "Isaac Asimov",
+          "title": "The Two Towers"
+        },
+        {
+          "name": "J.R.R. Tolkien",
+          "title": "Beowulf"
+        },
+        {
+          "name": "J.R.R. Tolkien",
+          "title": "I, Robot"
+        },
+        {
+          "name": "J.R.R. Tolkien",
+          "title": "The Fellowship of the Ring"
+        },
+        {
+          "name": "J.R.R. Tolkien",
+          "title": "The Two Towers"
+        }
+      ],
+      "plan": "Unavailable: plan not requested."
+    },
+    "status": "done"
+  },
+  "0f93f6a2ce1116": {
+    "output": {
+      "rows": [
+        {
+          "id": 3,
+          "name": "Alan Turing",
+          "email": "alan@example.com",
+          "gender": "male",
+          "active": false
+        },
+        {
+          "id": 6,
+          "name": "Donald Knuth",
+          "email": "donald@example.com",
+          "gender": "male",
+          "active": false
+        },
+        {
+          "id": 7,
+          "name": "John McCarthy",
+          "email": "john@example.com",
+          "gender": "male",
+          "active": false
+        },
+        {
+          "id": 8,
+          "name": "Edsger Dijkstra",
+          "email": "edsger@example.com",
+          "gender": "male",
+          "active": false
+        }
+      ],
+      "plan": "Update on users  (cost=0.00..17.88 rows=3 width=7)\n  ->  Seq Scan on users  (cost=0.00..17.88 rows=3 width=7)\n        Filter: (gender = 'male'::text)"
+    },
+    "status": "done"
+  },
+  "0fa8e2f8050c62": {
+    "output": {
+      "rows": [],
+      "plan": "Unavailable: plan not requested."
+    },
+    "status": "done"
+  },
+  "10a6cdbb53417c": {
+    "output": {
+      "rows": [],
+      "plan": "Unavailable: plan not requested."
+    },
+    "status": "done"
+  },
+  "10a83025d81624": {
+    "output": {
+      "rows": [
+        {
+          "day": "2026-01-01T00:00:00.000Z",
+          "total_cents": 3500
+        },
+        {
+          "day": "2026-01-02T00:00:00.000Z",
+          "total_cents": 3000
+        }
+      ],
+      "plan": "GroupAggregate  (cost=23.45..23.55 rows=5 width=16)\n  Group Key: (date_trunc('day'::text, created_at))\n  ->  Sort  (cost=23.45..23.46 rows=5 width=12)\n        Sort Key: (date_trunc('day'::text, created_at))\n        ->  Seq Scan on payments  (cost=0.00..23.39 rows=5 width=12)\n              Filter: (status = 'paid'::text)"
+    },
+    "status": "done"
+  },
+  "1181268466ce4b": {
+    "output": {
+      "rows": [
+        {
+          "QUERY PLAN": "Insert on users  (cost=0.00..0.01 rows=0 width=0) (actual time=0.159..0.161 rows=0.00 loops=1)"
+        },
+        {
+          "QUERY PLAN": "  Buffers: shared hit=45"
+        },
+        {
+          "QUERY PLAN": "  ->  Result  (cost=0.00..0.01 rows=1 width=101) (actual time=0.030..0.031 rows=1.00 loops=1)"
+        },
+        {
+          "QUERY PLAN": "        Buffers: shared hit=14"
+        },
+        {
+          "QUERY PLAN": "Planning Time: 0.029 ms"
+        },
+        {
+          "QUERY PLAN": "Execution Time: 0.181 ms"
+        }
+      ],
+      "plan": "Unavailable: plan not requested."
+    },
+    "status": "done"
+  },
+  "11a097ceaf64f5": {
+    "output": {
+      "rows": [
+        {
+          "conname": "products_id_not_null",
+          "contype": "n"
+        },
+        {
+          "conname": "products_name_not_null",
+          "contype": "n"
+        },
+        {
+          "conname": "products_pkey",
+          "contype": "p"
+        },
+        {
+          "conname": "products_price_cents_check",
+          "contype": "c"
+        },
+        {
+          "conname": "products_price_cents_not_null",
+          "contype": "n"
+        },
+        {
+          "conname": "products_sku_key",
+          "contype": "u"
+        },
+        {
+          "conname": "products_sku_not_null",
+          "contype": "n"
+        }
+      ],
+      "plan": "Sort  (cost=7.44..7.44 rows=1 width=65)\n  Sort Key: conname\n  ->  Seq Scan on pg_constraint  (cost=0.00..7.43 rows=1 width=65)\n        Filter: (conrelid = '16385'::oid)"
+    },
+    "status": "done"
+  },
+  "11a418c31541d8": {
+    "output": {
+      "rows": [
+        {
+          "title": "Fix signup",
+          "owner": "Ada"
+        },
+        {
+          "title": "Write docs",
+          "owner": "Unassigned"
+        },
+        {
+          "title": "Close billing bug",
+          "owner": "Grace"
+        }
+      ],
+      "plan": "Sort  (cost=57.23..59.26 rows=810 width=68)\n  Sort Key: id\n  ->  Seq Scan on tickets  (cost=0.00..18.10 rows=810 width=68)"
+    },
+    "status": "done"
+  },
+  "11af9e62e42ba4": {
+    "output": {
+      "rows": [
+        {
+          "xmin": "753",
+          "xmax": "0",
+          "name": "payroll",
+          "balance": 2000
+        },
+        {
+          "xmin": "753",
+          "xmax": "0",
+          "name": "reserve",
+          "balance": 3000
+        }
+      ],
+      "plan": "Unavailable for a multi-statement SQL example."
+    },
+    "status": "done"
+  },
+  "11df4f9689db9f": {
+    "output": {
+      "rows": [
+        {
+          "title": "Kindred",
+          "borrower_name": "Nnedi Okorafor",
+          "borrowed_at": "2026-09-01T09:00:00.000Z",
+          "returned_at": null
+        },
+        {
+          "title": "Invisible Cities",
+          "borrower_name": "Ursula K. Le Guin",
+          "borrowed_at": "2026-09-05T14:30:00.000Z",
+          "returned_at": "2026-09-12T11:00:00.000Z"
+        }
+      ],
+      "plan": "Unavailable: plan not requested."
+    },
+    "status": "done"
+  },
+  "12460b8da68e2a": {
+    "output": {
+      "rows": [],
+      "plan": "Update on users  (cost=0.29..8.30 rows=0 width=0)\n  ->  Index Scan using users_email_idx on users  (cost=0.29..8.30 rows=1 width=38)\n        Index Cond: (email = 'user9000@example.com'::text)"
+    },
+    "status": "done"
+  },
+  "128e2a0ec84748": {
+    "output": {
+      "rows": [
+        {
+          "paid": 3,
+          "failed": 1
+        }
+      ],
+      "plan": "Aggregate  (cost=31.40..31.41 rows=1 width=16)\n  ->  Seq Scan on payments  (cost=0.00..20.70 rows=1070 width=32)"
+    },
+    "status": "done"
+  },
+  "12ec343a0df442": {
+    "output": {
+      "rows": [
+        {
+          "order_number": "ORD-11990",
+          "status": "pending",
+          "created_at": "2026-01-09T07:50:00.000Z"
+        },
+        {
+          "order_number": "ORD-11980",
+          "status": "pending",
+          "created_at": "2026-01-09T07:40:00.000Z"
+        },
+        {
+          "order_number": "ORD-11970",
+          "status": "pending",
+          "created_at": "2026-01-09T07:30:00.000Z"
+        },
+        {
+          "order_number": "ORD-11960",
+          "status": "pending",
+          "created_at": "2026-01-09T07:20:00.000Z"
+        },
+        {
+          "order_number": "ORD-11950",
+          "status": "pending",
+          "created_at": "2026-01-09T07:10:00.000Z"
+        }
+      ],
+      "plan": "Limit  (cost=0.29..1.70 rows=5 width=22)\n  ->  Index Scan using orders_status_created_at_idx on orders  (cost=0.29..305.54 rows=1080 width=22)\n        Index Cond: (status = 'pending'::text)"
+    },
+    "status": "done"
+  },
+  "135feae76139c9": {
+    "output": {
+      "rows": [
+        {
+          "id": 1,
+          "name": "J.R.R. Tolkien"
+        },
+        {
+          "id": 2,
+          "name": "Isaac Asimov"
+        },
+        {
+          "id": 3,
+          "name": "Agatha Christie"
+        }
+      ],
+      "plan": "Unavailable: plan not requested."
+    },
+    "status": "done"
+  },
+  "13c07ee60a9f6e": {
+    "output": {
+      "rows": [
+        {
+          "relation": "accounts",
+          "mode": "AccessShareLock"
+        }
+      ],
+      "plan": "Unavailable for a multi-statement SQL example."
+    },
+    "status": "done"
+  },
+  "143a87a633d135": {
+    "output": {
+      "rows": [
+        {
+          "id": 9000,
+          "name": "User 9000",
+          "email": "user9000@example.com",
+          "city": "London"
+        }
+      ],
+      "plan": "Seq Scan on users  (cost=0.00..218.00 rows=1 width=39)\n  Filter: (email = 'user9000@example.com'::text)"
+    },
+    "status": "done"
+  },
+  "149b7a9b0fbc68": {
+    "output": {
+      "rows": [
+        {
+          "id": 9000,
+          "name": "User 9000",
+          "email": "user9000@example.com",
+          "city": "London"
+        }
+      ],
+      "plan": "Index Scan using users_email_idx on users  (cost=0.29..8.30 rows=1 width=39)\n  Index Cond: (email = 'user9000@example.com'::text)"
+    },
+    "status": "done"
+  },
+  "14c1d2c98c371d": {
+    "output": {
+      "rows": [
+        {
+          "table_name": "lending.loans",
+          "definition": "PRIMARY KEY (id)"
+        },
+        {
+          "table_name": "library.authors",
+          "definition": "PRIMARY KEY (id)"
+        },
+        {
+          "table_name": "library.books",
+          "definition": "PRIMARY KEY (id)"
+        }
+      ],
+      "plan": "Unavailable: plan not requested."
+    },
+    "status": "done"
+  },
+  "1535cd91901de0": {
+    "output": {
+      "rows": [
+        {
+          "id": 3,
+          "name": "Linus Torvalds",
+          "email": "linus@example.com"
+        }
+      ],
+      "plan": "Insert on \"User\"  (cost=0.00..0.01 rows=1 width=68)\n  ->  Result  (cost=0.00..0.01 rows=1 width=68)"
+    },
+    "status": "done"
+  },
+  "15a7e59b78cb97": {
+    "output": {
+      "rows": [
+        {
+          "event_id": "33333333-3333-3333-3333-333333333333",
+          "seat_id": 2,
+          "user_id": "22222222-2222-2222-2222-222222222222",
+          "status": "H",
+          "holding_date": "2026-09-27T16:18:43.350Z",
+          "reservation_date": null
+        }
+      ],
+      "plan": "Unavailable: plan not requested."
+    },
+    "status": "done"
+  },
+  "15d3c925c223a2": {
+    "output": {
+      "rows": [
+        {
+          "city": "Berlin",
+          "orders": 1,
+          "revenue_cents": 900
+        },
+        {
+          "city": "London",
+          "orders": 2,
+          "revenue_cents": 6000
+        },
+        {
+          "city": "Paris",
+          "orders": 2,
+          "revenue_cents": 4800
+        }
+      ],
+      "plan": "Sort  (cost=33.82..34.32 rows=200 width=48)\n  Sort Key: city\n  ->  HashAggregate  (cost=24.18..26.18 rows=200 width=48)\n        Group Key: city\n        ->  Seq Scan on orders  (cost=0.00..18.10 rows=810 width=36)"
+    },
+    "status": "done"
+  },
+  "1717424c30eb89": {
+    "output": {
+      "rows": [
+        {
+          "id": 1,
+          "label": "A1"
+        },
+        {
+          "id": 3,
+          "label": "A3"
+        }
+      ],
+      "plan": "Unavailable: plan not requested."
+    },
+    "status": "done"
+  },
+  "173fd6e550fe68": {
+    "output": {
+      "rows": [
+        {
+          "id": 1,
+          "name": "Ada Lovelace",
+          "email": "ada@example.com"
+        },
+        {
+          "id": 2,
+          "name": "Grace Hopper",
+          "email": "grace@example.com"
+        }
+      ],
+      "plan": "Seq Scan on \"User\"  (cost=0.00..1.02 rows=2 width=34)"
+    },
+    "status": "done"
+  },
+  "17c72edb87af67": {
+    "output": {
+      "rows": [
+        {
+          "name": "Isaac Asimov",
+          "title": "I, Robot"
+        },
+        {
+          "name": "J.R.R. Tolkien",
+          "title": "The Fellowship of the Ring"
+        },
+        {
+          "name": "J.R.R. Tolkien",
+          "title": "The Two Towers"
+        },
+        {
+          "name": null,
+          "title": "Beowulf"
+        }
+      ],
+      "plan": "Unavailable: plan not requested."
+    },
+    "status": "done"
+  },
+  "17f1a126940d9f": {
+    "output": {
+      "rows": [
+        {
+          "id": 1,
+          "name": "Ada Lovelace",
+          "email": "ada@example.com"
+        }
+      ],
+      "plan": "Seq Scan on \"User\"  (cost=0.00..1.02 rows=1 width=34)\n  Filter: (email = 'ada@example.com'::text)"
+    },
+    "status": "done"
+  },
+  "1870f328968c04": {
+    "output": {
+      "rows": [
+        {
+          "title": "PostgreSQL indexing guide"
+        },
+        {
+          "title": "JSON in Postgres"
+        }
+      ],
+      "plan": "Seq Scan on articles  (cost=0.00..20.62 rows=1 width=32)\n  Filter: (title ~~* '%postgres%'::text)"
+    },
+    "status": "done"
+  },
+  "18b6bd3b9f4b2f": {
+    "output": {
+      "rows": [
+        {
+          "indexname": "project_members_pkey",
+          "tablename": "project_members"
+        },
+        {
+          "indexname": "project_members_user_id_idx",
+          "tablename": "project_members"
+        },
+        {
+          "indexname": "projects_pkey",
+          "tablename": "projects"
+        },
+        {
+          "indexname": "projects_team_id_idx",
+          "tablename": "projects"
+        },
+        {
+          "indexname": "teams_pkey",
+          "tablename": "teams"
+        },
+        {
+          "indexname": "users_pkey",
+          "tablename": "users"
+        }
+      ],
+      "plan": "Sort  (cost=32.83..32.84 rows=3 width=128)\n  Sort Key: i.relname\n  ->  Nested Loop  (cost=21.62..32.81 rows=3 width=128)\n        ->  Hash Join  (cost=21.35..27.66 rows=7 width=68)\n              Hash Cond: (x.indrelid = c.oid)\n              ->  Seq Scan on pg_index x  (cost=0.00..5.63 rows=163 width=8)\n              ->  Hash  (cost=21.14..21.14 rows=17 width=68)\n                    ->  Hash Join  (cost=1.06..21.14 rows=17 width=68)\n                          Hash Cond: (c.relnamespace = n.oid)\n                          ->  Seq Scan on pg_class c  (cost=0.00..19.71 rows=68 width=72)\n                                Filter: (relkind = ANY ('{r,m,p}'::\"char\"[]))\n                          ->  Hash  (cost=1.05..1.05 rows=1 width=4)\n                                ->  Seq Scan on pg_namespace n  (cost=0.00..1.05 rows=1 width=4)\n                                      Filter: (nspname = 'public'::name)\n        ->  Index Scan using pg_class_oid_index on pg_class i  (cost=0.27..0.73 rows=1 width=72)\n              Index Cond: (oid = x.indexrelid)\n              Filter: (relkind = ANY ('{i,I}'::\"char\"[]))"
+    },
+    "status": "done"
+  },
+  "190b693c4df41d": {
+    "output": {
+      "rows": [
+        {
+          "column_name": "id",
+          "data_type": "integer",
+          "is_nullable": "NO"
+        },
+        {
+          "column_name": "author_id",
+          "data_type": "integer",
+          "is_nullable": "NO"
+        },
+        {
+          "column_name": "title",
+          "data_type": "text",
+          "is_nullable": "NO"
+        },
+        {
+          "column_name": "published_year",
+          "data_type": "integer",
+          "is_nullable": "NO"
+        }
+      ],
+      "plan": "Unavailable: plan not requested."
+    },
+    "status": "done"
+  },
+  "195c11ae968cd9": {
+    "output": {
+      "rows": [
+        {
+          "name": "Ada",
+          "balance_cents": 5000
+        },
+        {
+          "name": "Grace",
+          "balance_cents": 3000
+        }
+      ],
+      "plan": "Unavailable for a multi-statement SQL example."
+    },
+    "status": "done"
+  },
+  "1a6b4bd3ca8c37": {
+    "output": {
+      "rows": [
+        {
+          "project": "PgQuest",
+          "member": "Ada"
+        },
+        {
+          "project": "PgQuest",
+          "member": "Grace"
+        },
+        {
+          "project": "Warehouse",
+          "member": "Grace"
+        },
+        {
+          "project": "Warehouse",
+          "member": "Linus"
+        }
+      ],
+      "plan": "Sort  (cost=245.99..251.64 rows=2260 width=64)\n  Sort Key: projects.name, users.name\n  ->  Hash Join  (cost=75.58..120.08 rows=2260 width=64)\n        Hash Cond: (project_members.user_id = users.id)\n        ->  Hash Join  (cost=37.00..75.55 rows=2260 width=36)\n              Hash Cond: (project_members.project_id = projects.id)\n              ->  Seq Scan on project_members  (cost=0.00..32.60 rows=2260 width=8)\n              ->  Hash  (cost=22.00..22.00 rows=1200 width=36)\n                    ->  Seq Scan on projects  (cost=0.00..22.00 rows=1200 width=36)\n        ->  Hash  (cost=22.70..22.70 rows=1270 width=36)\n              ->  Seq Scan on users  (cost=0.00..22.70 rows=1270 width=36)"
+    },
+    "status": "done"
+  },
+  "1a9586543eee09": {
+    "output": {
+      "rows": [
+        {
+          "event_id": "33333333-3333-3333-3333-333333333333",
+          "seat_id": 2,
+          "user_id": "22222222-2222-2222-2222-222222222222",
+          "status": "H",
+          "holding_date": "2026-09-27T16:19:01.208Z",
+          "reservation_date": null
+        }
+      ],
+      "plan": "Unavailable: plan not requested."
+    },
+    "status": "done"
+  },
+  "1bee41b7010770": {
+    "output": {
+      "rows": [
+        {
+          "table_schema": "lending",
+          "table_name": "loans",
+          "column_name": "id"
+        },
+        {
+          "table_schema": "library",
+          "table_name": "authors",
+          "column_name": "id"
+        },
+        {
+          "table_schema": "library",
+          "table_name": "books",
+          "column_name": "id"
+        }
+      ],
+      "plan": "Unavailable: plan not requested."
+    },
+    "status": "done"
+  },
+  "1c161154a3cc19": {
+    "output": {
+      "rows": [
+        {
+          "id": 3,
+          "name": "Alan Turing",
+          "email": "alan@example.com",
+          "gender": "male",
+          "active": false
+        }
+      ],
+      "plan": "Update on users  (cost=0.15..8.17 rows=1 width=7)\n  ->  Index Scan using users_email_key on users  (cost=0.15..8.17 rows=1 width=7)\n        Index Cond: (email = 'alan@example.com'::text)"
+    },
+    "status": "done"
+  },
+  "1c1ccf3b1fd172": {
+    "output": {
+      "rows": [
+        {
+          "relation": "accounts",
+          "mode": "RowExclusiveLock"
+        },
+        {
+          "relation": "transfers",
+          "mode": "AccessShareLock"
+        }
+      ],
+      "plan": "Unavailable for a multi-statement SQL example."
+    },
+    "status": "done"
+  },
+  "1c72e3302df9a3": {
+    "output": {
+      "rows": [
+        {
+          "email": "ada@example.com",
+          "plan": "pro"
+        },
+        {
+          "email": "grace@example.com",
+          "plan": "free"
+        },
+        {
+          "email": "linus@example.com",
+          "plan": "pro"
+        }
+      ],
+      "plan": "Sort  (cost=61.98..64.11 rows=850 width=64)\n  Sort Key: email\n  ->  Seq Scan on accounts  (cost=0.00..20.62 rows=850 width=64)"
+    },
+    "status": "done"
+  },
+  "1dca35eface3db": {
+    "output": {
+      "rows": [
+        {
+          "event_id": "33333333-3333-3333-3333-333333333333",
+          "seat_id": 2,
+          "user_id": "22222222-2222-2222-2222-222222222222",
+          "status": "R",
+          "holding_date": "2026-09-27T16:19:09.220Z",
+          "reservation_date": "2026-09-27T16:19:09.235Z"
+        }
+      ],
+      "plan": "Unavailable: plan not requested."
+    },
+    "status": "done"
+  },
+  "1dd5acc1b2d429": {
+    "output": {
+      "rows": [
+        {
+          "status": "paid",
+          "payments": 3
+        }
+      ],
+      "plan": "Sort  (cost=30.58..30.75 rows=67 width=40)\n  Sort Key: status\n  ->  HashAggregate  (cost=26.05..28.55 rows=67 width=40)\n        Group Key: status\n        Filter: (count(*) > 1)\n        ->  Seq Scan on payments  (cost=0.00..20.70 rows=1070 width=32)"
+    },
+    "status": "done"
+  },
+  "1ddf76c543da92": {
+    "output": {
+      "rows": [
+        {
+          "orders": 5,
+          "revenue_cents": 11700
+        }
+      ],
+      "plan": "Aggregate  (cost=22.15..22.16 rows=1 width=16)\n  ->  Seq Scan on orders  (cost=0.00..18.10 rows=810 width=4)"
+    },
+    "status": "done"
+  },
+  "1dedc34f9689ec": {
+    "output": {
+      "rows": [
+        {
+          "name": "Agatha Christie",
+          "title": null
+        },
+        {
+          "name": "Isaac Asimov",
+          "title": "I, Robot"
+        },
+        {
+          "name": "J.R.R. Tolkien",
+          "title": "The Fellowship of the Ring"
+        },
+        {
+          "name": "J.R.R. Tolkien",
+          "title": "The Two Towers"
+        },
+        {
+          "name": null,
+          "title": "Beowulf"
+        }
+      ],
+      "plan": "Unavailable: plan not requested."
+    },
+    "status": "done"
+  },
+  "1e7cba80e6617e": {
+    "output": {
+      "rows": [
+        {
+          "id": 2,
+          "title": "Write docs"
+        }
+      ],
+      "plan": "Seq Scan on tickets  (cost=0.00..18.10 rows=4 width=36)\n  Filter: (assignee IS NULL)"
+    },
+    "status": "done"
+  },
+  "1ea77550424e15": {
+    "output": {
+      "rows": [
+        {
+          "table_schema": "lending",
+          "table_name": "loans"
+        },
+        {
+          "table_schema": "library",
+          "table_name": "authors"
+        },
+        {
+          "table_schema": "library",
+          "table_name": "books"
+        }
+      ],
+      "plan": "Unavailable: plan not requested."
+    },
+    "status": "done"
+  },
+  "1ee94a7bf08290": {
+    "output": {
+      "rows": [
+        {
+          "order_number": "ORD-9000",
+          "status": "failed",
+          "total_cents": 10000
+        }
+      ],
+      "plan": "Index Scan using orders_failed_order_number_idx on orders  (cost=0.14..8.16 rows=1 width=18)\n  Index Cond: (order_number = 'ORD-9000'::text)"
+    },
+    "status": "done"
+  },
+  "1f5236860f9f47": {
+    "output": {
+      "rows": [
+        {
+          "name": "Alice",
+          "on_call": false
+        },
+        {
+          "name": "Bob",
+          "on_call": true
+        }
+      ],
+      "plan": "Unavailable for a multi-statement SQL example."
+    },
+    "status": "done"
+  },
+  "1fa737c7b96e0c": {
+    "output": {
+      "rows": [
+        {
+          "id": 1,
+          "name": "Ada Lovelace",
+          "amount": "42.00"
+        },
+        {
+          "id": 2,
+          "name": "Ada Lovelace",
+          "amount": "15.50"
+        },
+        {
+          "id": 3,
+          "name": "Grace Hopper",
+          "amount": "9.99"
+        }
+      ],
+      "plan": "Sort  (cost=2.15..2.16 rows=3 width=23)\n  Sort Key: \"Order\".id\n  ->  Nested Loop  (cost=0.00..2.12 rows=3 width=23)\n        Join Filter: (\"User\".id = \"Order\".user_id)\n        ->  Seq Scan on \"Order\"  (cost=0.00..1.03 rows=3 width=14)\n        ->  Materialize  (cost=0.00..1.03 rows=2 width=17)\n              ->  Seq Scan on \"User\"  (cost=0.00..1.02 rows=2 width=17)"
+    },
+    "status": "done"
+  },
+  "1feb0e2b02304a": {
+    "output": {
+      "rows": [],
+      "plan": "Update on users  (cost=0.00..218.00 rows=0 width=0)\n  ->  Seq Scan on users  (cost=0.00..218.00 rows=1 width=38)\n        Filter: (email = 'user9000@example.com'::text)"
+    },
+    "status": "done"
+  }
+}

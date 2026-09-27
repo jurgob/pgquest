@@ -23,9 +23,10 @@
       "outputs": []
     },
     "build-assets:search-index": {
-      "dependsOn": ["build-assets:pgexamples"],
+      "dependsOn": ["build-assets:pgexamples", "build-assets:lesson-sql-results"],
       "inputs": [
         "scripts/build-search-index.tsx",
+        "app/generated/lesson-sql-results.json",
         "app/routes/**",
         "app/sql/**",
         "cli_examples/**",
@@ -53,16 +54,31 @@
       ],
       "outputs": ["app/generated/postgres-examples.json"]
     },
+    "build-assets:lesson-sql-results": {
+      "inputs": [
+        "scripts/build-lesson-sql-results.ts",
+        "app/routes/**",
+        "app/sql/**",
+        "cli_examples/**",
+        "vite.cli.config.ts"
+      ],
+      "outputs": ["app/generated/lesson-sql-results.json"]
+    },
     "build": {
       "dependsOn": [
         "typecheck",
         "build-assets:search-index",
         "build-assets:sitemap",
+        "build-assets:lesson-sql-results",
         "build-assets:pgexamples"
       ],
       "outputs": ["build/**"]
     },
     "build-assets:pgexamples:check": {
+      "dependsOn": ["build"],
+      "cache": false
+    },
+    "build-assets:lesson-sql-results:check": {
       "dependsOn": ["build"],
       "cache": false
     },

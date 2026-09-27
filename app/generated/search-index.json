@@ -21,7 +21,7 @@
     "anchor": "basic-query",
     "heading": "Query",
     "lessonId": "my-first-query",
-    "text": "Once the table and rows exist, this SELECT reads every user back without a filter."
+    "text": "Once the table and rows exist, this SELECT reads every user back without a filter. id name email 1 Ada Lovelace ada@example.com 2 Grace Hopper grace@example.com"
   },
   {
     "anchor": "basic-query-explanation",
@@ -57,7 +57,7 @@
     "anchor": "specific-select-query",
     "heading": "Query",
     "lessonId": "my-first-query",
-    "text": "This SELECT looks for one user whose email matches the value in the WHERE clause."
+    "text": "This SELECT looks for one user whose email matches the value in the WHERE clause. id name email 1 Ada Lovelace ada@example.com"
   },
   {
     "anchor": "specific-select-explanation",
@@ -75,7 +75,7 @@
     "anchor": "insert-query",
     "heading": "Query",
     "lessonId": "my-first-query",
-    "text": "This INSERT creates a new user and returns the row PostgreSQL added."
+    "text": "This INSERT creates a new user and returns the row PostgreSQL added. id name email 3 Linus Torvalds linus@example.com"
   },
   {
     "anchor": "insert-explanation",
@@ -105,13 +105,13 @@
     "anchor": "introduction-to-join.without-join",
     "heading": "Order rows alone",
     "lessonId": "introduction-to-join",
-    "text": "Order only carries user_id — no name, no email. Loaded Database: introduction-to-join.database-init"
+    "text": "Order only carries user_id — no name, no email. Loaded Database: introduction-to-join.database-init id user_id amount 1 1 42.00 2 1 15.50 3 2 9.99"
   },
   {
     "anchor": "introduction-to-join.with-join",
     "heading": "Combine with JOIN",
     "lessonId": "introduction-to-join",
-    "text": "JOIN matches Order.user_id to User.id, pulling both tables into one result. Loaded Database: introduction-to-join.database-init Try Yourself Loaded Database: introduction-to-join.database-init The database for this lesson is already loaded. Write any query you want and run it directly in your browser."
+    "text": "JOIN matches Order.user_id to User.id, pulling both tables into one result. Loaded Database: introduction-to-join.database-init id name amount 1 Ada Lovelace 42.00 2 Ada Lovelace 15.50 3 Grace Hopper 9.99 Try Yourself Loaded Database: introduction-to-join.database-init The database for this lesson is already loaded. Write any query you want and run it directly in your browser."
   },
   {
     "anchor": "exercises",
@@ -135,7 +135,7 @@
     "anchor": "list-schemas-empty",
     "heading": "List schemas (empty database)",
     "lessonId": "schemas-tables-and-types",
-    "text": "A schema groups database objects such as tables inside one database. Given a fresh Postgres database where no migration has run yet , information_schema lets you discover what schemas already exist. Every fresh Postgres database starts with exactly these 2 schemas: public , the default schema new tables land in when you don't name one, and information_schema , the standard views you just queried to list schemas."
+    "text": "A schema groups database objects such as tables inside one database. Given a fresh Postgres database where no migration has run yet , information_schema lets you discover what schemas already exist. schema_name information_schema public Every fresh Postgres database starts with exactly these 2 schemas: public , the default schema new tables land in when you don't name one, and information_schema , the standard views you just queried to list schemas."
   },
   {
     "anchor": "create-schemas-migration",
@@ -147,55 +147,55 @@
     "anchor": "list-schemas-after-migration",
     "heading": "List schemas (after migration)",
     "lessonId": "schemas-tables-and-types",
-    "text": "The migration above was just applied twice in a row before this query ran, and nothing broke. Same query as before, now against a migrated database. library and lending now show up alongside the two defaults."
+    "text": "The migration above was just applied twice in a row before this query ran, and nothing broke. Same query as before, now against a migrated database. schema_name information_schema lending library public library and lending now show up alongside the two defaults."
   },
   {
     "anchor": "setting-default-schema",
     "heading": "Setting the default schema",
     "lessonId": "schemas-tables-and-types",
-    "text": "Yes, you can change which schema unqualified names resolve to: SET search_path picks the search order. Here we point it at lending, so loans below means lending.loans without spelling it out. Loaded Database: schemas-tables-and-types.database-init search_path defaults to \"$user\", public , which is why public is where unqualified names land until you change it. This only affects the current session's name lookup — lending.loans is still reachable however search_path is set."
+    "text": "Yes, you can change which schema unqualified names resolve to: SET search_path picks the search order. Here we point it at lending, so loans below means lending.loans without spelling it out. Loaded Database: schemas-tables-and-types.database-init id book_id borrower_name borrowed_at returned_at 1 1 Nnedi Okorafor 2026-09-01T09:00:00.000Z 2 2 Ursula K. Le Guin 2026-09-05T14:30:00.000Z 2026-09-12T11:00:00.000Z search_path defaults to \"$user\", public , which is why public is where unqualified names land until you change it. This only affects the current session's name lookup — lending.loans is still reachable however search_path is set."
   },
   {
     "anchor": "cross-schema-join",
     "heading": "A cross-schema join",
     "lessonId": "schemas-tables-and-types",
-    "text": "Joining across schemas works exactly like joining tables in the same schema — a schema is a naming namespace, not a query boundary. This finds which book each loan is for. Loaded Database: schemas-tables-and-types.database-init This is easy because one migration owns both schemas here. If lending belonged to a separate service instead, this same join would tie your query to another team's internal tables."
+    "text": "Joining across schemas works exactly like joining tables in the same schema — a schema is a naming namespace, not a query boundary. This finds which book each loan is for. Loaded Database: schemas-tables-and-types.database-init title borrower_name borrowed_at returned_at Kindred Nnedi Okorafor 2026-09-01T09:00:00.000Z Invisible Cities Ursula K. Le Guin 2026-09-05T14:30:00.000Z 2026-09-12T11:00:00.000Z This is easy because one migration owns both schemas here. If lending belonged to a separate service instead, this same join would tie your query to another team's internal tables."
   },
   {
     "anchor": "list-tables",
     "heading": "List tables",
     "lessonId": "schemas-tables-and-types",
-    "text": "information_schema.tables shows the tables visible in each schema. Loaded Database: schemas-tables-and-types.database-init"
+    "text": "information_schema.tables shows the tables visible in each schema. Loaded Database: schemas-tables-and-types.database-init table_schema table_name lending loans library authors library books"
   },
   {
     "anchor": "inspect-table-shape",
     "heading": "Inspect table shape",
     "lessonId": "schemas-tables-and-types",
-    "text": "information_schema.columns shows each column name, type, and nullability. Loaded Database: schemas-tables-and-types.database-init"
+    "text": "information_schema.columns shows each column name, type, and nullability. Loaded Database: schemas-tables-and-types.database-init column_name data_type is_nullable id integer NO author_id integer NO title text NO published_year integer NO"
   },
   {
     "anchor": "putting-it-together",
     "heading": "Putting it together",
     "lessonId": "schemas-tables-and-types",
-    "text": "You don't need to read the migration to know the shape of these tables. Joining information_schema.tables and information_schema.columns reconstructs every column, type, and nullability across both schemas, straight from what Postgres itself tracks. Watch the column_default column below: it holds the literal default expression Postgres runs whenever a column is left out of an INSERT . For an id column it'll read something like nextval('lending.loans_id_seq'::regclass) — that's what SERIAL actually is. Declaring a column SERIAL silently creates a sequence (a sequence is just a relation ) named table_column_seq by convention (here, lending.loans_id_seq ) and points the column's default at nextval() on it. The ::regclass cast is there because nextval() takes a regclass argument — a reference to the sequence by object identity (its OID), not by a plain text name — so the default keeps working even if the sequence or its schema gets renamed; Postgres just prints it back as whatever name currently resolves to that OID. One thing is still missing: information_schema.columns doesn't say which column is the primary key. Here are three ways to get that. Loaded Database: schemas-tables-and-types.database-init"
+    "text": "You don't need to read the migration to know the shape of these tables. Joining information_schema.tables and information_schema.columns reconstructs every column, type, and nullability across both schemas, straight from what Postgres itself tracks. Watch the column_default column below: it holds the literal default expression Postgres runs whenever a column is left out of an INSERT . For an id column it'll read something like nextval('lending.loans_id_seq'::regclass) — that's what SERIAL actually is. Declaring a column SERIAL silently creates a sequence (a sequence is just a relation ) named table_column_seq by convention (here, lending.loans_id_seq ) and points the column's default at nextval() on it. The ::regclass cast is there because nextval() takes a regclass argument — a reference to the sequence by object identity (its OID), not by a plain text name — so the default keeps working even if the sequence or its schema gets renamed; Postgres just prints it back as whatever name currently resolves to that OID. One thing is still missing: information_schema.columns doesn't say which column is the primary key. Here are three ways to get that. Loaded Database: schemas-tables-and-types.database-init table_schema table_name column_name data_type is_nullable column_default lending loans id integer NO nextval('lending.loans_id_seq'::regclass) lending loans book_id integer NO lending loans borrower_name text NO lending loans borrowed_at timestamp without time zone NO lending loans returned_at timestamp without time zone YES library authors id integer NO nextval('library.authors_id_seq'::regclass) library authors name text NO library authors country text NO library books id integer NO nextval('library.books_id_seq'::regclass) library books author_id integer NO library books title text NO library books published_year integer NO"
   },
   {
     "anchor": "primary-keys-information-schema",
     "heading": "Finding primary keys: information_schema",
     "lessonId": "schemas-tables-and-types",
-    "text": "The portable, ANSI-SQL-standard way — works the same on any SQL database, not just Postgres. Loaded Database: schemas-tables-and-types.database-init"
+    "text": "The portable, ANSI-SQL-standard way — works the same on any SQL database, not just Postgres. Loaded Database: schemas-tables-and-types.database-init table_schema table_name column_name lending loans id library authors id library books id"
   },
   {
     "anchor": "primary-keys-pg-constraint",
     "heading": "Finding primary keys: pg_constraint",
     "lessonId": "schemas-tables-and-types",
-    "text": "Postgres' own catalog, the one information_schema is built on top of. Not portable, but simpler and faster. Loaded Database: schemas-tables-and-types.database-init"
+    "text": "Postgres' own catalog, the one information_schema is built on top of. Not portable, but simpler and faster. Loaded Database: schemas-tables-and-types.database-init table_name definition lending.loans PRIMARY KEY (id) library.authors PRIMARY KEY (id) library.books PRIMARY KEY (id)"
   },
   {
     "anchor": "primary-keys-pg-index",
     "heading": "Finding primary keys: pg_index",
     "lessonId": "schemas-tables-and-types",
-    "text": "A primary key is always backed by a unique index, so you can find it there too — useful when you care about the index itself. Loaded Database: schemas-tables-and-types.database-init Try Yourself Loaded Database: schemas-tables-and-types.database-init The database for this lesson is already loaded. Write any query you want and run it directly in your browser."
+    "text": "A primary key is always backed by a unique index, so you can find it there too — useful when you care about the index itself. Loaded Database: schemas-tables-and-types.database-init table_schema table_name column_name lending loans id library authors id library books id Try Yourself Loaded Database: schemas-tables-and-types.database-init The database for this lesson is already loaded. Write any query you want and run it directly in your browser."
   },
   {
     "anchor": "exercises",
@@ -237,7 +237,7 @@
     "anchor": "result",
     "heading": "Result",
     "lessonId": "introduction-to-indexes",
-    "text": "The query returns the same row either way."
+    "text": "The query returns the same row either way. id name email city 9000 User 9000 user9000@example.com London"
   },
   {
     "anchor": "explain",
@@ -279,13 +279,13 @@
     "anchor": "insert-update-delete.insert-returning",
     "heading": "Insert a row",
     "lessonId": "insert-update-delete",
-    "text": "INSERT adds a row. RETURNING shows the row PostgreSQL stored. Loaded Database: insert-update-delete.database-init"
+    "text": "INSERT adds a row. RETURNING shows the row PostgreSQL stored. Loaded Database: insert-update-delete.database-init id name email gender active 9 Radia Perlman radia@example.com female true"
   },
   {
     "anchor": "update-and-delete",
     "heading": "Update and delete a row",
     "lessonId": "insert-update-delete",
-    "text": "UPDATE changes columns on matching rows. DELETE removes matching rows outright. Both scope their effect with a WHERE clause — leave it off and every row in the table is changed, or gone. Update a row UPDATE changes matching rows. The WHERE clause keeps the change focused. Loaded Database: insert-update-delete.database-init Delete a row DELETE removes matching rows. RETURNING is useful when you want to inspect what was removed. Loaded Database: insert-update-delete.database-init"
+    "text": "UPDATE changes columns on matching rows. DELETE removes matching rows outright. Both scope their effect with a WHERE clause — leave it off and every row in the table is changed, or gone. Update a row UPDATE changes matching rows. The WHERE clause keeps the change focused. Loaded Database: insert-update-delete.database-init id name email gender active 3 Alan Turing alan@example.com male false Delete a row DELETE removes matching rows. RETURNING is useful when you want to inspect what was removed. Loaded Database: insert-update-delete.database-init id name email gender active 2 Grace Hopper grace@example.com female true"
   },
   {
     "anchor": "cost-of-insert-update-delete",
@@ -297,19 +297,19 @@
     "anchor": "upsert",
     "heading": "UPSERT",
     "lessonId": "insert-update-delete",
-    "text": "PostgreSQL has no dedicated UPSERT keyword. MySQL has INSERT ... ON DUPLICATE KEY UPDATE ; SQL Server and Oracle have MERGE . PostgreSQL instead extends INSERT itself: ON CONFLICT lets that single statement insert a new row or update the existing one, depending on whether it already exists — atomically, with no race condition between a separate check and a follow-up write. The absence of this feature from Postgres has been a long-standing complaint from Postgres users [2] [3] [4] [5] . Loaded Database: insert-update-delete.database-init Katherine Johnson's id doesn't change — this updated the existing row instead of erroring on the duplicate email or inserting a second one. Explain the explain It's still an Insert on users plan — PostgreSQL always attempts the insert first. Two lines make it an upsert: Conflict Resolution: UPDATE and Conflict Arbiter Indexes: users_email_key . The second one names the unique index PostgreSQL checks to decide whether a row already exists. If email collides, it runs the DO UPDATE SET instead of raising a duplicate-key error — no index on the conflict column, no upsert."
+    "text": "PostgreSQL has no dedicated UPSERT keyword. MySQL has INSERT ... ON DUPLICATE KEY UPDATE ; SQL Server and Oracle have MERGE . PostgreSQL instead extends INSERT itself: ON CONFLICT lets that single statement insert a new row or update the existing one, depending on whether it already exists — atomically, with no race condition between a separate check and a follow-up write. The absence of this feature from Postgres has been a long-standing complaint from Postgres users [2] [3] [4] [5] . Loaded Database: insert-update-delete.database-init id name email gender active 4 Katherine Johnson katherine@example.com female false Katherine Johnson's id doesn't change — this updated the existing row instead of erroring on the duplicate email or inserting a second one. Explain the explain It's still an Insert on users plan — PostgreSQL always attempts the insert first. Two lines make it an upsert: Conflict Resolution: UPDATE and Conflict Arbiter Indexes: users_email_key . The second one names the unique index PostgreSQL checks to decide whether a row already exists. If email collides, it runs the DO UPDATE SET instead of raising a duplicate-key error — no index on the conflict column, no upsert."
   },
   {
     "anchor": "deactivate-every-male-user",
     "heading": "Deactivate every male user (bulk update)",
     "lessonId": "insert-update-delete",
-    "text": "A WHERE clause can match more than one row. UPDATE changes every match, and RETURNING hands back all of them. Loaded Database: insert-update-delete.database-init Explain the explain gender has no index, unlike email . The plan falls back to Seq Scan on users with Filter: (gender = 'male') — PostgreSQL reads every row in the table, keeps the ones that match, and updates each one it keeps. RETURNING * hands back every row it touched, not just one. On a small table this is nothing; on a large one, an index on gender would turn that seq scan into an index scan the same way it did for email above."
+    "text": "A WHERE clause can match more than one row. UPDATE changes every match, and RETURNING hands back all of them. Loaded Database: insert-update-delete.database-init id name email gender active 3 Alan Turing alan@example.com male false 6 Donald Knuth donald@example.com male false 7 John McCarthy john@example.com male false 8 Edsger Dijkstra edsger@example.com male false Explain the explain gender has no index, unlike email . The plan falls back to Seq Scan on users with Filter: (gender = 'male') — PostgreSQL reads every row in the table, keeps the ones that match, and updates each one it keeps. RETURNING * hands back every row it touched, not just one. On a small table this is nothing; on a large one, an index on gender would turn that seq scan into an index scan the same way it did for email above."
   },
   {
     "anchor": "upsert-vs-delete-insert",
     "heading": "UPSERT vs DELETE + INSERT",
     "lessonId": "insert-update-delete",
-    "text": "Refreshing an existing row is often written as a DELETE followed by an INSERT . It reaches the same end state as the upsert above, but not the same way under the hood — deleting marks the old row dead and writes the replacement somewhere new, while ON CONFLICT updates the existing row in place. A full comparison walks through the difference in detail, including the VACUUM cost DELETE + INSERT leaves behind. A VACUUM is a cleanup process for rows marked as deleted — either run by hand ( VACUUM users; ) or triggered automatically in the background by autovacuum . It scans the table for those leftover rows and marks their space reusable, so the table doesn't just keep growing with every write. VACUUM is needed because PostgreSQL internally implements MVCC (Multi-Version Concurrency Control): it never overwrites a row version in place, because some other transaction might still need to see the version that was there before. A DELETE just marks that row's version as no longer current — the bytes stay on the disk page as a dead tuple until VACUUM reclaims the space. An UPDATE (what ON CONFLICT DO UPDATE runs) leaves a dead tuple too — MVCC doesn't make an exception for it — but when the new version fits on the same page and no indexed column changed, it qualifies as a HOT (Heap-Only Tuple) update : no other index has to be touched, and PostgreSQL can often clean up that dead space on its own without waiting for a full VACUUM pass. A DELETE followed by a separate INSERT never gets that shortcut. Learn more in the dedicated lesson about MVCC . Same scenario as the upsert above — deactivate Katherine Johnson — done two ways, with EXPLAIN (ANALYZE, BUFFERS) instead of a plain EXPLAIN . This actually runs the statement and reports real timing and page reads, not just an estimate. DELETE + INSERT UPSERT Removing Katherine Johnson's row so it can be reinserted from scratch. Loaded Database: insert-update-delete.database-init Reinserting her as a brand new row, right after the DELETE above. Loaded Database: insert-update-delete.refresh-after-delete-init Same end state, one statement: update her row in place instead of deleting and reinserting it. Loaded Database: insert-update-delete.database-init Look at the Buffers line in each plan — it counts real page touches, not an estimate. DELETE + INSERT pays for two statements: a lookup through the email index to find the old row, then a whole new tuple written elsewhere in the table — with a new id , since the sequence never rewinds after a delete — and every index loses an entry and gains a new one. UPSERT pays for the same conflict-checking lookup, but updates the tuple it already found instead: same id , one statement, and (usually) no other index touched. Run this enough times and that gap compounds — here's what the article linked above measured on a 100k-row table, single-row operations: Approach Total Time Buffer Hits Disk I/O Dead Tuples DELETE + INSERT 0.423 ms 10 Higher Yes UPSERT (ON CONFLICT) 0.145 ms 5 Lower No In their benchmark, the UPSERT approach is ~2.9x faster and uses 50% fewer buffer hits than DELETE + INSERT. Try Yourself Loaded Database: insert-update-delete.database-init The database for this lesson is already loaded. Write any query you want and run it directly in your browser."
+    "text": "Refreshing an existing row is often written as a DELETE followed by an INSERT . It reaches the same end state as the upsert above, but not the same way under the hood — deleting marks the old row dead and writes the replacement somewhere new, while ON CONFLICT updates the existing row in place. A full comparison walks through the difference in detail, including the VACUUM cost DELETE + INSERT leaves behind. A VACUUM is a cleanup process for rows marked as deleted — either run by hand ( VACUUM users; ) or triggered automatically in the background by autovacuum . It scans the table for those leftover rows and marks their space reusable, so the table doesn't just keep growing with every write. VACUUM is needed because PostgreSQL internally implements MVCC (Multi-Version Concurrency Control): it never overwrites a row version in place, because some other transaction might still need to see the version that was there before. A DELETE just marks that row's version as no longer current — the bytes stay on the disk page as a dead tuple until VACUUM reclaims the space. An UPDATE (what ON CONFLICT DO UPDATE runs) leaves a dead tuple too — MVCC doesn't make an exception for it — but when the new version fits on the same page and no indexed column changed, it qualifies as a HOT (Heap-Only Tuple) update : no other index has to be touched, and PostgreSQL can often clean up that dead space on its own without waiting for a full VACUUM pass. A DELETE followed by a separate INSERT never gets that shortcut. Learn more in the dedicated lesson about MVCC . Same scenario as the upsert above — deactivate Katherine Johnson — done two ways, with EXPLAIN (ANALYZE, BUFFERS) instead of a plain EXPLAIN . This actually runs the statement and reports real timing and page reads, not just an estimate. DELETE + INSERT UPSERT Removing Katherine Johnson's row so it can be reinserted from scratch. Loaded Database: insert-update-delete.database-init QUERY PLAN Delete on users (cost=0.15..8.17 rows=0 width=0) (actual time=0.325..0.336 rows=0.00 loops=1) Buffers: shared hit=3 -> Index Scan using users_email_key on users (cost=0.15..8.17 rows=1 width=6) (actual time=0.040..0.046 rows=1.00 loops=1) Index Cond: (email = 'katherine@example.com'::text) Index Searches: 1 Buffers: shared hit=2 Planning: Buffers: shared hit=49 read=1 Planning Time: 0.277 ms Execution Time: 0.587 ms Reinserting her as a brand new row, right after the DELETE above. Loaded Database: insert-update-delete.refresh-after-delete-init QUERY PLAN Insert on users (cost=0.00..0.01 rows=0 width=0) (actual time=0.159..0.161 rows=0.00 loops=1) Buffers: shared hit=45 -> Result (cost=0.00..0.01 rows=1 width=101) (actual time=0.030..0.031 rows=1.00 loops=1) Buffers: shared hit=14 Planning Time: 0.029 ms Execution Time: 0.181 ms Same end state, one statement: update her row in place instead of deleting and reinserting it. Loaded Database: insert-update-delete.database-init QUERY PLAN Insert on users (cost=0.00..0.01 rows=0 width=0) (actual time=0.099..0.101 rows=0.00 loops=1) Conflict Resolution: UPDATE Conflict Arbiter Indexes: users_email_key Tuples Inserted: 0 Conflicting Tuples: 1 Buffers: shared hit=31 -> Result (cost=0.00..0.01 rows=1 width=101) (actual time=0.030..0.032 rows=1.00 loops=1) Buffers: shared hit=14 Planning: Buffers: shared hit=25 Planning Time: 0.078 ms Execution Time: 0.249 ms Look at the Buffers line in each plan — it counts real page touches, not an estimate. DELETE + INSERT pays for two statements: a lookup through the email index to find the old row, then a whole new tuple written elsewhere in the table — with a new id , since the sequence never rewinds after a delete — and every index loses an entry and gains a new one. UPSERT pays for the same conflict-checking lookup, but updates the tuple it already found instead: same id , one statement, and (usually) no other index touched. Run this enough times and that gap compounds — here's what the article linked above measured on a 100k-row table, single-row operations: Approach Total Time Buffer Hits Disk I/O Dead Tuples DELETE + INSERT 0.423 ms 10 Higher Yes UPSERT (ON CONFLICT) 0.145 ms 5 Lower No In their benchmark, the UPSERT approach is ~2.9x faster and uses 50% fewer buffer hits than DELETE + INSERT. Try Yourself Loaded Database: insert-update-delete.database-init The database for this lesson is already loaded. Write any query you want and run it directly in your browser."
   },
   {
     "anchor": "exercises",
@@ -345,25 +345,25 @@
     "anchor": "a-normal-select",
     "heading": "A normal SELECT",
     "lessonId": "mvcc",
-    "text": "Nothing unusual — just the columns declared in the migration above. Loaded Database: mvcc.database-init"
+    "text": "Nothing unusual — just the columns declared in the migration above. Loaded Database: mvcc.database-init id name balance 1 checking 1000 2 savings 5000"
   },
   {
     "anchor": "select-the-hidden-columns",
     "heading": "Select the hidden columns",
     "lessonId": "mvcc",
-    "text": "Even though the migration never declared them, every row secretly carries xmin and xmax — Postgres adds them to every table automatically, and you can select them like any other column. xmin — the id of the transaction that created this row version. xmax — the id of the transaction that ended it. 0 means nothing has, so this is the live version. ctid — this row version's physical location on disk. Loaded Database: mvcc.database-init (0,1) isn't a transaction id — that's ctid , formatted as (page number, position on that page). checking landed in slot 1 of page 0, savings in slot 2 of the same page. They differ because they're two different rows, each with its own physical slot — not because two transactions ran. Both actually share the same xmin above, since the seed's single INSERT statement created them both in one transaction."
+    "text": "Even though the migration never declared them, every row secretly carries xmin and xmax — Postgres adds them to every table automatically, and you can select them like any other column. xmin — the id of the transaction that created this row version. xmax — the id of the transaction that ended it. 0 means nothing has, so this is the live version. ctid — this row version's physical location on disk. Loaded Database: mvcc.database-init xmin xmax ctid id name balance 752 0 (0,1) 1 checking 1000 752 0 (0,2) 2 savings 5000 (0,1) isn't a transaction id — that's ctid , formatted as (page number, position on that page). checking landed in slot 1 of page 0, savings in slot 2 of the same page. They differ because they're two different rows, each with its own physical slot — not because two transactions ran. Both actually share the same xmin above, since the seed's single INSERT statement created them both in one transaction."
   },
   {
     "anchor": "two-inserts-one-transaction",
     "heading": "Two inserts, one transaction",
     "lessonId": "mvcc",
-    "text": "Two separate INSERT statements, but one transaction: both new rows come back with the same xmin . xmin is stamped by the transaction, not the statement — anything that same transaction creates or changes shares it. Loaded Database: mvcc.database-init payroll and reserve come back with the same xmin — proof it tracks the transaction, not the statement. Without the explicit BEGIN / COMMIT wrapping them, each INSERT would run as its own implicit, auto-committed transaction and get a different xmin — the same way checking and savings differ in ctid above but not in xmin , because that seed was one statement too."
+    "text": "Two separate INSERT statements, but one transaction: both new rows come back with the same xmin . xmin is stamped by the transaction, not the statement — anything that same transaction creates or changes shares it. Loaded Database: mvcc.database-init xmin xmax name balance 753 0 payroll 2000 753 0 reserve 3000 payroll and reserve come back with the same xmin — proof it tracks the transaction, not the statement. Without the explicit BEGIN / COMMIT wrapping them, each INSERT would run as its own implicit, auto-committed transaction and get a different xmin — the same way checking and savings differ in ctid above but not in xmin , because that seed was one statement too."
   },
   {
     "anchor": "update-changes-xmin",
     "heading": "xmin changes on UPDATE",
     "lessonId": "mvcc",
-    "text": "UPDATE doesn't touch the row you had — it writes a brand new row version stamped with the current transaction's id as its xmin . Compare the number below to checking's xmin above: it's a new, higher transaction id, even though id and name didn't change. Loaded Database: mvcc.database-init"
+    "text": "UPDATE doesn't touch the row you had — it writes a brand new row version stamped with the current transaction's id as its xmin . Compare the number below to checking's xmin above: it's a new, higher transaction id, even though id and name didn't change. Loaded Database: mvcc.database-init xmin xmax name balance 753 0 checking 900"
   },
   {
     "anchor": "two-concurrent-transactions",
@@ -393,13 +393,13 @@
     "anchor": "constraints.insert-valid-product",
     "heading": "Insert valid data",
     "lessonId": "constraints",
-    "text": "The row passes NOT NULL, UNIQUE, PRIMARY KEY, and CHECK constraints. Loaded Database: constraints.database-init"
+    "text": "The row passes NOT NULL, UNIQUE, PRIMARY KEY, and CHECK constraints. Loaded Database: constraints.database-init id sku name price_cents 3 TEE-001 PgQuest T-shirt 3200"
   },
   {
     "anchor": "constraints.list-constraints",
     "heading": "Inspect constraints",
     "lessonId": "constraints",
-    "text": "PostgreSQL stores constraints in system catalogs that you can query. Loaded Database: constraints.database-init Try Yourself Loaded Database: constraints.database-init The database for this lesson is already loaded. Write any query you want and run it directly in your browser."
+    "text": "PostgreSQL stores constraints in system catalogs that you can query. Loaded Database: constraints.database-init conname contype products_id_not_null n products_name_not_null n products_pkey p products_price_cents_check c products_price_cents_not_null n products_sku_key u products_sku_not_null n Try Yourself Loaded Database: constraints.database-init The database for this lesson is already loaded. Write any query you want and run it directly in your browser."
   },
   {
     "anchor": "exercises",
@@ -423,19 +423,19 @@
     "anchor": "advanced-indexes.low-selectivity",
     "heading": "Low selectivity",
     "lessonId": "advanced-indexes",
-    "text": "An index on status exists, but paid matches most rows, so a scan can still be cheaper. Loaded Database: advanced-indexes.database-init"
+    "text": "An index on status exists, but paid matches most rows, so a scan can still be cheaper. Loaded Database: advanced-indexes.database-init paid_orders 10800"
   },
   {
     "anchor": "advanced-indexes.composite-index",
     "heading": "Composite index",
     "lessonId": "advanced-indexes",
-    "text": "This query matches the status, created_at index shape: filter first, then order. Loaded Database: advanced-indexes.database-init"
+    "text": "This query matches the status, created_at index shape: filter first, then order. Loaded Database: advanced-indexes.database-init order_number status created_at ORD-11990 pending 2026-01-09T07:50:00.000Z ORD-11980 pending 2026-01-09T07:40:00.000Z ORD-11970 pending 2026-01-09T07:30:00.000Z ORD-11960 pending 2026-01-09T07:20:00.000Z ORD-11950 pending 2026-01-09T07:10:00.000Z"
   },
   {
     "anchor": "advanced-indexes.partial-index",
     "heading": "Partial index",
     "lessonId": "advanced-indexes",
-    "text": "A partial index stores only failed orders, which keeps a rare lookup small. Loaded Database: advanced-indexes.database-init Try Yourself Loaded Database: advanced-indexes.database-init The database for this lesson is already loaded. Write any query you want and run it directly in your browser."
+    "text": "A partial index stores only failed orders, which keeps a rare lookup small. Loaded Database: advanced-indexes.database-init order_number status total_cents ORD-9000 failed 10000 Try Yourself Loaded Database: advanced-indexes.database-init The database for this lesson is already loaded. Write any query you want and run it directly in your browser."
   },
   {
     "anchor": "exercises",
@@ -459,19 +459,19 @@
     "anchor": "aggregation-intro.totals",
     "heading": "Count and sum",
     "lessonId": "aggregation-intro",
-    "text": "Aggregate functions collapse many rows into one summary row. Loaded Database: aggregation-intro.database-init"
+    "text": "Aggregate functions collapse many rows into one summary row. Loaded Database: aggregation-intro.database-init orders revenue_cents 5 11700"
   },
   {
     "anchor": "aggregation-intro.group-by",
     "heading": "Group by city",
     "lessonId": "aggregation-intro",
-    "text": "GROUP BY returns one summary row for each distinct city. Loaded Database: aggregation-intro.database-init"
+    "text": "GROUP BY returns one summary row for each distinct city. Loaded Database: aggregation-intro.database-init city orders revenue_cents Berlin 1 900 London 2 6000 Paris 2 4800"
   },
   {
     "anchor": "aggregation-intro.having",
     "heading": "Filter groups",
     "lessonId": "aggregation-intro",
-    "text": "HAVING filters grouped rows after the aggregate has been computed. Loaded Database: aggregation-intro.database-init Try Yourself Loaded Database: aggregation-intro.database-init The database for this lesson is already loaded. Write any query you want and run it directly in your browser."
+    "text": "HAVING filters grouped rows after the aggregate has been computed. Loaded Database: aggregation-intro.database-init status orders paid 3 Try Yourself Loaded Database: aggregation-intro.database-init The database for this lesson is already loaded. Write any query you want and run it directly in your browser."
   },
   {
     "anchor": "exercises",
@@ -495,19 +495,19 @@
     "anchor": "null.find-null",
     "heading": "Find missing values",
     "lessonId": "null",
-    "text": "Use IS NULL because NULL means unknown, not equal to a value. Loaded Database: null.database-init"
+    "text": "Use IS NULL because NULL means unknown, not equal to a value. Loaded Database: null.database-init id title 2 Write docs"
   },
   {
     "anchor": "null.coalesce",
     "heading": "Replace NULL for display",
     "lessonId": "null",
-    "text": "COALESCE returns the first non-NULL value from its arguments. Loaded Database: null.database-init"
+    "text": "COALESCE returns the first non-NULL value from its arguments. Loaded Database: null.database-init title owner Fix signup Ada Write docs Unassigned Close billing bug Grace"
   },
   {
     "anchor": "null.comparison",
     "heading": "NULL is not equal",
     "lessonId": "null",
-    "text": "A comparison with NULL does not return true, so this query finds nothing. Loaded Database: null.database-init Try Yourself Loaded Database: null.database-init The database for this lesson is already loaded. Write any query you want and run it directly in your browser."
+    "text": "A comparison with NULL does not return true, so this query finds nothing. Loaded Database: null.database-init No rows Try Yourself Loaded Database: null.database-init The database for this lesson is already loaded. Write any query you want and run it directly in your browser."
   },
   {
     "anchor": "exercises",
@@ -543,43 +543,43 @@
     "anchor": "authors",
     "heading": "authors",
     "lessonId": "joins",
-    "text": "Loaded Database: joins.database-init"
+    "text": "Loaded Database: joins.database-init id name 1 J.R.R. Tolkien 2 Isaac Asimov 3 Agatha Christie"
   },
   {
     "anchor": "books",
     "heading": "books",
     "lessonId": "joins",
-    "text": "Loaded Database: joins.database-init"
+    "text": "Loaded Database: joins.database-init id title author_id 1 The Fellowship of the Ring 1 2 The Two Towers 1 3 I, Robot 2 4 Beowulf"
   },
   {
     "anchor": "inner-join",
     "heading": "INNER JOIN",
     "lessonId": "joins",
-    "text": "Agatha Christie and Beowulf both disappear: neither has a match on the other side. Loaded Database: joins.database-init"
+    "text": "Agatha Christie and Beowulf both disappear: neither has a match on the other side. Loaded Database: joins.database-init name title Isaac Asimov I, Robot J.R.R. Tolkien The Fellowship of the Ring J.R.R. Tolkien The Two Towers"
   },
   {
     "anchor": "left-join",
     "heading": "LEFT JOIN",
     "lessonId": "joins",
-    "text": "Agatha Christie survives with a NULL title. Beowulf is still gone — it isn't on the left. Loaded Database: joins.database-init"
+    "text": "Agatha Christie survives with a NULL title. Beowulf is still gone — it isn't on the left. Loaded Database: joins.database-init name title Agatha Christie Isaac Asimov I, Robot J.R.R. Tolkien The Fellowship of the Ring J.R.R. Tolkien The Two Towers"
   },
   {
     "anchor": "right-join",
     "heading": "RIGHT JOIN",
     "lessonId": "joins",
-    "text": "Same tables, same column order — only the join keyword changed. Beowulf survives with a NULL name; Agatha Christie is gone. Loaded Database: joins.database-init"
+    "text": "Same tables, same column order — only the join keyword changed. Beowulf survives with a NULL name; Agatha Christie is gone. Loaded Database: joins.database-init name title Isaac Asimov I, Robot J.R.R. Tolkien The Fellowship of the Ring J.R.R. Tolkien The Two Towers Beowulf"
   },
   {
     "anchor": "full-outer-join",
     "heading": "FULL OUTER JOIN",
     "lessonId": "joins",
-    "text": "Nobody is left out. Agatha Christie and Beowulf both survive, each with a NULL on the missing side. Loaded Database: joins.database-init"
+    "text": "Nobody is left out. Agatha Christie and Beowulf both survive, each with a NULL on the missing side. Loaded Database: joins.database-init name title Agatha Christie Isaac Asimov I, Robot J.R.R. Tolkien The Fellowship of the Ring J.R.R. Tolkien The Two Towers Beowulf"
   },
   {
     "anchor": "cross-join",
     "heading": "CROSS JOIN",
     "lessonId": "joins",
-    "text": "No ON clause, so nothing is matched or excluded: every author pairs with every book. 3 authors × 4 books = 12 rows. Loaded Database: joins.database-init Try Yourself Loaded Database: joins.database-init The database for this lesson is already loaded. Write any query you want and run it directly in your browser."
+    "text": "No ON clause, so nothing is matched or excluded: every author pairs with every book. 3 authors × 4 books = 12 rows. Loaded Database: joins.database-init name title Agatha Christie Beowulf Agatha Christie I, Robot Agatha Christie The Fellowship of the Ring Agatha Christie The Two Towers Isaac Asimov Beowulf Isaac Asimov I, Robot Isaac Asimov The Fellowship of the Ring Isaac Asimov The Two Towers J.R.R. Tolkien Beowulf J.R.R. Tolkien I, Robot J.R.R. Tolkien The Fellowship of the Ring J.R.R. Tolkien The Two Towers Try Yourself Loaded Database: joins.database-init The database for this lesson is already loaded. Write any query you want and run it directly in your browser."
   },
   {
     "anchor": "exercises",
@@ -603,19 +603,19 @@
     "anchor": "relationships.one-to-many",
     "heading": "One-to-many",
     "lessonId": "relationships",
-    "text": "One team can own many projects through projects.team_id. Loaded Database: relationships.database-init"
+    "text": "One team can own many projects through projects.team_id. Loaded Database: relationships.database-init team project Core PgQuest Core Website Data Warehouse"
   },
   {
     "anchor": "relationships.many-to-many",
     "heading": "Many-to-many",
     "lessonId": "relationships",
-    "text": "A join table connects projects and users when both sides can have many matches. Loaded Database: relationships.database-init"
+    "text": "A join table connects projects and users when both sides can have many matches. Loaded Database: relationships.database-init project member PgQuest Ada PgQuest Grace Warehouse Grace Warehouse Linus"
   },
   {
     "anchor": "relationships.foreign-key-indexes",
     "heading": "Indexes on relationships",
     "lessonId": "relationships",
-    "text": "Foreign-key columns are often indexed because joins and lookups use them. Loaded Database: relationships.database-init Try Yourself Loaded Database: relationships.database-init The database for this lesson is already loaded. Write any query you want and run it directly in your browser."
+    "text": "Foreign-key columns are often indexed because joins and lookups use them. Loaded Database: relationships.database-init indexname tablename project_members_pkey project_members project_members_user_id_idx project_members projects_pkey projects projects_team_id_idx projects teams_pkey teams users_pkey users Try Yourself Loaded Database: relationships.database-init The database for this lesson is already loaded. Write any query you want and run it directly in your browser."
   },
   {
     "anchor": "exercises",
@@ -639,19 +639,19 @@
     "anchor": "sorting-and-pagination.ordered-events",
     "heading": "Sort rows",
     "lessonId": "sorting-and-pagination",
-    "text": "ORDER BY makes result order explicit instead of trusting table storage order. Loaded Database: sorting-and-pagination.database-init"
+    "text": "ORDER BY makes result order explicit instead of trusting table storage order. Loaded Database: sorting-and-pagination.database-init name starts_at Join clinic 2026-01-05T09:00:00.000Z Aggregation lab 2026-01-04T09:00:00.000Z Index workshop 2026-01-03T09:00:00.000Z Schema review 2026-01-02T09:00:00.000Z Kickoff 2026-01-01T09:00:00.000Z"
   },
   {
     "anchor": "sorting-and-pagination.page-events",
     "heading": "Limit and offset",
     "lessonId": "sorting-and-pagination",
-    "text": "LIMIT and OFFSET can fetch one page from a larger ordered result. Loaded Database: sorting-and-pagination.database-init"
+    "text": "LIMIT and OFFSET can fetch one page from a larger ordered result. Loaded Database: sorting-and-pagination.database-init name starts_at Index workshop 2026-01-03T09:00:00.000Z Schema review 2026-01-02T09:00:00.000Z"
   },
   {
     "anchor": "sorting-and-pagination.index-backed-order",
     "heading": "Sort with an index",
     "lessonId": "sorting-and-pagination",
-    "text": "An index with the same order can let PostgreSQL avoid a separate sort step. Loaded Database: sorting-and-pagination.database-init Try Yourself Loaded Database: sorting-and-pagination.database-init The database for this lesson is already loaded. Write any query you want and run it directly in your browser."
+    "text": "An index with the same order can let PostgreSQL avoid a separate sort step. Loaded Database: sorting-and-pagination.database-init name starts_at Join clinic 2026-01-05T09:00:00.000Z Try Yourself Loaded Database: sorting-and-pagination.database-init The database for this lesson is already loaded. Write any query you want and run it directly in your browser."
   },
   {
     "anchor": "exercises",
@@ -675,19 +675,19 @@
     "anchor": "text-search-basics.like-prefix",
     "heading": "Prefix search",
     "lessonId": "text-search-basics",
-    "text": "LIKE uses % as a wildcard. This pattern matches titles starting with SQL. Loaded Database: text-search-basics.database-init"
+    "text": "LIKE uses % as a wildcard. This pattern matches titles starting with SQL. Loaded Database: text-search-basics.database-init title SQL join guide"
   },
   {
     "anchor": "text-search-basics.ilike-contains",
     "heading": "Case-insensitive search",
     "lessonId": "text-search-basics",
-    "text": "ILIKE works like LIKE, but ignores letter case. Loaded Database: text-search-basics.database-init"
+    "text": "ILIKE works like LIKE, but ignores letter case. Loaded Database: text-search-basics.database-init title PostgreSQL indexing guide JSON in Postgres"
   },
   {
     "anchor": "text-search-basics.lower-search",
     "heading": "Normalize then search",
     "lessonId": "text-search-basics",
-    "text": "LOWER can make a regular LIKE comparison case-insensitive. Loaded Database: text-search-basics.database-init Try Yourself Loaded Database: text-search-basics.database-init The database for this lesson is already loaded. Write any query you want and run it directly in your browser."
+    "text": "LOWER can make a regular LIKE comparison case-insensitive. Loaded Database: text-search-basics.database-init title Vector search notes Try Yourself Loaded Database: text-search-basics.database-init The database for this lesson is already loaded. Write any query you want and run it directly in your browser."
   },
   {
     "anchor": "exercises",
@@ -711,19 +711,19 @@
     "anchor": "json-in-postgresql.extract-json",
     "heading": "Extract fields",
     "lessonId": "json-in-postgresql",
-    "text": "The ->> operator extracts a JSON value as text. Loaded Database: json-in-postgresql.database-init"
+    "text": "The ->> operator extracts a JSON value as text. Loaded Database: json-in-postgresql.database-init email plan ada@example.com pro grace@example.com free linus@example.com pro"
   },
   {
     "anchor": "json-in-postgresql.filter-json",
     "heading": "Filter nested JSON",
     "lessonId": "json-in-postgresql",
-    "text": "JSON operators can reach nested values inside a jsonb column. Loaded Database: json-in-postgresql.database-init"
+    "text": "JSON operators can reach nested values inside a jsonb column. Loaded Database: json-in-postgresql.database-init email ada@example.com"
   },
   {
     "anchor": "json-in-postgresql.contain-json",
     "heading": "Containment",
     "lessonId": "json-in-postgresql",
-    "text": "The @> operator asks whether jsonb contains another jsonb document. Loaded Database: json-in-postgresql.database-init Try Yourself Loaded Database: json-in-postgresql.database-init The database for this lesson is already loaded. Write any query you want and run it directly in your browser."
+    "text": "The @> operator asks whether jsonb contains another jsonb document. Loaded Database: json-in-postgresql.database-init email ada@example.com linus@example.com Try Yourself Loaded Database: json-in-postgresql.database-init The database for this lesson is already loaded. Write any query you want and run it directly in your browser."
   },
   {
     "anchor": "exercises",
@@ -747,13 +747,13 @@
     "anchor": "transactions.commit-transfer",
     "heading": "Commit a transfer",
     "lessonId": "transactions",
-    "text": "COMMIT makes every statement in the transaction durable together. Loaded Database: transactions.database-init"
+    "text": "COMMIT makes every statement in the transaction durable together. Loaded Database: transactions.database-init name balance_cents Ada 4000 Grace 4000"
   },
   {
     "anchor": "transactions.rollback-transfer",
     "heading": "Rollback a transfer",
     "lessonId": "transactions",
-    "text": "ROLLBACK throws away the changes made inside the transaction. Loaded Database: transactions.database-init Try Yourself Loaded Database: transactions.database-init The database for this lesson is already loaded. Write any query you want and run it directly in your browser."
+    "text": "ROLLBACK throws away the changes made inside the transaction. Loaded Database: transactions.database-init name balance_cents Ada 5000 Grace 3000 Try Yourself Loaded Database: transactions.database-init The database for this lesson is already loaded. Write any query you want and run it directly in your browser."
   },
   {
     "anchor": "exercises",
@@ -777,19 +777,19 @@
     "anchor": "advanced-aggregation.having",
     "heading": "HAVING",
     "lessonId": "advanced-aggregation",
-    "text": "HAVING filters groups, while WHERE filters rows before grouping. Loaded Database: advanced-aggregation.database-init"
+    "text": "HAVING filters groups, while WHERE filters rows before grouping. Loaded Database: advanced-aggregation.database-init status payments paid 3"
   },
   {
     "anchor": "advanced-aggregation.filter",
     "heading": "FILTER",
     "lessonId": "advanced-aggregation",
-    "text": "FILTER lets different aggregates count different subsets in one query. Loaded Database: advanced-aggregation.database-init"
+    "text": "FILTER lets different aggregates count different subsets in one query. Loaded Database: advanced-aggregation.database-init paid failed 3 1"
   },
   {
     "anchor": "advanced-aggregation.date-trunc",
     "heading": "Group by time",
     "lessonId": "advanced-aggregation",
-    "text": "date_trunc turns timestamps into buckets such as day, month, or year. Loaded Database: advanced-aggregation.database-init Try Yourself Loaded Database: advanced-aggregation.database-init The database for this lesson is already loaded. Write any query you want and run it directly in your browser."
+    "text": "date_trunc turns timestamps into buckets such as day, month, or year. Loaded Database: advanced-aggregation.database-init day total_cents 2026-01-01T00:00:00.000Z 3500 2026-01-02T00:00:00.000Z 3000 Try Yourself Loaded Database: advanced-aggregation.database-init The database for this lesson is already loaded. Write any query you want and run it directly in your browser."
   },
   {
     "anchor": "exercises",
@@ -813,13 +813,13 @@
     "anchor": "vectors.nearest-vector",
     "heading": "Nearest vector",
     "lessonId": "vectors",
-    "text": "This uses arrays to show the same idea: nearest embeddings sort first. Loaded Database: vectors.database-init"
+    "text": "This uses arrays to show the same idea: nearest embeddings sort first. Loaded Database: vectors.database-init title SQL indexes JOIN patterns"
   },
   {
     "anchor": "vectors.distance-score",
     "heading": "Show distance",
     "lessonId": "vectors",
-    "text": "The smaller the distance score, the more similar the document is to the query vector. Loaded Database: vectors.database-init Try Yourself Loaded Database: vectors.database-init The database for this lesson is already loaded. Write any query you want and run it directly in your browser."
+    "text": "The smaller the distance score, the more similar the document is to the query vector. Loaded Database: vectors.database-init title distance Vector search 0.0024999999999999935 JSON documents 0.7300000000000002 JOIN patterns 0.8475000000000001 SQL indexes 1.1400000000000001 Try Yourself Loaded Database: vectors.database-init The database for this lesson is already loaded. Write any query you want and run it directly in your browser."
   },
   {
     "anchor": "exercises",
@@ -873,19 +873,19 @@
     "anchor": "holding-a-seat",
     "heading": "Holding a seat",
     "lessonId": "concurrency-reservation-system",
-    "text": "Holding is trickier than it looks: we want to grab the seat if it's free, or take it over if the current hold has expired, but never if someone is actively holding or has reserved it. The tempting version is read-then-write — SELECT to check, then INSERT or UPDATE — and that has a gap between the check and the write where another request slips in. Instead we do it in one statement . The primary key turns the insert into an upsert: if a row already exists, ON CONFLICT DO UPDATE takes over — but only when its WHERE says the existing hold has expired. The unique constraint and the lock on the conflicting reservation protect this seat. This standalone statement doesn't enforce the user's hold limit; the transaction above adds that protection. EXCLUDED is a pseudo-table Postgres exposes inside DO UPDATE : it holds the row you just tried to insert (the one that hit the conflict), so EXCLUDED.user_id below means \"the user_id from the VALUES clause\" — whoever is making this hold attempt. Loaded Database: concurrency-reservation-system.database-init If the seat is actively held (not expired), the ON CONFLICT guard fails and the statement changes nothing — zero rows come back, which the app turns into \"seat taken\". Here Bob tries to grab A2 while Ada is still holding it: Loaded Database: concurrency-reservation-system.database-init-live-hold But if the previous hold has expired , the exact same statement takes it over cleanly — no delete, no separate check. This time Grace takes over Ada's expired hold: Loaded Database: concurrency-reservation-system.database-init-expired-hold"
+    "text": "Holding is trickier than it looks: we want to grab the seat if it's free, or take it over if the current hold has expired, but never if someone is actively holding or has reserved it. The tempting version is read-then-write — SELECT to check, then INSERT or UPDATE — and that has a gap between the check and the write where another request slips in. Instead we do it in one statement . The primary key turns the insert into an upsert: if a row already exists, ON CONFLICT DO UPDATE takes over — but only when its WHERE says the existing hold has expired. The unique constraint and the lock on the conflicting reservation protect this seat. This standalone statement doesn't enforce the user's hold limit; the transaction above adds that protection. EXCLUDED is a pseudo-table Postgres exposes inside DO UPDATE : it holds the row you just tried to insert (the one that hit the conflict), so EXCLUDED.user_id below means \"the user_id from the VALUES clause\" — whoever is making this hold attempt. Loaded Database: concurrency-reservation-system.database-init event_id seat_id user_id status holding_date reservation_date 33333333-3333-3333-3333-333333333333 2 22222222-2222-2222-2222-222222222222 H 2026-09-27T16:18:43.350Z If the seat is actively held (not expired), the ON CONFLICT guard fails and the statement changes nothing — zero rows come back, which the app turns into \"seat taken\". Here Bob tries to grab A2 while Ada is still holding it: Loaded Database: concurrency-reservation-system.database-init-live-hold No rows But if the previous hold has expired , the exact same statement takes it over cleanly — no delete, no separate check. This time Grace takes over Ada's expired hold: Loaded Database: concurrency-reservation-system.database-init-expired-hold event_id seat_id user_id status holding_date reservation_date 33333333-3333-3333-3333-333333333333 2 22222222-2222-2222-2222-222222222222 H 2026-09-27T16:19:01.208Z"
   },
   {
     "anchor": "reserving-confirm-only-if-you-still-hold-it",
     "heading": "Reserving: confirm only if you still hold it",
     "lessonId": "concurrency-reservation-system",
-    "text": "Reserving is where a naive implementation overbooks. Near the expiry deadline, your hold can lapse and someone else can take the seat while your confirmation is mid-flight. If confirm is a plain UPDATE ... SET status = 'R' , you'd hand the seat to a user whose hold is already gone. So we put every precondition in the WHERE : it's still an H row, still yours , and still within the window at the statement's start. If another writer changes the row while we wait, Postgres checks the updated row against these conditions. A hold that was already expired when this statement began matches nothing: Loaded Database: concurrency-reservation-system.database-init-grace-hold Try the same confirm against a seat someone else holds and it simply matches nothing — zero rows, no double-booking: Loaded Database: concurrency-reservation-system.database-init-live-hold"
+    "text": "Reserving is where a naive implementation overbooks. Near the expiry deadline, your hold can lapse and someone else can take the seat while your confirmation is mid-flight. If confirm is a plain UPDATE ... SET status = 'R' , you'd hand the seat to a user whose hold is already gone. So we put every precondition in the WHERE : it's still an H row, still yours , and still within the window at the statement's start. If another writer changes the row while we wait, Postgres checks the updated row against these conditions. A hold that was already expired when this statement began matches nothing: Loaded Database: concurrency-reservation-system.database-init-grace-hold event_id seat_id user_id status holding_date reservation_date 33333333-3333-3333-3333-333333333333 2 22222222-2222-2222-2222-222222222222 R 2026-09-27T16:19:09.220Z 2026-09-27T16:19:09.235Z Try the same confirm against a seat someone else holds and it simply matches nothing — zero rows, no double-booking: Loaded Database: concurrency-reservation-system.database-init-live-hold No rows"
   },
   {
     "anchor": "listing-available-seats",
     "heading": "Listing available seats",
     "lessonId": "concurrency-reservation-system",
-    "text": "A seat is available if it has no reservation row at all, or if its only row is a hold that has already expired. The same 30-second rule that governs holds decides visibility here: Loaded Database: concurrency-reservation-system.database-init-live-hold Ada is actively holding A2, so it drops out of the list — only A1 and A3 come back. Let a hold expire and the seat quietly reappears, no cleanup required."
+    "text": "A seat is available if it has no reservation row at all, or if its only row is a hold that has already expired. The same 30-second rule that governs holds decides visibility here: Loaded Database: concurrency-reservation-system.database-init-live-hold id label 1 A1 3 A3 Ada is actively holding A2, so it drops out of the list — only A1 and A3 come back. Let a hold expire and the seat quietly reappears, no cleanup required."
   },
   {
     "anchor": "when-you-need-a-lock-for-update",
@@ -921,7 +921,7 @@
     "anchor": "check-then-act",
     "heading": "Check, then act",
     "lessonId": "transaction-isolation-levels",
-    "text": "Run alone, Alice's script is completely ordinary: check, then update, then commit. Loaded Database: transaction-isolation-levels.database-init"
+    "text": "Run alone, Alice's script is completely ordinary: check, then update, then commit. Loaded Database: transaction-isolation-levels.database-init name on_call Alice false Bob true"
   },
   {
     "anchor": "the-race",
@@ -999,7 +999,7 @@
     "anchor": "every-statement-takes-a-table-lock",
     "heading": "Every statement takes a table lock",
     "lessonId": "postgres-locks",
-    "text": "Filtering pg_locks to your own session ( pid = pg_backend_pid() ) inside an open transaction shows exactly what your statements have taken so far. Even a plain SELECT takes a lock: Loaded Database: postgres-locks.database-init Each table gets the lock its statement needs, and the transaction keeps all of them until it commits or rolls back: Loaded Database: postgres-locks.database-init And a schema change takes the strongest one: Loaded Database: postgres-locks.database-init"
+    "text": "Filtering pg_locks to your own session ( pid = pg_backend_pid() ) inside an open transaction shows exactly what your statements have taken so far. Even a plain SELECT takes a lock: Loaded Database: postgres-locks.database-init relation mode accounts AccessShareLock Each table gets the lock its statement needs, and the transaction keeps all of them until it commits or rolls back: Loaded Database: postgres-locks.database-init relation mode accounts RowExclusiveLock transfers AccessShareLock And a schema change takes the strongest one: Loaded Database: postgres-locks.database-init relation mode accounts AccessExclusiveLock"
   },
   {
     "anchor": "the-eight-table-lock-modes",

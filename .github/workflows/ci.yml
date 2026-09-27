@@ -22,6 +22,7 @@ jobs:
           - test
           - build
           - build-assets:pgexamples:check
+          - build-assets:lesson-sql-results:check
           - build-assets:search-index:check
           - build-assets:sitemap:check
         # sitemap.xml's lastmod dates come from `git log` at build time; a
