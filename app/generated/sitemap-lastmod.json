@@ -24,5 +24,6 @@
   "/lessons/vectors": "2026-09-15T23:29:11Z",
   "/lessons/concurrency-reservation-system": "2026-09-20T07:54:57Z",
   "/lessons/transaction-isolation-levels": "2026-09-23T23:55:35Z",
-  "/lessons/postgres-locks": "2026-09-26T22:24:25Z"
+  "/lessons/postgres-locks": "2026-09-26T22:24:25Z",
+  "/lessons/slow-queries": "2026-09-27T15:24:53Z"
 }
