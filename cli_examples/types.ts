@@ -281,6 +281,20 @@ export const SQL_EXAMPLE_IDS = {
   ),
   postgresLocksQueueTranscript: sqlExampleId("postgres-locks.queue-transcript"),
   postgresLocksDeadlockTranscript: sqlExampleId("postgres-locks.deadlock-transcript"),
+  slowQueriesDatabaseInit: sqlExampleId("slow-queries.database-init"),
+  slowQueriesFixedDatabaseInit: sqlExampleId("slow-queries.fixed-database-init"),
+  slowQueriesTopByTotalTime: sqlExampleId("slow-queries.top-by-total-time"),
+  slowQueriesTopByMeanTime: sqlExampleId("slow-queries.top-by-mean-time"),
+  slowQueriesTableScans: sqlExampleId("slow-queries.table-scans"),
+  slowQueriesExplainRecentOrders: sqlExampleId("slow-queries.explain-recent-orders"),
+  slowQueriesExplainRecentOrdersFixed: sqlExampleId(
+    "slow-queries.explain-recent-orders-fixed",
+  ),
+  slowQueriesExplainLogin: sqlExampleId("slow-queries.explain-login"),
+  slowQueriesExplainLoginFixed: sqlExampleId("slow-queries.explain-login-fixed"),
+  slowQueriesTopByTotalTimeFixed: sqlExampleId("slow-queries.top-by-total-time-fixed"),
+  slowQueriesExerciseTopByBlocks: sqlExampleId("slow-queries.top-by-blocks"),
+  slowQueriesExerciseLoginWithIndex: sqlExampleId("slow-queries.login-with-index"),
   emptyDatabase: sqlExampleId("empty-database.database-init"),
 } as const;
 

@@ -314,6 +314,20 @@ export const lessons: readonly LessonCatalogItem[] = [
     time: "25 min",
     draft: true,
   },
+  {
+    id: "slow-queries",
+    label: "Lesson 22",
+    number: "22",
+    title: "Finding and fixing slow queries",
+    slug: "slow-queries",
+    routeModule: "routes/slow-queries.tsx",
+    cliExampleModule: "slow-queries.sql.ts",
+    href: "/lessons/slow-queries",
+    summary:
+      "Track which queries cost the most with pg_stat_statements, read their plans with EXPLAIN ANALYZE, and fix them with the right index.",
+    meta: "PG_STAT_STATEMENTS · EXPLAIN ANALYZE",
+    time: "25 min",
+  },
 ] as const satisfies readonly LessonCatalogItem[];
 
 export const lessonSummaries = lessons.map(({ id, number, title, href }) => ({

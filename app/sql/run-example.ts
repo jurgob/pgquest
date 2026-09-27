@@ -3,6 +3,7 @@ import type { PGliteInterface } from "@electric-sql/pglite";
 import type { Client as PgClient } from "pg";
 import type { PostgresExampleStep, SqlExample } from "../../cli_examples/types";
 
+import { pgliteExtensions } from "./pglite-extensions";
 import type { ExecutionOutput, ExplainRow, QueryRow, SqlExecutionInput } from "./types";
 
 let timingId = 0;
@@ -47,7 +48,9 @@ export async function createSqlDatabase(sqlLoad: string, signal?: AbortSignal) {
 
   const db =
     import.meta.env.SSR || import.meta.env.MODE === "test"
-      ? new (await import("@electric-sql/pglite")).PGlite()
+      ? new (await import("@electric-sql/pglite")).PGlite({
+          extensions: pgliteExtensions,
+        })
       : await (async () => {
           const { PGliteWorker } = await import("@electric-sql/pglite/worker");
           const databaseId = crypto.randomUUID();

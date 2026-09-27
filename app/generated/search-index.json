@@ -1066,5 +1066,95 @@
     "heading": "What We Learned",
     "lessonId": "postgres-locks",
     "text": "Table-level locks Every statement locks the tables it touches in one of eight modes, held until the transaction ends. Two sessions conflict only if their modes do. ACCESS EXCLUSIVE The lock most ALTER TABLE s take. It conflicts with everything, including plain SELECT s. Row-level locks FOR KEY SHARE , FOR SHARE , FOR NO KEY UPDATE , and FOR UPDATE . They block other writers and lockers of the same row, never plain readers. pg_locks A system view listing every lock currently held or awaited, by which session ( pid ), and whether it was granted. NOWAIT / SKIP LOCKED Instead of waiting for a locked row, fail immediately ( NOWAIT ) or skip it ( SKIP LOCKED ). lock_timeout The longest a statement will wait for a lock before failing. Essential for schema migrations on busy tables. Deadlock Two transactions each waiting for a lock the other holds. Postgres detects it and cancels one; locking rows in a consistent order prevents it."
+  },
+  {
+    "anchor": null,
+    "heading": null,
+    "lessonId": "slow-queries",
+    "text": "Finding and fixing slow queries The app got slow. Pages that used to load instantly now take a second, and the database server's CPU is busy. Which query is it? Guessing is how you spend a day adding an index nobody needed. Postgres keeps statistics about every query it runs, so you don't have to guess. This lesson follows the loop you'll use every time: track which queries cost the most, analyze the worst one with EXPLAIN ANALYZE , fix it, and verify that the fix worked. It builds on the introduction to indexes ."
+  },
+  {
+    "anchor": "the-migration",
+    "heading": "The migration",
+    "lessonId": "slow-queries",
+    "text": "A small shop: customers, and their orders. Each table has a primary key, and email is UNIQUE , which also gives it an index."
+  },
+  {
+    "anchor": "the-seed",
+    "heading": "The seed",
+    "lessonId": "slow-queries",
+    "text": "5,000 customers and 60,000 orders, spread over most of a year. Enough rows that reading a whole table takes a few milliseconds."
+  },
+  {
+    "anchor": "the-traffic",
+    "heading": "The traffic",
+    "lessonId": "slow-queries",
+    "text": "Then the application does its job. The lesson database replays a burst of requests, interleaved the way real traffic would be. Each request runs one of four queries, with different values every time: Request Calls One of those calls Order page 200 SELECT id, customer_id, status, total_cents FROM orders WHERE id = 294; Customer's recent orders 40 SELECT id, status, total_cents, created_at FROM orders WHERE customer_id = 38 ORDER BY created_at DESC LIMIT 10; Log in 40 SELECT id, name FROM customers WHERE lower(email) = lower('Customer71@Example.com'); Monthly revenue report 2 SELECT date_trunc('month', created_at) AS month, count(*) AS orders, sum(total_cents) AS revenue_cents FROM orders WHERE status = 'paid' GROUP BY 1 ORDER BY 1; Nothing here looks obviously wrong. That's normal: slow queries rarely look slow. They look like every other query, until the table grows."
+  },
+  {
+    "anchor": "tracking-with-pg-stat-statements",
+    "heading": "Tracking with pg_stat_statements",
+    "lessonId": "slow-queries",
+    "text": "pg_stat_statements is an extension that ships with Postgres. Once it's loaded, it records every statement the server runs, and groups statements that differ only in their constants. The 40 recent orders queries, each for a different customer, become a single row, with the customer id replaced by $1 . For each of these normalized queries it keeps running totals: how many times it ran, how long it took, how many rows it returned, how much data it touched. The lesson database has it enabled, and resets its statistics right before the traffic, so they only describe the traffic. Here are the queries that cost the database the most time: Loaded Database: slow-queries.database-init These timings are real: your browser just ran the whole traffic, so the numbers change a little every time you load the page. The ranking doesn't. The customer's recent orders query is on top, with about half of the total time on its own. The login comes next. The order page ran five times as often as either of them and barely registers. The WHERE query NOT LIKE '%pg_stat%' filter hides the monitoring queries themselves, since pg_stat_statements tracks those too."
+  },
+  {
+    "anchor": "total-time-vs-mean-time",
+    "heading": "Total time vs. mean time",
+    "lessonId": "slow-queries",
+    "text": "Sort the same statistics by mean time, the average for a single call, and the ranking changes: Loaded Database: slow-queries.database-init The monthly revenue report is by far the slowest call. But it ran twice, while the recent orders query ran 40 times. Total time is what a query costs the database, so it's where a fix frees up the most capacity. Mean time is what one user waits, so it's what to look at when a specific page is slow. Start with total time, and keep an eye on the mean. The last two columns explain the timings. blocks_per_call counts the 8 kB blocks of table and index data each call touched ( shared_blks_hit from memory plus shared_blks_read from disk). The recent orders query touches over 400 blocks, pretty much the whole orders table, to return 10 rows. Compare that to the order page: 3 blocks for 1 row. Unlike time, block counts don't depend on how busy the machine is, which makes them a good measure to compare before and after a fix."
+  },
+  {
+    "anchor": "which-tables-get-scanned",
+    "heading": "Which tables get scanned?",
+    "lessonId": "slow-queries",
+    "text": "Postgres also keeps statistics per table. A sequential scan reads a table from start to end; that's fine once in a while, but a table scanned over and over is usually missing an index: Loaded Database: slow-queries.database-init These counters add up since the database was created, seed included, but the traffic dominates them: over 40 sequential scans of orders read 2.5 million rows, nearly the whole table each time, for traffic that returned a few hundred. customers was scanned about 40 times too, once per login, even though email has an index. We'll see why."
+  },
+  {
+    "anchor": "analyzing-with-explain-analyze",
+    "heading": "Analyzing with EXPLAIN ANALYZE",
+    "lessonId": "slow-queries",
+    "text": "pg_stat_statements tells you which query is slow, not why. For that, pick one real call of it, with real values in place of $1 and $2 , and run it with EXPLAIN ANALYZE . Plain EXPLAIN , as in the indexes lesson, only shows the plan and the planner's estimates. ANALYZE actually runs the query and adds what really happened at each step; BUFFERS adds how many blocks each step touched (it's on by default with ANALYZE since Postgres 18). Loaded Database: slow-queries.database-init Read a plan from the most indented line up: each step feeds its rows to the one above it. Seq Scan on orders reads every row, and Rows Removed by Filter shows it threw away 59,988 of them to keep the 12 orders of customer 42. Sort then orders those 12 by created_at DESC , and Limit keeps the first 10. actual time=first..last is in milliseconds: when the step produced its first row, and its last. Nearly all of the total is spent in the scan. Buffers: shared hit is the same 400-odd blocks pg_stat_statements reported per call. So the query isn't slow because of the sort, or the limit. It's slow because finding one customer's orders means reading all of them. Things to look for in any plan: In the plan What it usually means Seq Scan with a large Rows Removed by Filter Postgres read the whole table to keep a few rows. Usually a missing index, or one the query can't use. Estimated rows far from actual rows The planner guessed wrong, so it may have picked the wrong plan. Stale statistics are the usual cause: run ANALYZE. Sort Method: external merge Disk The sort didn't fit in work_mem and spilled to disk. A node with a large loops count The node ran once per row of its parent, typically the inner side of a Nested Loop. Multiply its time by loops. Large Buffers numbers The query touches a lot of data. Each block is 8 kB: shared hit came from memory, read came from disk. One warning: because EXPLAIN ANALYZE really runs the statement, analyzing an INSERT , UPDATE , or DELETE really changes data. Wrap it in a transaction and roll back:"
+  },
+  {
+    "anchor": "fix-an-index-that-matches-the-query",
+    "heading": "Fix 1: an index that matches the query",
+    "lessonId": "slow-queries",
+    "text": "Postgres automatically indexes primary keys and unique columns, but not foreign keys: orders.customer_id references customers, and nothing indexes it. That's one of the most common causes of slow queries. An index on customer_id alone would find the 12 orders directly, then sort them. We can do better: an index on customer_id and then created_at DESC keeps each customer's orders already sorted newest first, so Postgres reads the first 10 entries and stops. Loaded Database: slow-queries.fixed-database-init An Index Scan instead of a sequential scan, no Sort step at all, and a handful of blocks instead of hundreds. Column order matters: an index on (created_at, customer_id) couldn't jump to customer 42's orders, because they'd be scattered across the whole index."
+  },
+  {
+    "anchor": "fix-the-index-that-wasnt-used",
+    "heading": "Fix 2: the index that wasn't used",
+    "lessonId": "slow-queries",
+    "text": "Now the login. email is UNIQUE , so it has an index, yet customers was scanned once per login: Loaded Database: slow-queries.database-init Look at the Filter line. The query doesn't compare email , it compares lower(email) , so the application can match emails whatever their case. The index stores email values, and Postgres can't use it to find lower(email) values. So it computes lower() for every one of the 5,000 customers, which is also why this scan is slower per row than the one on orders. The same thing happens with any function or calculation on an indexed column: WHERE created_at::date = ... , WHERE id + 1 = ... . The fix is to index exactly what the query filters on, an expression index: Loaded Database: slow-queries.fixed-database-init The other way to fix it is to change the data instead of the index: store emails already lowercased and compare them directly, or use the citext type, whose comparisons ignore case."
+  },
+  {
+    "anchor": "verify-the-fix",
+    "heading": "Verify the fix",
+    "lessonId": "slow-queries",
+    "text": "An index that looks right in EXPLAIN still needs checking against the real traffic. Here is the same traffic, replayed on the same data with both indexes, next to the original: Loaded Database: slow-queries.fixed-database-init Before After The two queries we fixed dropped from the top of the list to fractions of a millisecond per call. The monthly report is now the most expensive query, and it's tempting to go after it next. But look at what it does: it adds up every paid order of the year. It needs most of the table, so no index will make it read much less. It runs twice. Not every slow query is a problem; if it ever becomes one, the answer is usually to precompute it (a materialized view, or a summary table), not an index. Knowing when to stop is part of the job, since every index also slows down every write to its table."
+  },
+  {
+    "anchor": "tracking-in-production",
+    "heading": "Tracking in production",
+    "lessonId": "slow-queries",
+    "text": "Here, pg_stat_statements was loaded for you. On a real server it has to be in shared_preload_libraries , which needs a restart. Most managed services (RDS, Cloud SQL, Supabase, and others) already load it; you only need the CREATE EXTENSION . A few things that help in practice: The statistics add up from the last reset, possibly months ago. To see what is slow now, reset after a deploy, or save snapshots of the view and compare two of them. pg_stat_statements only shows $1 . log_min_duration_statement logs each slow call with its actual values, which are what you paste into EXPLAIN ANALYZE . The same query can be fast for one customer and slow for another. The auto_explain extension goes one step further and logs the plan of every slow call, as it ran. For what is slow right now, rather than in total, pg_stat_activity lists the running queries and when they started:"
+  },
+  {
+    "anchor": "rules-of-thumb",
+    "heading": "Rules of thumb",
+    "lessonId": "slow-queries",
+    "text": "Measure before you fix. Enable pg_stat_statements on every database, before you need it. Fix the biggest total time first; a fast query called a lot can cost more than a slow one called rarely. Explain one real call, with EXPLAIN (ANALYZE, BUFFERS) , and read it from the inside out. Index foreign key columns you filter on. Postgres doesn't do it for you. Build indexes to match the query: filter columns first, then the ORDER BY columns, and index expressions when the query filters on an expression. Verify with the same statistics you started from, and compare blocks, not just milliseconds. Try Yourself Loaded Database: slow-queries.database-init The database for this lesson is already loaded. Write any query you want and run it directly in your browser."
+  },
+  {
+    "anchor": "exercises",
+    "heading": "Exercises",
+    "lessonId": "slow-queries",
+    "text": "0 OF 2 DONE 1. Timings change from run to run, but the amount of data a query touches doesn't. From pg_stat_statements, return query, calls, and the total number of buffer blocks each statement touched (shared_blks_hit + shared_blks_read) as blocks, for the 3 statements with the most blocks, most first. 2. This database has the customers_lower_email_idx index on lower(email). Find the id and name of the customer who types their email as 'CUSTOMER2048@example.com', ignoring case, with a query that uses that index."
+  },
+  {
+    "anchor": "what-we-learned",
+    "heading": "What We Learned",
+    "lessonId": "slow-queries",
+    "text": "pg_stat_statements An extension that groups every statement by its shape and keeps running totals: calls, time, rows, and buffer blocks. The first place to look when the database is slow. Total time vs. mean time total_exec_time is what a query costs the database; mean_exec_time is what one caller waits. Fix the biggest total first. pg_stat_user_tables Per-table counters. Many sequential scans reading many rows point at a missing index. EXPLAIN ANALYZE Runs the query and shows the plan with what really happened: actual rows, time, loops, and, with BUFFERS , how much data each step touched. Composite index An index on the filter column followed by the sort column serves both WHERE and ORDER BY ... LIMIT , so Postgres reads just the rows it returns. Expression index An index on lower(email) instead of email . An index is only used when the query filters on exactly what it indexes. log_min_duration_statement Logs each statement slower than a threshold, with its real parameter values, which is what you need to run EXPLAIN ANALYZE on it."
   }
 ]
