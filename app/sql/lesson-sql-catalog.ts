@@ -82,6 +82,10 @@ import {
   database_inits as exampleNineteenDatabaseInits,
   exercises as exampleNineteenExercises,
 } from "../../cli_examples/postgres-locks.sql";
+import {
+  database_inits as exampleTwentyDatabaseInits,
+  exercises as exampleTwentyExercises,
+} from "../../cli_examples/slow-queries.sql";
 import type { SqlExample } from "../../cli_examples/types";
 import { lessons } from "./lesson-catalog";
 import type { LessonId } from "./types";
@@ -180,6 +184,10 @@ const lessonSqlById = {
   "postgres-locks": {
     databaseInits: exampleNineteenDatabaseInits,
     exercises: exampleNineteenExercises,
+  },
+  "slow-queries": {
+    databaseInits: exampleTwentyDatabaseInits,
+    exercises: exampleTwentyExercises,
   },
 } as const satisfies Record<
   LessonId,

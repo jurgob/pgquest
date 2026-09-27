@@ -281,6 +281,18 @@ export const SQL_EXAMPLE_IDS = {
   ),
   postgresLocksQueueTranscript: sqlExampleId("postgres-locks.queue-transcript"),
   postgresLocksDeadlockTranscript: sqlExampleId("postgres-locks.deadlock-transcript"),
+  slowQueriesDatabaseInit: sqlExampleId("slow-queries.database-init"),
+  slowQueriesFixedDatabaseInit: sqlExampleId("slow-queries.fixed-database-init"),
+  slowQueriesTopByType: sqlExampleId("slow-queries.top-by-type"),
+  slowQueriesSlowestCalls: sqlExampleId("slow-queries.slowest-calls"),
+  slowQueriesSlowestListCalls: sqlExampleId("slow-queries.slowest-list-calls"),
+  slowQueriesExplainSearch: sqlExampleId("slow-queries.explain-search"),
+  slowQueriesExplainSearchFixed: sqlExampleId("slow-queries.explain-search-fixed"),
+  slowQueriesExplainList: sqlExampleId("slow-queries.explain-list"),
+  slowQueriesExplainListFixed: sqlExampleId("slow-queries.explain-list-fixed"),
+  slowQueriesTopByTypeFixed: sqlExampleId("slow-queries.top-by-type-fixed"),
+  slowQueriesExerciseBlocksByType: sqlExampleId("slow-queries.blocks-by-type"),
+  slowQueriesExerciseKeysetPage: sqlExampleId("slow-queries.keyset-page"),
   emptyDatabase: sqlExampleId("empty-database.database-init"),
 } as const;
 

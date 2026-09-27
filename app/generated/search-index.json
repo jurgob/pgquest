@@ -1066,5 +1066,71 @@
     "heading": "What We Learned",
     "lessonId": "postgres-locks",
     "text": "Table-level locks Every statement locks the tables it touches in one of eight modes, held until the transaction ends. Two sessions conflict only if their modes do. ACCESS EXCLUSIVE The lock most ALTER TABLE s take. It conflicts with everything, including plain SELECT s. Row-level locks FOR KEY SHARE , FOR SHARE , FOR NO KEY UPDATE , and FOR UPDATE . They block other writers and lockers of the same row, never plain readers. pg_locks A system view listing every lock currently held or awaited, by which session ( pid ), and whether it was granted. NOWAIT / SKIP LOCKED Instead of waiting for a locked row, fail immediately ( NOWAIT ) or skip it ( SKIP LOCKED ). lock_timeout The longest a statement will wait for a lock before failing. Essential for schema migrations on busy tables. Deadlock Two transactions each waiting for a lock the other holds. Postgres detects it and cancels one; locking rows in a consistent order prevents it."
+  },
+  {
+    "anchor": null,
+    "heading": null,
+    "lessonId": "slow-queries",
+    "text": "Finding and fixing slow queries Draft An app is slow. Find which queries are to blame, understand why, fix them, and check that the fix worked."
+  },
+  {
+    "anchor": "the-app",
+    "heading": "The app",
+    "lessonId": "slow-queries",
+    "text": "Four endpoints: create, list, delete, search. First, turn on tracking: Then send the app's traffic, each endpoint many times:"
+  },
+  {
+    "anchor": "slowest-query-types",
+    "heading": "Slowest query types",
+    "lessonId": "slow-queries",
+    "text": "Loaded Database: slow-queries.database-init Search: 20 calls, most of the total time. Timings are real, measured in your browser."
+  },
+  {
+    "anchor": "slowest-actual-calls",
+    "heading": "Slowest actual calls",
+    "lessonId": "slow-queries",
+    "text": "Loaded Database: slow-queries.database-init Loaded Database: slow-queries.database-init"
+  },
+  {
+    "anchor": "why-is-search-slow",
+    "heading": "Why is search slow?",
+    "lessonId": "slow-queries",
+    "text": "Loaded Database: slow-queries.database-init"
+  },
+  {
+    "anchor": "fix-1-a-trigram-index",
+    "heading": "Fix 1: a trigram index",
+    "lessonId": "slow-queries",
+    "text": "Loaded Database: slow-queries.fixed-database-init"
+  },
+  {
+    "anchor": "why-are-deep-pages-slow",
+    "heading": "Why are deep pages slow?",
+    "lessonId": "slow-queries",
+    "text": "Loaded Database: slow-queries.database-init"
+  },
+  {
+    "anchor": "fix-2-keyset-pagination",
+    "heading": "Fix 2: keyset pagination",
+    "lessonId": "slow-queries",
+    "text": "No index this time: change the query. Loaded Database: slow-queries.fixed-database-init"
+  },
+  {
+    "anchor": "verify",
+    "heading": "Verify",
+    "lessonId": "slow-queries",
+    "text": "Same traffic, before and after both fixes. Before After Search and list are fixed. INSERT now touches more blocks: every new row also updates the trigram index. Indexes aren't free. Try Yourself Loaded Database: slow-queries.database-init The database for this lesson is already loaded. Write any query you want and run it directly in your browser."
+  },
+  {
+    "anchor": "exercises",
+    "heading": "Exercises",
+    "lessonId": "slow-queries",
+    "text": "0 OF 2 DONE 1. Timings vary between runs, buffer blocks don't. From pg_stat_statements, return query, calls, and shared_blks_hit + shared_blks_read AS blocks for the app's queries (NOT toplevel), most blocks first. 2. With keyset pagination, return id, name, and price_cents of the 20 'office' products after id 50000, in id order."
+  },
+  {
+    "anchor": "what-we-learned",
+    "heading": "What We Learned",
+    "lessonId": "slow-queries",
+    "text": "pg_stat_statements Groups every statement by its shape and keeps running totals: calls, time, rows, buffer blocks. EXPLAIN (ANALYZE, BUFFERS) Runs the query and shows what each step of the plan really did. pg_trgm Trigram indexes: make ILIKE '%...%' use an index. Keyset pagination WHERE id > last_id instead of OFFSET : every page costs the same."
   }
 ]

@@ -3,6 +3,11 @@ import type { PGliteInterface } from "@electric-sql/pglite";
 import type { Client as PgClient } from "pg";
 import type { PostgresExampleStep, SqlExample } from "../../cli_examples/types";
 
+import {
+  pgliteExtensionNamesFor,
+  pgliteExtensions,
+  type PgliteWorkerMeta,
+} from "./pglite-extensions";
 import type { ExecutionOutput, ExplainRow, QueryRow, SqlExecutionInput } from "./types";
 
 let timingId = 0;
@@ -45,9 +50,12 @@ export async function createSqlDatabase(sqlLoad: string, signal?: AbortSignal) {
     console.time(timer);
   }
 
+  const extensionNames = pgliteExtensionNamesFor(sqlLoad);
   const db =
     import.meta.env.SSR || import.meta.env.MODE === "test"
-      ? new (await import("@electric-sql/pglite")).PGlite()
+      ? new (await import("@electric-sql/pglite")).PGlite({
+          extensions: pgliteExtensions(extensionNames),
+        })
       : await (async () => {
           const { PGliteWorker } = await import("@electric-sql/pglite/worker");
           const databaseId = crypto.randomUUID();
@@ -58,6 +66,7 @@ export async function createSqlDatabase(sqlLoad: string, signal?: AbortSignal) {
             {
               dataDir: `memory://pgquest-${databaseId}`,
               id: `pgquest-${databaseId}`,
+              meta: { extensionNames } satisfies PgliteWorkerMeta,
             },
           );
         })();
