@@ -18,13 +18,201 @@ import {
   LessonSection,
   Paragraph,
   Paragraphs,
-  Section,
   Title2,
 } from "../sql/lesson-layout";
 import { SqlCodeViewer } from "../sql/sql-editor";
 
 function Example({ id }: { id: SqlExampleId }) {
   return <ExampleBlock example={getSqlExample(examples, id)} />;
+}
+
+type ApproachSummary = {
+  name: string;
+  summary: React.ReactNode;
+  pros: readonly React.ReactNode[];
+  cons: readonly React.ReactNode[];
+  lesson?: { href: string; label: string };
+};
+
+const textApproaches: readonly ApproachSummary[] = [
+  {
+    name: "ILIKE",
+    summary: "Finds a piece of text anywhere in a column.",
+    pros: [
+      "Built in, nothing to set up.",
+      "Exact and predictable.",
+      <>
+        With a trigram index, fast even for <InlineCode>&apos;%...%&apos;</InlineCode>.
+      </>,
+    ],
+    cons: [
+      "No ranking.",
+      "No typos, no word forms: 'indexing' doesn't find 'Indexes'.",
+      "Without an index, it reads every row.",
+    ],
+    lesson: { href: "/lessons/text-search-basics", label: "Text search basics" },
+  },
+  {
+    name: "Fuzzy search (pg_trgm)",
+    summary: "Compares strings by the 3-letter chunks they share.",
+    pros: [
+      "Tolerates typos.",
+      "Gives a score to sort by.",
+      "Great for short text: names, titles, autocomplete.",
+    ],
+    cons: [
+      "Knows nothing about words or meaning.",
+      "Weak on long text and on very short queries.",
+      "Trigram indexes are large.",
+    ],
+    lesson: { href: "/lessons/fuzzy-search", label: "Fuzzy search with pg_trgm" },
+  },
+  {
+    name: "Full-text search",
+    summary: "Matches words and their forms: 'indexing' finds 'Indexes'.",
+    pros: [
+      "Built in.",
+      "Stemming, stop words, search-box syntax (quotes, OR, -word).",
+      "Ranking and highlighting.",
+      "A GIN index scales to millions of rows.",
+    ],
+    cons: [
+      "No typos, no synonyms, no meaning.",
+      "One language configuration per tsvector.",
+      "Basic ranking: no BM25 out of the box.",
+    ],
+    lesson: { href: "/lessons/full-text-search", label: "Full-text search" },
+  },
+];
+
+const vectorApproaches: readonly ApproachSummary[] = [
+  {
+    name: "Arrays and SQL functions",
+    summary: "Embeddings in a DOUBLE PRECISION[] column, distance written in SQL.",
+    pros: ["No extension: works on any Postgres.", "Every step of the math is visible."],
+    cons: [
+      "No index: every search computes the distance for every row.",
+      "Nothing checks that vectors have the same number of dimensions.",
+    ],
+    lesson: { href: "/lessons/vectors", label: "Vectors" },
+  },
+  {
+    name: "pgvector, no index",
+    summary: "A vector column and distance operators, searched by a full scan.",
+    pros: [
+      "Exact results: always the true nearest rows.",
+      "Simple: fine up to tens of thousands of rows.",
+      "Type checking and fast distance operators.",
+    ],
+    cons: ["Cost grows with rows × dimensions: every search reads the whole table."],
+    lesson: { href: "/lessons/pgvector", label: "pgvector" },
+  },
+  {
+    name: "pgvector + HNSW index",
+    summary: "A graph of neighbours that a search walks towards the question.",
+    pros: [
+      "Fast, with high recall.",
+      "Can be created on an empty table; stays good as rows arrive.",
+      <>
+        Tunable at query time with <InlineCode>hnsw.ef_search</InlineCode>.
+      </>,
+    ],
+    cons: [
+      "Approximate: can miss a true neighbour.",
+      "Slow to build, and uses a lot of memory.",
+      "A selective WHERE filter can return fewer rows than the LIMIT.",
+    ],
+    lesson: { href: "/lessons/pgvector#an-index", label: "pgvector" },
+  },
+  {
+    name: "pgvector + IVFFlat index",
+    summary: "Groups vectors into clusters and only searches the nearest ones.",
+    pros: ["Faster to build and smaller than HNSW."],
+    cons: [
+      "Must be created after the data is loaded: the clusters come from it.",
+      "Lower recall than HNSW at the same speed.",
+      "Needs rebuilding when the data changes a lot.",
+    ],
+  },
+  {
+    name: "Smaller vectors (halfvec, binary quantization)",
+    summary: "Store each number in 16 bits, or even 1 bit, instead of 32.",
+    pros: [
+      "Half the storage with halfvec, 1/32 with bits; faster indexes.",
+      "halfvec indexes up to 4,000 dimensions; vector stops at 2,000.",
+    ],
+    cons: [
+      "Some accuracy lost.",
+      "Binary quantization usually needs a second pass that re-ranks with the full vectors.",
+    ],
+  },
+  {
+    name: "Embeddings computed in the database (pgai)",
+    summary:
+      "The database calls the embedding model itself, for every new or changed row.",
+    pros: ["Embeddings stay in sync automatically, like an index.", "No app code."],
+    cons: [
+      "The database calls an external API: latency, API keys, and failures inside Postgres.",
+      "pgai has not been maintained since February 2026.",
+    ],
+  },
+];
+
+const hybridApproach: ApproachSummary = {
+  name: "Hybrid: full-text + vectors",
+  summary: "Runs both searches and merges the two rankings.",
+  pros: ["Exact words and names, and meaning when the words differ.", "One SQL query."],
+  cons: [
+    "Two indexes and two searches to tune.",
+    "Still needs an embedding for every document and every search.",
+  ],
+};
+
+function ApproachCard({ approach }: { approach: ApproachSummary }) {
+  return (
+    <div className="rounded-md border border-zinc-200 p-4">
+      <h3 className="text-lg font-semibold text-zinc-950">{approach.name}</h3>
+      <p className="mt-1 text-base leading-7 text-zinc-800">{approach.summary}</p>
+      <div className="mt-3 grid gap-4 sm:grid-cols-2">
+        <div>
+          <h4 className="font-mono text-xs font-semibold uppercase tracking-wide text-emerald-700">
+            Pros
+          </h4>
+          <ul className="mt-1 list-disc pl-5 text-sm leading-6 text-zinc-800">
+            {approach.pros.map((pro, index) => (
+              <li key={index}>{pro}</li>
+            ))}
+          </ul>
+        </div>
+        <div>
+          <h4 className="font-mono text-xs font-semibold uppercase tracking-wide text-rose-700">
+            Cons
+          </h4>
+          <ul className="mt-1 list-disc pl-5 text-sm leading-6 text-zinc-800">
+            {approach.cons.map((con, index) => (
+              <li key={index}>{con}</li>
+            ))}
+          </ul>
+        </div>
+      </div>
+      {approach.lesson ? (
+        <p className="mt-3 text-sm text-zinc-700">
+          Lesson:{" "}
+          <LessonLink to={approach.lesson.href}>{approach.lesson.label}</LessonLink>
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+function ApproachCards({ approaches }: { approaches: readonly ApproachSummary[] }) {
+  return (
+    <div className="mt-4 flex flex-col gap-4">
+      {approaches.map((approach) => (
+        <ApproachCard approach={approach} key={approach.name} />
+      ))}
+    </div>
+  );
 }
 
 type Approach = {
@@ -90,7 +278,7 @@ const approaches: readonly Approach[] = [
     ranking: "Rank fusion",
     index: "GIN + HNSW",
     needs: "Both of the above",
-    lessons: [{ href: `#${SQL_EXAMPLE_IDS.textSearchInPostgresHybrid}`, label: "Above" }],
+    lessons: [{ href: `#${SQL_EXAMPLE_IDS.textSearchInPostgresHybrid}`, label: "Below" }],
   },
 ];
 
@@ -195,14 +383,46 @@ export default function TextSearchInPostgres() {
           data.
         </p>
         <p className="mt-3">
-          PostgreSQL can often do the job itself. This lesson puts every approach from the
-          previous lessons on one table, with the same eight documents, so you can compare
-          them side by side. It repeats a little of each lesson on purpose; follow the
-          links for the details.
+          PostgreSQL can often do the job itself. First, every approach in brief, with its
+          pros and cons, and a table to compare them. Then all of them on one table, with
+          the same eight documents as the previous lessons. It repeats a little of each
+          lesson on purpose; follow the links for the details.
         </p>
       </Paragraphs>
 
-      <Section>
+      <LessonSection>
+        <Title2 id="the-approaches">The approaches</Title2>
+        <Paragraph>Keyword search: match the text the user typed.</Paragraph>
+        <ApproachCards approaches={textApproaches} />
+      </LessonSection>
+
+      <LessonSection>
+        <Title2 id="vector-approaches">Vector search, in several flavours</Title2>
+        <Paragraph>
+          Vector search matches meaning. Every flavour needs an embedding model to turn
+          text into a vector, for every document and for every search: an extra
+          dependency, with its own cost and latency. They differ in how the vectors are
+          stored and searched, and in who computes them.
+        </Paragraph>
+        <ApproachCards approaches={vectorApproaches} />
+      </LessonSection>
+
+      <LessonSection>
+        <Title2 id="hybrid-approach">Both at once</Title2>
+        <ApproachCards approaches={[hybridApproach]} />
+      </LessonSection>
+
+      <LessonSection>
+        <Title2 id="comparison">Comparison</Title2>
+        <ComparisonTable />
+        <Paragraph>
+          They are not exclusive: one table can have all of them, as the one below does.
+          Start with the simplest one that answers what your users type, and add the next
+          when search results show you why.
+        </Paragraph>
+      </LessonSection>
+
+      <LessonSection>
         <Title2 id="one-table">One table, every kind of search</Title2>
         <Paragraph>
           A trigram index for <InlineCode>ILIKE</InlineCode> and typos, a tsvector column
@@ -215,7 +435,7 @@ export default function TextSearchInPostgres() {
         <div className="mt-4">
           <SqlCodeViewer code={seed} databaseInitId={databaseInit.id} />
         </div>
-      </Section>
+      </LessonSection>
 
       <Example id={SQL_EXAMPLE_IDS.textSearchInPostgresIlike} />
       <Paragraph>
@@ -264,16 +484,6 @@ export default function TextSearchInPostgres() {
         <div className="mt-4">
           <SqlCodeViewer code={pgaiExample} />
         </div>
-      </LessonSection>
-
-      <LessonSection>
-        <Title2 id="comparison">Comparison</Title2>
-        <ComparisonTable />
-        <Paragraph>
-          They are not exclusive: one table can have all of them, as this one does. Start
-          with the simplest one that answers what your users type, and add the next when
-          search results show you why.
-        </Paragraph>
       </LessonSection>
 
       <LessonSection>
