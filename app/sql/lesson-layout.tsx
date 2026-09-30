@@ -1,5 +1,6 @@
 import { useState } from "react";
 import posthog from "posthog-js";
+import { Link } from "react-router";
 import type { SqlExample } from "../../cli_examples/types";
 import { ExerciseCheckMessage, useExerciseSubmission } from "./exercise-submission";
 import { getOrComputeExerciseExpectedOutput } from "./exercise-expected-output-cache";
@@ -143,6 +144,18 @@ export function Paragraph({ children }: { children: React.ReactNode }) {
 
 export function Paragraphs({ children }: { children: React.ReactNode }) {
   return <div className="mt-3 text-base leading-7 text-zinc-800">{children}</div>;
+}
+
+// A link to another lesson, inside lesson prose.
+export function LessonLink({ children, to }: { children: React.ReactNode; to: string }) {
+  return (
+    <Link
+      className="text-sky-700 underline decoration-sky-300 underline-offset-2 hover:text-sky-900"
+      to={to}
+    >
+      {children}
+    </Link>
+  );
 }
 
 export function InlineCode({

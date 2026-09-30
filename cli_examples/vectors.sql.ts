@@ -1,61 +1,148 @@
+import { arrayLiteral, searchDocumentsSeed } from "./search-documents";
 import { SQL_EXAMPLE_IDS, type SqlExample } from "./types";
 
-const migration = `
+export const migration = `
 CREATE TABLE documents (
   id SERIAL PRIMARY KEY,
   title TEXT NOT NULL,
+  body TEXT NOT NULL,
+  -- [databases, web, AI]: how much the document is about each topic.
   embedding DOUBLE PRECISION[] NOT NULL
 );
 `;
 
-const seed = `
-INSERT INTO documents (title, embedding)
-VALUES
-  ('SQL indexes', ARRAY[0.90, 0.10, 0.20]),
-  ('JSON documents', ARRAY[0.20, 0.80, 0.30]),
-  ('Vector search', ARRAY[0.10, 0.20, 0.95]),
-  ('JOIN patterns', ARRAY[0.75, 0.25, 0.25]);
+export const seed = searchDocumentsSeed({ embedding: arrayLiteral });
+
+export const functions = `
+-- unnest(a, b) zips two arrays into rows of (x, y) pairs,
+-- so these work for any number of dimensions.
+
+-- Euclidean (L2) distance: the straight-line distance between two points.
+CREATE FUNCTION l2_distance(a DOUBLE PRECISION[], b DOUBLE PRECISION[])
+RETURNS DOUBLE PRECISION
+LANGUAGE sql IMMUTABLE
+AS $$
+  SELECT sqrt(sum((x - y) ^ 2)) FROM unnest(a, b) AS t(x, y)
+$$;
+
+-- Cosine similarity: 1 when two vectors point the same way, 0 when unrelated.
+CREATE FUNCTION cosine_similarity(a DOUBLE PRECISION[], b DOUBLE PRECISION[])
+RETURNS DOUBLE PRECISION
+LANGUAGE sql IMMUTABLE
+AS $$
+  SELECT sum(x * y) / (sqrt(sum(x * x)) * sqrt(sum(y * y)))
+  FROM unnest(a, b) AS t(x, y)
+$$;
 `;
 
 export const databaseInit: SqlExample = {
   id: SQL_EXAMPLE_IDS.vectorsDatabaseInit,
-  name: "Lesson 15 database",
-  description: "Creates documents with small vector embeddings.",
-  query: `${migration}\n${seed}`,
+  name: "Vectors database",
+  description:
+    "Eight documents with hand-made 3-dimensional embeddings, plus l2_distance and cosine_similarity functions.",
+  query: [migration, seed, functions].join("\n"),
 };
 
 export const database_inits = [databaseInit] as const;
 
 export const examples: SqlExample[] = [
   {
-    id: SQL_EXAMPLE_IDS.vectorsNearestVector,
-    name: "Nearest vector",
-    description: "This uses arrays to show the same idea: nearest embeddings sort first.",
+    id: SQL_EXAMPLE_IDS.vectorsShowEmbeddings,
+    name: "The embeddings",
+    description:
+      "Each document has three numbers: how much it is about databases, the web, and AI.",
+    database_init: databaseInit,
+    query: `
+-- ::text shows the array the way Postgres writes it.
+SELECT title, embedding::text AS embedding
+FROM documents;
+`,
+  },
+  {
+    id: SQL_EXAMPLE_IDS.vectorsKeywordsMiss,
+    name: "Keywords miss meaning",
+    description:
+      "A user searches for 'speed up my database'. No document contains those words, so a keyword search returns nothing, even though three documents are exactly about that.",
     database_init: databaseInit,
     query: `
 SELECT title
 FROM documents
-ORDER BY
-  power(embedding[1] - 0.85, 2) +
-  power(embedding[2] - 0.15, 2) +
-  power(embedding[3] - 0.20, 2)
-LIMIT 2;
+WHERE title ILIKE '%speed up%'
+   OR body ILIKE '%speed up%';
 `,
   },
   {
     id: SQL_EXAMPLE_IDS.vectorsDistanceScore,
-    name: "Show distance",
+    name: "The question is a vector too",
     description:
-      "The smaller the distance score, the more similar the document is to the query vector.",
+      "The same embedding model turns 'speed up my database' into ARRAY[0.85, 0.10, 0.05]: mostly databases. Distance is Pythagoras in three dimensions: the smaller it is, the closer the meaning.",
     database_init: databaseInit,
     query: `
 SELECT
   title,
-  power(embedding[1] - 0.10, 2) +
-  power(embedding[2] - 0.20, 2) +
-  power(embedding[3] - 0.90, 2) AS distance
+  round(sqrt(
+    power(embedding[1] - 0.85, 2) +
+    power(embedding[2] - 0.10, 2) +
+    power(embedding[3] - 0.05, 2)
+  )::numeric, 3) AS distance
 FROM documents
 ORDER BY distance;
+`,
+  },
+  {
+    id: SQL_EXAMPLE_IDS.vectorsNearestVector,
+    name: "Nearest neighbours",
+    description:
+      "The same math, written once as a function. ORDER BY distance plus LIMIT is the whole of vector search: the k nearest neighbours.",
+    database_init: databaseInit,
+    query: `
+SELECT title
+FROM documents
+ORDER BY l2_distance(embedding, ARRAY[0.85, 0.10, 0.05])
+LIMIT 3;
+`,
+  },
+  {
+    id: SQL_EXAMPLE_IDS.vectorsCosineSimilarity,
+    name: "Cosine similarity",
+    description:
+      "'AI that understands text' becomes ARRAY[0.20, 0.10, 0.95]. Cosine similarity compares the direction of two vectors and ignores their length. Most embedding models return vectors of length 1, so both measures give the same order; cosine is the usual default.",
+    database_init: databaseInit,
+    query: `
+SELECT
+  title,
+  round(l2_distance(embedding, ARRAY[0.20, 0.10, 0.95])::numeric, 3) AS distance,
+  round(cosine_similarity(embedding, ARRAY[0.20, 0.10, 0.95])::numeric, 3) AS similarity
+FROM documents
+ORDER BY similarity DESC;
+`,
+  },
+  {
+    id: SQL_EXAMPLE_IDS.vectorsCutoff,
+    name: "Set a cutoff",
+    description:
+      "Nearest neighbours always returns rows, even when nothing is really close. A WHERE on the distance keeps only good matches.",
+    database_init: databaseInit,
+    query: `
+SELECT title
+FROM documents
+WHERE l2_distance(embedding, ARRAY[0.20, 0.10, 0.95]) < 0.3
+ORDER BY l2_distance(embedding, ARRAY[0.20, 0.10, 0.95]);
+`,
+  },
+  {
+    id: SQL_EXAMPLE_IDS.vectorsMoreLikeThis,
+    name: "More like this",
+    description:
+      "A 'related articles' box: use a stored document's embedding as the question, and skip the document itself.",
+    database_init: databaseInit,
+    query: `
+SELECT other.title
+FROM documents AS source
+JOIN documents AS other ON other.id <> source.id
+WHERE source.title = 'Vector search'
+ORDER BY cosine_similarity(other.embedding, source.embedding) DESC
+LIMIT 3;
 `,
   },
 ];
@@ -64,31 +151,27 @@ export const exercises: SqlExample[] = [
   {
     id: SQL_EXAMPLE_IDS.vectorsExerciseFindSqlVector,
     name: "Exercise 1",
-    description: "Find the closest document to ARRAY[0.95, 0.10, 0.20].",
+    description:
+      "'How do I build a web UI?' has the embedding ARRAY[0.05, 0.90, 0.05]. Return the title of the closest document by l2_distance.",
     database_init: databaseInit,
     query: `
 SELECT title
 FROM documents
-ORDER BY
-  power(embedding[1] - 0.95, 2) +
-  power(embedding[2] - 0.10, 2) +
-  power(embedding[3] - 0.20, 2)
+ORDER BY l2_distance(embedding, ARRAY[0.05, 0.90, 0.05])
 LIMIT 1;
 `,
   },
   {
     id: SQL_EXAMPLE_IDS.vectorsExerciseFindIndexVector,
     name: "Exercise 2",
-    description: "Return the two closest documents to ARRAY[0.70, 0.25, 0.25].",
+    description:
+      "Return the titles of the 3 documents most similar to ARRAY[0.60, 0.00, 0.80] by cosine_similarity, most similar first.",
     database_init: databaseInit,
     query: `
 SELECT title
 FROM documents
-ORDER BY
-  power(embedding[1] - 0.70, 2) +
-  power(embedding[2] - 0.25, 2) +
-  power(embedding[3] - 0.25, 2)
-LIMIT 2;
+ORDER BY cosine_similarity(embedding, ARRAY[0.60, 0.00, 0.80]) DESC
+LIMIT 3;
 `,
   },
 ];

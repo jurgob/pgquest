@@ -1,6 +1,12 @@
 import { examples, exercises } from "../../cli_examples/text-search-basics.sql";
 import { CourseLessonPage, ExampleBlock } from "../sql/course-lesson-page";
-import { Paragraphs } from "../sql/lesson-layout";
+import {
+  LessonLink,
+  LessonSection,
+  Paragraph,
+  Paragraphs,
+  Title2,
+} from "../sql/lesson-layout";
 
 export default function Lesson11() {
   return (
@@ -38,6 +44,19 @@ export default function Lesson11() {
       {examples.map((example) => (
         <ExampleBlock example={example} key={example.id} />
       ))}
+      <LessonSection>
+        <Title2 id="beyond-patterns">Beyond patterns</Title2>
+        <Paragraph>
+          Patterns need the exact characters. For word forms, see{" "}
+          <LessonLink to="/lessons/full-text-search">full-text search</LessonLink>; for
+          typos, <LessonLink to="/lessons/fuzzy-search">fuzzy search</LessonLink>; for
+          meaning, <LessonLink to="/lessons/vectors">vectors</LessonLink>.{" "}
+          <LessonLink to="/lessons/text-search-in-postgres">
+            Text search in Postgres
+          </LessonLink>{" "}
+          compares them all.
+        </Paragraph>
+      </LessonSection>
     </CourseLessonPage>
   );
 }

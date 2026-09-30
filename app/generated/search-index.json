@@ -687,7 +687,13 @@
     "anchor": "text-search-basics.lower-search",
     "heading": "Normalize then search",
     "lessonId": "text-search-basics",
-    "text": "LOWER can make a regular LIKE comparison case-insensitive. Loaded Database: text-search-basics.database-init title Vector search notes Try Yourself Loaded Database: text-search-basics.database-init The database for this lesson is already loaded. Write any query you want and run it directly in your browser."
+    "text": "LOWER can make a regular LIKE comparison case-insensitive. Loaded Database: text-search-basics.database-init title Vector search notes"
+  },
+  {
+    "anchor": "beyond-patterns",
+    "heading": "Beyond patterns",
+    "lessonId": "text-search-basics",
+    "text": "Patterns need the exact characters. For word forms, see full-text search ; for typos, fuzzy search ; for meaning, vectors . Text search in Postgres compares them all. Try Yourself Loaded Database: text-search-basics.database-init The database for this lesson is already loaded. Write any query you want and run it directly in your browser."
   },
   {
     "anchor": "exercises",
@@ -807,31 +813,379 @@
     "anchor": null,
     "heading": null,
     "lessonId": "vectors",
-    "text": "Vectors Draft Vector search stores meaning as numbers and ranks rows by distance. Real apps often use pgvector; this lesson uses arrays to show the core idea."
+    "text": "Vectors and similarity search Draft Keyword search matches characters. Vector search matches meaning. An embedding model reads a text and returns a list of numbers, a vector, chosen so that texts with similar meaning get vectors that are close together. Searching then means: turn the question into a vector too, and return the rows whose vectors are nearest. Real models return hundreds or thousands of numbers that no human can name. Here each document has three hand-made ones, so you can read them: how much it is about databases, the web, and AI. The lesson uses plain PostgreSQL arrays so every step of the math is visible. The pgvector lesson does the same search with a real vector type and index."
   },
   {
-    "anchor": "vectors.nearest-vector",
-    "heading": "Nearest vector",
+    "anchor": "vectors.show-embeddings",
+    "heading": "The embeddings",
     "lessonId": "vectors",
-    "text": "This uses arrays to show the same idea: nearest embeddings sort first. Loaded Database: vectors.database-init title SQL indexes JOIN patterns"
+    "text": "Each document has three numbers: how much it is about databases, the web, and AI. Loaded Database: vectors.database-init title embedding SQL indexes {0.9,0.1,0.1} JOIN patterns {0.85,0.05,0.05} Query tuning {0.8,0.15,0.1} React components {0.05,0.95,0.1} CSS grid layouts {0.05,0.9,0} Neural networks {0.05,0.05,0.95} Chatbots {0.1,0.25,0.9} Vector search {0.6,0.05,0.8}"
+  },
+  {
+    "anchor": "vectors.keywords-miss",
+    "heading": "Keywords miss meaning",
+    "lessonId": "vectors",
+    "text": "A user searches for 'speed up my database'. No document contains those words, so a keyword search returns nothing, even though three documents are exactly about that. Loaded Database: vectors.database-init No rows"
   },
   {
     "anchor": "vectors.distance-score",
-    "heading": "Show distance",
+    "heading": "The question is a vector too",
     "lessonId": "vectors",
-    "text": "The smaller the distance score, the more similar the document is to the query vector. Loaded Database: vectors.database-init title distance Vector search 0.0024999999999999935 JSON documents 0.7300000000000002 JOIN patterns 0.8475000000000001 SQL indexes 1.1400000000000001 Try Yourself Loaded Database: vectors.database-init The database for this lesson is already loaded. Write any query you want and run it directly in your browser."
+    "text": "The same embedding model turns 'speed up my database' into ARRAY[0.85, 0.10, 0.05]: mostly databases. Distance is Pythagoras in three dimensions: the smaller it is, the closer the meaning. Loaded Database: vectors.database-init title distance JOIN patterns 0.050 SQL indexes 0.071 Query tuning 0.087 Vector search 0.792 CSS grid layouts 1.132 Chatbots 1.143 React components 1.168 Neural networks 1.205"
+  },
+  {
+    "anchor": "distance-functions",
+    "heading": "Distance as a function",
+    "lessonId": "vectors",
+    "text": "Writing every dimension by hand stops working at 1,536 dimensions. Two SQL functions do the same math for arrays of any length: Loaded Database: vectors.database-init"
+  },
+  {
+    "anchor": "vectors.nearest-vector",
+    "heading": "Nearest neighbours",
+    "lessonId": "vectors",
+    "text": "The same math, written once as a function. ORDER BY distance plus LIMIT is the whole of vector search: the k nearest neighbours. Loaded Database: vectors.database-init title JOIN patterns SQL indexes Query tuning"
+  },
+  {
+    "anchor": "vectors.cosine-similarity",
+    "heading": "Cosine similarity",
+    "lessonId": "vectors",
+    "text": "'AI that understands text' becomes ARRAY[0.20, 0.10, 0.95]. Cosine similarity compares the direction of two vectors and ignores their length. Most embedding models return vectors of length 1, so both measures give the same order; cosine is the usual default. Loaded Database: vectors.database-init title distance similarity Neural networks 0.158 0.987 Chatbots 0.187 0.982 Vector search 0.430 0.906 Query tuning 1.042 0.337 SQL indexes 1.101 0.321 JOIN patterns 1.111 0.267 React components 1.211 0.214 CSS grid layouts 1.251 0.114"
+  },
+  {
+    "anchor": "vectors.cutoff",
+    "heading": "Set a cutoff",
+    "lessonId": "vectors",
+    "text": "Nearest neighbours always returns rows, even when nothing is really close. A WHERE on the distance keeps only good matches. Loaded Database: vectors.database-init title Neural networks Chatbots"
+  },
+  {
+    "anchor": "vectors.more-like-this",
+    "heading": "More like this",
+    "lessonId": "vectors",
+    "text": "A 'related articles' box: use a stored document's embedding as the question, and skip the document itself. Loaded Database: vectors.database-init title Chatbots Neural networks Query tuning"
+  },
+  {
+    "anchor": "why-pgvector",
+    "heading": "Why arrays are not enough",
+    "lessonId": "vectors",
+    "text": "Look at the plans above: every search is a Seq Scan followed by a Sort . Postgres computes the distance for every row, and nothing can index an expression like l2_distance(embedding, ...) . Fine for eight rows, slow for a million. Arrays also don't check that every embedding has the same number of dimensions. The pgvector lesson fixes both, with the same documents and the same questions. To see how vectors compare with keyword, fuzzy, and full-text search, read Text search in Postgres . Try Yourself Loaded Database: vectors.database-init The database for this lesson is already loaded. Write any query you want and run it directly in your browser."
   },
   {
     "anchor": "exercises",
     "heading": "Exercises",
     "lessonId": "vectors",
-    "text": "0 OF 2 DONE 1. Find the closest document to ARRAY[0.95, 0.10, 0.20]. 2. Return the two closest documents to ARRAY[0.70, 0.25, 0.25]."
+    "text": "0 OF 2 DONE 1. 'How do I build a web UI?' has the embedding ARRAY[0.05, 0.90, 0.05]. Return the title of the closest document by l2_distance. 2. Return the titles of the 3 documents most similar to ARRAY[0.60, 0.00, 0.80] by cosine_similarity, most similar first."
   },
   {
     "anchor": "what-we-learned",
     "heading": "What We Learned",
     "lessonId": "vectors",
-    "text": "Embedding is a numeric representation of meaning. Distance scores how far two vectors are from each other. Similarity search orders rows by nearest vector distance. pgvector is the common PostgreSQL extension for vector columns."
+    "text": "Embedding a list of numbers produced by a model, so that texts with similar meaning get nearby vectors. L2 distance the straight-line distance between two vectors: smaller is closer. Cosine similarity compares the direction of two vectors, ignoring their length: 1 is identical. Nearest neighbours ORDER BY distance LIMIT k : the whole of vector search. Cutoff nearest neighbours always return rows; a WHERE on the distance keeps only good ones. pgvector the PostgreSQL extension that makes all of this fast."
+  },
+  {
+    "anchor": null,
+    "heading": null,
+    "lessonId": "pgvector",
+    "text": "pgvector Draft The vectors lesson computed distances by hand, with arrays. It worked, but every search read and sorted every row. pgvector is the PostgreSQL extension that turns this into a real feature: a vector column type, distance operators, and indexes that find the nearest rows without reading them all. Same eight documents, same hand-made embeddings ([databases, web, AI]), same questions. Only the column type changes."
+  },
+  {
+    "anchor": "the-documents",
+    "heading": "The documents",
+    "lessonId": "pgvector",
+    "text": "Loaded Database: pgvector.database-init"
+  },
+  {
+    "anchor": "pgvector.nearest",
+    "heading": "Same question, one operator",
+    "lessonId": "pgvector",
+    "text": "'speed up my database' is '[0.85, 0.10, 0.05]'. <-> is the L2 distance: the same l2_distance the vectors lesson wrote by hand, and the same three results. Loaded Database: pgvector.database-init title distance JOIN patterns 0.050 SQL indexes 0.071 Query tuning 0.087"
+  },
+  {
+    "anchor": "pgvector.operators",
+    "heading": "The distance operators",
+    "lessonId": "pgvector",
+    "text": "'AI that understands text' is '[0.20, 0.10, 0.95]'. <=> is cosine distance (1 - cosine similarity). <#> is the negative inner product, negative so that ascending order still means closest first. All three: smaller is closer. Loaded Database: pgvector.database-init title l2 cosine inner_product Neural networks 0.158 0.013 -0.917 Chatbots 0.187 0.018 -0.900 Vector search 0.430 0.094 -0.885 Query tuning 1.042 0.663 -0.270 SQL indexes 1.101 0.679 -0.285 JOIN patterns 1.111 0.733 -0.222 React components 1.211 0.786 -0.200 CSS grid layouts 1.251 0.886 -0.100"
+  },
+  {
+    "anchor": "which-operator",
+    "heading": "Which operator?",
+    "lessonId": "pgvector",
+    "text": "Use the one your embedding model was trained for; its documentation says. Most text models, including OpenAI's, return vectors of length 1, and then all three give the same order. <=> is the safe default. With length-1 vectors, <#> gives the same order and skips a division."
+  },
+  {
+    "anchor": "pgvector.helpers",
+    "heading": "A real type",
+    "lessonId": "pgvector",
+    "text": "vector(3) is checked: inserting '[1, 2]' fails with 'expected 3 dimensions, not 2'. pgvector also ships helper functions, and casts to and from arrays. Loaded Database: pgvector.database-init title dims length as_array SQL indexes 3 0.911 {0.9,0.1,0.1} JOIN patterns 3 0.853 {0.85,0.05,0.05} Query tuning 3 0.820 {0.8,0.15,0.1}"
+  },
+  {
+    "anchor": "pgvector.more-like-this",
+    "heading": "More like this",
+    "lessonId": "pgvector",
+    "text": "Related documents, with the stored embedding as the question. It's still SQL: joins and WHERE work as usual. Loaded Database: pgvector.database-init title Chatbots Neural networks Query tuning"
+  },
+  {
+    "anchor": "an-index",
+    "heading": "An index for nearest neighbours",
+    "lessonId": "pgvector",
+    "text": "All the plans so far are Seq Scan + Sort : fine for eight rows. A B-tree can't help: \"closest to this point in 1,536 dimensions\" has no sort order. pgvector adds two index types: HNSW (better recall and speed, slower to build) and IVFFlat (fast to build, needs data before you create it). Start with HNSW. Loaded Database: pgvector.indexed-database-init"
+  },
+  {
+    "anchor": "pgvector.index-scan",
+    "heading": "An HNSW index",
+    "lessonId": "pgvector",
+    "text": "5,008 documents and an HNSW index. The plan is an Index Scan whose Order By is the distance: Postgres reads the nearest rows straight from the index, instead of sorting all of them. Loaded Database: pgvector.indexed-database-init title Sqlite networks note 4692 Svelte joins note 4337 Sqlite chatbots note 3982 Svelte tuning note 3627 Sqlite search note 3272"
+  },
+  {
+    "anchor": "approximate",
+    "heading": "Approximate, on purpose",
+    "lessonId": "pgvector",
+    "text": "HNSW is an approximate index: to be fast, it can miss a true neighbour now and then. SET hnsw.ef_search = 100 (default 40) searches more of the graph: better recall, slower queries. With a WHERE filter, the index returns the nearest rows first and the filter runs after, so a very selective filter can return fewer rows than the LIMIT ; recent pgvector versions add hnsw.iterative_scan for that."
+  },
+  {
+    "anchor": "in-a-real-app",
+    "heading": "In a real app",
+    "lessonId": "pgvector",
+    "text": "The only differences are the number of dimensions and where the numbers come from: your app sends the text to an embedding model and stores the result. Vector search finds meaning, but it misses exact words, product codes and names. Full-text search and fuzzy search are better at those, and Text search in Postgres combines them. Try Yourself Loaded Database: pgvector.database-init The database for this lesson is already loaded. Write any query you want and run it directly in your browser."
+  },
+  {
+    "anchor": "exercises",
+    "heading": "Exercises",
+    "lessonId": "pgvector",
+    "text": "0 OF 2 DONE 1. 'How do I build a web UI?' is '[0.05, 0.90, 0.05]'. Return the title of the closest document by L2 distance (<->). 2. Return the titles of the 2 documents closest to 'Neural networks' by cosine distance (<=>), without 'Neural networks' itself."
+  },
+  {
+    "anchor": "what-we-learned",
+    "heading": "What We Learned",
+    "lessonId": "pgvector",
+    "text": "vector(n) a column type for embeddings, with a fixed number of dimensions. <-> L2 (Euclidean) distance. <=> cosine distance: 1 - cosine similarity. The usual choice for text. <#> negative inner product: fastest, for vectors of length 1. HNSW index approximate nearest-neighbour search: an Index Scan ordered by distance instead of a full sort."
+  },
+  {
+    "anchor": null,
+    "heading": null,
+    "lessonId": "full-text-search",
+    "text": "Full-text search Draft LIKE and ILIKE match characters: '%indexing%' never finds \"Indexes\". Full-text search matches words. It reduces text to lexemes, so \"indexing\", \"indexes\" and \"index\" are the same word, understands search-box syntax, ranks the results, and has an index. It is built into PostgreSQL: no extension needed. Same eight documents as the vectors lesson , without the embeddings."
+  },
+  {
+    "anchor": "the-documents",
+    "heading": "The documents",
+    "lessonId": "full-text-search",
+    "text": "Loaded Database: full-text-search.database-init"
+  },
+  {
+    "anchor": "full-text-search.lexemes",
+    "heading": "Text becomes lexemes",
+    "lessonId": "full-text-search",
+    "text": "to_tsvector splits text into words, drops stop words like 'the' and 'without', and reduces each word to its stem: 'Indexes' becomes 'index', 'reading' becomes 'read'. The numbers are word positions. Loaded Database: full-text-search.database-init title lexemes SQL indexes 'find':6 'help':4 'index':2,3 'postgresql':5 'read':9 'row':7 'sql':1 'tabl':12 'whole':11 'without':8 JOIN patterns 'combin':4 'join':1,3 'one':10 'pattern':2 'relat':7 'result':11 'row':5 'tabl':8 Query tuning 'better':13 'faster':6 'get':5 'index':10 'plan':14 'queri':1,4 'right':9 'slow':3 'tune':2"
+  },
+  {
+    "anchor": "full-text-search.match",
+    "heading": "Match with @@",
+    "lessonId": "full-text-search",
+    "text": "The query goes through the same stemming, so 'indexing' matches 'Indexes' and 'index'. ILIKE '%indexing%' would find nothing. Loaded Database: full-text-search.database-init title SQL indexes Query tuning"
+  },
+  {
+    "anchor": "full-text-search.websearch",
+    "heading": "Search like a search box",
+    "lessonId": "full-text-search",
+    "text": "websearch_to_tsquery understands what users type in search boxes: \"quoted phrases\", OR, and -word to exclude. Here: documents about finding, but not the PostgreSQL one. Loaded Database: full-text-search.database-init title Vector search"
+  },
+  {
+    "anchor": "full-text-search.rank",
+    "heading": "Rank the results",
+    "lessonId": "full-text-search",
+    "text": "ts_rank scores how well each row matches. With title words weighted A and body words B, a match in the title counts more. Loaded Database: full-text-search.database-init title rank Vector search 0.426 SQL indexes 0.122"
+  },
+  {
+    "anchor": "full-text-search.headline",
+    "heading": "Highlight the matches",
+    "lessonId": "full-text-search",
+    "text": "ts_headline returns the text with matching words wrapped in <b> tags, ready for a results page. Loaded Database: full-text-search.database-init title snippet SQL indexes Indexes help PostgreSQL find <b>rows</b> without reading the whole table. JOIN patterns Joins combine <b>rows</b> from related tables into one result."
+  },
+  {
+    "anchor": "a-search-column",
+    "heading": "A search column and an index",
+    "lessonId": "full-text-search",
+    "text": "The examples above call to_tsvector on every row, for every search. In a real table, store the tsvector in a generated column, and index it: Loaded Database: full-text-search.indexed-database-init"
+  },
+  {
+    "anchor": "full-text-search.index-scan",
+    "heading": "Store it and index it",
+    "lessonId": "full-text-search",
+    "text": "5,008 documents, a stored search column, and a GIN index. The plan is a Bitmap Index Scan: the index returns the 62 rows containing both lexemes, and only those are read. Loaded Database: full-text-search.indexed-database-init title Redis chatbots note 63 Redis chatbots note 143 Redis chatbots note 223 Redis chatbots note 303 Redis chatbots note 383 Redis chatbots note 463 Redis chatbots note 543 Redis chatbots note 623 Redis chatbots note 703 Redis chatbots note 783 Redis chatbots note 863 Redis chatbots note 943 Redis chatbots note 1023 Redis chatbots note 1103 Redis chatbots note 1183 Redis chatbots note 1263 Redis chatbots note 1343 Redis chatbots note 1423 Redis chatbots note 1503 Redis chatbots note 1583 Redis chatbots note 1663 Redis chatbots note 1743 Redis chatbots note 1823 Redis chatbots note 1903 Redis chatbots note 1983 Redis chatbots note 2063 Redis chatbots note 2143 Redis chatbots note 2223 Redis chatbots note 2303 Redis chatbots note 2383 Redis chatbots note 2463 Redis chatbots note 2543 Redis chatbots note 2623 Redis chatbots note 2703 Redis chatbots note 2783 Redis chatbots note 2863 Redis chatbots note 2943 Redis chatbots note 3023 Redis chatbots note 3103 Redis chatbots note 3183 Redis chatbots note 3263 Redis chatbots note 3343 Redis chatbots note 3423 Redis chatbots note 3503 Redis chatbots note 3583 Redis chatbots note 3663 Redis chatbots note 3743 Redis chatbots note 3823 Redis chatbots note 3903 Redis chatbots note 3983 Redis chatbots note 4063 Redis chatbots note 4143 Redis chatbots note 4223 Redis chatbots note 4303 Redis chatbots note 4383 Redis chatbots note 4463 Redis chatbots note 4543 Redis chatbots note 4623 Redis chatbots note 4703 Redis chatbots note 4783 Redis chatbots note 4863 Redis chatbots note 4943"
+  },
+  {
+    "anchor": "full-text-search.typo",
+    "heading": "What it can't do",
+    "lessonId": "full-text-search",
+    "text": "A typo, 'postgress', becomes the lexeme 'postgress', which no document contains. Full-text search matches words, not spellings or meanings. Loaded Database: full-text-search.database-init No rows"
+  },
+  {
+    "anchor": "limits",
+    "heading": "Limits",
+    "lessonId": "full-text-search",
+    "text": "Full-text search knows words and their forms, nothing more. It doesn't forgive typos: fuzzy search does. It doesn't know that \"speed up\" and \"faster\" mean the same thing: vector search does. The language matters too: 'english' stems English words; Postgres ships configurations for about 30 languages, and 'simple' for no stemming at all. Text search in Postgres compares all the approaches and combines full-text with vector search. Try Yourself Loaded Database: full-text-search.database-init The database for this lesson is already loaded. Write any query you want and run it directly in your browser."
+  },
+  {
+    "anchor": "exercises",
+    "heading": "Exercises",
+    "lessonId": "full-text-search",
+    "text": "0 OF 2 DONE 1. Return the titles of the documents whose title or body matches the plain query 'table', ordered by title. 2. Use websearch_to_tsquery to find the documents that mention patterns but not networks. Return their titles."
+  },
+  {
+    "anchor": "what-we-learned",
+    "heading": "What We Learned",
+    "lessonId": "full-text-search",
+    "text": "tsvector a document as a sorted list of normalized words (lexemes). tsquery the search, built with plainto_tsquery or websearch_to_tsquery , matched with @@ . ts_rank scores matches; setweight makes title words count more. ts_headline highlights the matching words in a snippet. GIN index an inverted index from each lexeme to the rows that contain it."
+  },
+  {
+    "anchor": null,
+    "heading": null,
+    "lessonId": "fuzzy-search",
+    "text": "Fuzzy search with pg_trgm Draft Users make typos. ILIKE and full-text search both need the right spelling: \"postgress\" finds nothing. The pg_trgm extension compares strings by how many 3-letter chunks, trigrams, they share, so a word with a letter missing or swapped still scores close to the original. Same eight documents as the vectors lesson , without the embeddings."
+  },
+  {
+    "anchor": "the-documents",
+    "heading": "The documents",
+    "lessonId": "fuzzy-search",
+    "text": "Loaded Database: fuzzy-search.database-init"
+  },
+  {
+    "anchor": "fuzzy-search.show-trgm",
+    "heading": "Trigrams",
+    "lessonId": "fuzzy-search",
+    "text": "pg_trgm lowercases a string, pads each word with spaces, and cuts it into every 3-letter chunk. Loaded Database: fuzzy-search.database-init index typo {\" i\",\" in\",dex,\"ex \",ind,nde} {\" i\",\" in\",\"dx \",ind,ndx}"
+  },
+  {
+    "anchor": "fuzzy-search.similarity",
+    "heading": "Similarity",
+    "lessonId": "fuzzy-search",
+    "text": "similarity() is the share of trigrams two strings have in common: 1 is identical, 0 is nothing shared. A search with two typos still finds the right document. Loaded Database: fuzzy-search.database-init title score Neural networks 0.400 Query tuning 0.038 JOIN patterns 0.000"
+  },
+  {
+    "anchor": "fuzzy-search.percent",
+    "heading": "The % operator",
+    "lessonId": "fuzzy-search",
+    "text": "title % 'reakt componets' is true when the similarity is above pg_trgm.similarity_threshold, 0.3 by default. Use it in WHERE, and an index can help. Loaded Database: fuzzy-search.database-init title score React components 0.500"
+  },
+  {
+    "anchor": "fuzzy-search.word-similarity",
+    "heading": "A word inside longer text",
+    "lessonId": "fuzzy-search",
+    "text": "similarity() compares whole strings, so one word against a sentence scores low. word_similarity() finds the best matching part of the text instead: 'postgress' is close to 'PostgreSQL'. Loaded Database: fuzzy-search.database-init title whole best_word SQL indexes 0.127 0.800 CSS grid layouts 0.057 0.300 Query tuning 0.014 0.100"
+  },
+  {
+    "anchor": "fuzzy-search.did-you-mean",
+    "heading": "Did you mean",
+    "lessonId": "fuzzy-search",
+    "text": "<-> is the trigram distance, 1 - similarity. ORDER BY it with LIMIT 1 for a 'did you mean' suggestion. Loaded Database: fuzzy-search.database-init did_you_mean CSS grid layouts"
+  },
+  {
+    "anchor": "trigram-indexes",
+    "heading": "Trigram indexes",
+    "lessonId": "fuzzy-search",
+    "text": "Without an index, every function above scores every row. pg_trgm comes with two operator classes. The slow queries lesson uses the GIN one to fix a slow ILIKE search. Loaded Database: fuzzy-search.indexed-database-init"
+  },
+  {
+    "anchor": "fuzzy-search.ilike-index",
+    "heading": "An index for ILIKE",
+    "lessonId": "fuzzy-search",
+    "text": "A B-tree can't answer ILIKE '%...%': the match can start anywhere. A trigram index can: it finds the rows containing every trigram of the pattern. Both trigram indexes support ILIKE; here the planner picks the GiST one. Loaded Database: fuzzy-search.indexed-database-init title Mysql search note 4711"
+  },
+  {
+    "anchor": "fuzzy-search.gist-order",
+    "heading": "An index for nearest matches",
+    "lessonId": "fuzzy-search",
+    "text": "A GiST trigram index returns rows already ordered by <-> distance, so a typo-tolerant autocomplete reads a handful of rows instead of scoring all 5,008. Loaded Database: fuzzy-search.indexed-database-init title Redis chatbots note 4223 Redis chatbots note 463 Redis chatbots note 4703"
+  },
+  {
+    "anchor": "when-to-use-it",
+    "heading": "When to use it",
+    "lessonId": "fuzzy-search",
+    "text": "Trigrams are good at short strings where spelling matters: names, titles, product names, tags, autocomplete, \"did you mean\". They know nothing about words or meaning: \"running\" and \"ran\" share few trigrams, which full-text search handles, and \"car\" and \"vehicle\" share none, which vector search handles. Text search in Postgres compares all the approaches side by side. Try Yourself Loaded Database: fuzzy-search.database-init The database for this lesson is already loaded. Write any query you want and run it directly in your browser."
+  },
+  {
+    "anchor": "exercises",
+    "heading": "Exercises",
+    "lessonId": "fuzzy-search",
+    "text": "0 OF 2 DONE 1. A user typed 'quary tunning'. Return the title of the document with the highest similarity() to it. 2. A user typed 'naturl'. Return the titles of the documents whose body has a word with word_similarity() above 0.5."
+  },
+  {
+    "anchor": "what-we-learned",
+    "heading": "What We Learned",
+    "lessonId": "fuzzy-search",
+    "text": "pg_trgm compares strings by the 3-letter chunks they share. similarity() and % a 0-to-1 score for two whole strings, and a threshold test on it. word_similarity() and <% the best match for a word anywhere inside a longer text. <-> trigram distance, for ORDER BY ... LIMIT \"did you mean\" lookups. gin_trgm_ops, gist_trgm_ops trigram indexes: GIN for % and ILIKE , GiST also for ordering by distance."
+  },
+  {
+    "anchor": null,
+    "heading": null,
+    "lessonId": "text-search-in-postgres",
+    "text": "Text search in Postgres, without Elasticsearch or Algolia Draft When an app needs search, many teams add a search engine: Elasticsearch or OpenSearch (with Kibana to look at it), Algolia, Typesense, Meilisearch. That is a second datastore. Every write has to be copied to it, by a queue, a sync job or change data capture, and results are stale until the copy lands. It has its own bill, its own backups, its own access rules to keep in step with the database's, and it can't join search results with the rest of your data. PostgreSQL can often do the job itself. This lesson puts every approach from the previous lessons on one table, with the same eight documents, so you can compare them side by side. It repeats a little of each lesson on purpose; follow the links for the details."
+  },
+  {
+    "anchor": "one-table",
+    "heading": "One table, every kind of search",
+    "lessonId": "text-search-in-postgres",
+    "text": "A trigram index for ILIKE and typos, a tsvector column for words, an embedding for meaning. Postgres keeps all three up to date in the same transaction as the row itself. Loaded Database: text-search-in-postgres.database-init"
+  },
+  {
+    "anchor": "text-search-in-postgres.ilike",
+    "heading": "1. Pattern matching: ILIKE",
+    "lessonId": "text-search-in-postgres",
+    "text": "Characters, anywhere in the text. Simple and exact: 'index' also matches 'Indexes'. No ranking, no typos, no word forms beyond the substring. Loaded Database: text-search-in-postgres.database-init title SQL indexes Query tuning Details: Text search basics ."
+  },
+  {
+    "anchor": "text-search-in-postgres.fuzzy",
+    "heading": "2. Fuzzy matching: pg_trgm",
+    "lessonId": "text-search-in-postgres",
+    "text": "Similar spellings. 'sql indxes' has a typo and still finds the document, with a score to sort by. Loaded Database: text-search-in-postgres.database-init title score SQL indexes 0.643 Details: Fuzzy search with pg_trgm ."
+  },
+  {
+    "anchor": "text-search-in-postgres.full-text",
+    "heading": "3. Full-text search: tsvector",
+    "lessonId": "text-search-in-postgres",
+    "text": "Words, not characters. 'indexing tables' matches 'Indexes' and 'table' through stemming, and ts_rank orders the results. Loaded Database: text-search-in-postgres.database-init title rank SQL indexes 0.406 Details: Full-text search ."
+  },
+  {
+    "anchor": "text-search-in-postgres.semantic",
+    "heading": "4. Semantic search: pgvector",
+    "lessonId": "text-search-in-postgres",
+    "text": "Meaning, not words. 'speed up my database' shares no word with any document, but its embedding, '[0.85, 0.10, 0.05]', is close to the three database ones. Loaded Database: text-search-in-postgres.database-init title distance SQL indexes 0.001 JOIN patterns 0.002 Query tuning 0.004 Details: Vectors for the math, pgvector for the type and index."
+  },
+  {
+    "anchor": "text-search-in-postgres.hybrid",
+    "heading": "5. Hybrid: keywords + meaning",
+    "lessonId": "text-search-in-postgres",
+    "text": "The search 'find meaning', embedded as '[0.60, 0.05, 0.80]'. Rank the rows once by full-text and once by vector distance, then merge the two lists with reciprocal rank fusion: each list adds 1 / (60 + position). Rows near the top of both lists win. Loaded Database: text-search-in-postgres.database-init title keyword_position semantic_position score Vector search 1 1 0.0328 SQL indexes 2 5 0.0315 Chatbots 2 0.0161 Neural networks 3 0.0159 Query tuning 4 0.0156 Full-text search is precise on exact words and names; vector search catches meaning when the words differ. Hybrid search runs both and merges the rankings. Reciprocal rank fusion only uses positions, so the two scores never need to be on the same scale. The 60 is the usual constant: it keeps one list's top result from drowning out the other list."
+  },
+  {
+    "anchor": "where-embeddings-come-from",
+    "heading": "Where embeddings come from",
+    "lessonId": "text-search-in-postgres",
+    "text": "Every approach except vectors works on the text alone. Vectors need a model to compute the embedding of each document, and of each search. Usually the app does it: call the model, then INSERT the vector, as shown in the pgvector lesson . Timescale's pgai took the other route: a vectorizer, declared in SQL, that watches a table and keeps an embeddings table in sync by calling the model for every new or changed row. It can't run here, since it calls a model API from the database, and the project has not been maintained since February 2026. The idea is still worth knowing: treat embeddings like an index that the system keeps up to date."
+  },
+  {
+    "anchor": "comparison",
+    "heading": "Comparison",
+    "lessonId": "text-search-in-postgres",
+    "text": "Approach Finds Typos Meaning Ranking Index Needs Lesson ILIKE Substrings No No No Trigram GIN Built in Text search basics pg_trgm Similar spellings Yes No similarity() GIN, GiST pg_trgm (contrib) Fuzzy search Full-text Words and their forms No No ts_rank GIN Built in Full-text search pgvector Similar meaning Mostly Yes Distance HNSW, IVFFlat pgvector + an embedding model Vectors , pgvector Hybrid Words and meaning Mostly Yes Rank fusion GIN + HNSW Both of the above Above They are not exclusive: one table can have all of them, as this one does. Start with the simplest one that answers what your users type, and add the next when search results show you why."
+  },
+  {
+    "anchor": "when-postgres-is-not-enough",
+    "heading": "When Postgres is not enough",
+    "lessonId": "text-search-in-postgres",
+    "text": "A dedicated search engine still earns its place when search is the product: hundreds of millions of documents with heavy query traffic that you want off the main database, faceted navigation with live counts on every filter, per-language analyzers and synonyms tuned by a search team, log analytics and dashboards (what Kibana is really for), or a hosted instant-search UI you don't want to build. Below that, which is most apps, Postgres search is one less system to run, and it is always consistent with your data. Try Yourself Loaded Database: text-search-in-postgres.database-init The database for this lesson is already loaded. Write any query you want and run it directly in your browser."
+  },
+  {
+    "anchor": "exercises",
+    "heading": "Exercises",
+    "lessonId": "text-search-in-postgres",
+    "text": "0 OF 2 DONE 1. Use the search column to find the documents matching the web search 'language models'. Return their titles. 2. 'make a nice web page' is '[0.10, 0.90, 0.10]'. Return the titles of the 2 closest documents by cosine distance (<=>)."
+  },
+  {
+    "anchor": "what-we-learned",
+    "heading": "What We Learned",
+    "lessonId": "text-search-in-postgres",
+    "text": "One database search lives next to the data: no sync pipeline, no stale index, the same transactions and permissions. Pick by what users type exact fragments: ILIKE. Typos: pg_trgm. Words: full-text. Meaning: pgvector. Hybrid search full-text and vector rankings merged with reciprocal rank fusion, in one query. Embeddings come from outside a model computes them; your app (or a tool like pgai) stores them in a vector column."
   },
   {
     "anchor": null,
