@@ -71,6 +71,22 @@ import {
   exercises as exampleSixteenExercises,
 } from "../../cli_examples/vectors.sql";
 import {
+  database_inits as examplePgvectorDatabaseInits,
+  exercises as examplePgvectorExercises,
+} from "../../cli_examples/pgvector.sql";
+import {
+  database_inits as exampleFullTextSearchDatabaseInits,
+  exercises as exampleFullTextSearchExercises,
+} from "../../cli_examples/full-text-search.sql";
+import {
+  database_inits as exampleFuzzySearchDatabaseInits,
+  exercises as exampleFuzzySearchExercises,
+} from "../../cli_examples/fuzzy-search.sql";
+import {
+  database_inits as exampleTextSearchInPostgresDatabaseInits,
+  exercises as exampleTextSearchInPostgresExercises,
+} from "../../cli_examples/text-search-in-postgres.sql";
+import {
   database_inits as exampleSeventeenDatabaseInits,
   exercises as exampleSeventeenExercises,
 } from "../../cli_examples/concurrency-reservation-system.sql";
@@ -172,6 +188,22 @@ const lessonSqlById = {
   vectors: {
     databaseInits: exampleSixteenDatabaseInits,
     exercises: exampleSixteenExercises,
+  },
+  pgvector: {
+    databaseInits: examplePgvectorDatabaseInits,
+    exercises: examplePgvectorExercises,
+  },
+  "full-text-search": {
+    databaseInits: exampleFullTextSearchDatabaseInits,
+    exercises: exampleFullTextSearchExercises,
+  },
+  "fuzzy-search": {
+    databaseInits: exampleFuzzySearchDatabaseInits,
+    exercises: exampleFuzzySearchExercises,
+  },
+  "text-search-in-postgres": {
+    databaseInits: exampleTextSearchInPostgresDatabaseInits,
+    exercises: exampleTextSearchInPostgresExercises,
   },
   "concurrency-reservation-system": {
     databaseInits: exampleSeventeenDatabaseInits,

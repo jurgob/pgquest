@@ -1,9 +1,10 @@
 import { pg_stat_statements } from "@electric-sql/pglite/contrib/pg_stat_statements";
 import { pg_trgm } from "@electric-sql/pglite/contrib/pg_trgm";
+import { vector } from "@electric-sql/pglite-pgvector";
 
 // PGlite extensions a lesson can use. A database only loads the ones its SQL creates
 // (see pgliteExtensionsFor), so lessons that don't use them never download them.
-const availableExtensions = { pg_stat_statements, pg_trgm };
+const availableExtensions = { pg_stat_statements, pg_trgm, vector };
 
 export type PgliteExtensionName = keyof typeof availableExtensions;
 
