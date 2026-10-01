@@ -96,11 +96,13 @@ export async function createSqlDatabase(sqlLoad: string, signal?: AbortSignal) {
 // starts from a gzipped snapshot of the result (~1s, ~5 MB each).
 const setupSnapshots = new Map<string, Promise<File | Blob>>();
 
-// A snapshot only holds what is on disk. SET and temporary tables live in the
-// session that ran the setup, and pg_stat_statements counts in shared memory, so
-// setups that use them are always run from scratch.
-const sessionStatePattern =
-  /^\s*SET\s|\bTEMP(?:ORARY)?\s+TABLE\b|\bpg_stat_statements\b/im;
+// Setups that are always run from scratch:
+// - A snapshot only holds what is on disk. SET and temporary tables live in the
+//   session that ran the setup, and pg_stat_statements counts in shared memory.
+// - A snapshot freezes time. A setup that stores the current time (a seat hold
+//   that expires after 30s) would look older and older to later queries.
+const uncacheableSetupPattern =
+  /^\s*SET\s|\bTEMP(?:ORARY)?\s+TABLE\b|\bpg_stat_statements\b|\b(?:now|statement_timestamp|clock_timestamp|transaction_timestamp)\s*\(|\b(?:current_timestamp|current_date|current_time|localtimestamp|localtime)\b/im;
 
 async function createServerSqlDatabase(sqlLoad: string) {
   const { PGlite } = await import("@electric-sql/pglite");
@@ -117,7 +119,7 @@ async function createServerSqlDatabase(sqlLoad: string) {
     }
   };
 
-  if (sessionStatePattern.test(sqlLoad)) {
+  if (uncacheableSetupPattern.test(sqlLoad)) {
     return runSetup();
   }
 
