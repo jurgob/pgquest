@@ -18,13 +18,367 @@ import {
   LessonSection,
   Paragraph,
   Paragraphs,
-  Section,
   Title2,
 } from "../sql/lesson-layout";
 import { SqlCodeViewer } from "../sql/sql-editor";
 
 function Example({ id }: { id: SqlExampleId }) {
   return <ExampleBlock example={getSqlExample(examples, id)} />;
+}
+
+type ApproachSummary = {
+  name: string;
+  summary: React.ReactNode;
+  pros: readonly React.ReactNode[];
+  cons: readonly React.ReactNode[];
+  // What a search returns on this lesson's eight documents.
+  example: { search: string; result: React.ReactNode; verb?: "search" | "insert" };
+  warning?: React.ReactNode;
+  // How searches match a column holding the words in matchWords.
+  matches?: readonly Match[];
+  lesson?: { href: string; label: string };
+};
+
+type Match = { search: string; result: string; note?: string };
+
+const matchWords = "dog, Dog, dogs, hotdog, doggo, doing, puppy, canine";
+
+const vectorMatches: readonly Match[] = [
+  { search: "puppy", result: "puppy, dog, doggo, canine", note: "all close in meaning" },
+  { search: "canine", result: "canine, dog, puppy", note: "no shared letters needed" },
+  {
+    search: "dgo",
+    result: "unpredictable",
+    note: "a typo is a different text, so a different vector",
+  },
+];
+
+function MatchList({ matches }: { matches: readonly Match[] }) {
+  return (
+    <ul className="mt-2 flex flex-col gap-0.5 text-sm leading-6 text-zinc-800">
+      {matches.map((match) => (
+        <li key={match.search}>
+          <code className="font-mono font-semibold text-zinc-950">{match.search}</code> →{" "}
+          {match.result}
+          {match.note ? <span className="text-zinc-500"> ({match.note})</span> : null}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+const textApproaches: readonly ApproachSummary[] = [
+  {
+    name: "ILIKE",
+    summary: "Finds a piece of text anywhere in a column.",
+    example: { search: "index", result: <>SQL indexes, Query tuning.</> },
+    warning: (
+      <>Search &quot;indexing&quot;: nothing. No document contains that exact text.</>
+    ),
+    matches: [
+      { search: "dog", result: "dog, Dog", note: "case is ignored; LIKE gives only dog" },
+      { search: "%dog%", result: "dog, Dog, dogs, hotdog, doggo" },
+      { search: "do%g", result: "dog, Dog, doing", note: "% is any text, even 'in'" },
+      { search: "dog_", result: "dogs", note: "_ is exactly one character" },
+      { search: "%dgo%", result: "nothing", note: "no typos" },
+    ],
+    pros: [
+      "Built in, nothing to set up.",
+      "Exact and predictable.",
+      <>
+        With a trigram index, fast even for <InlineCode>&apos;%...%&apos;</InlineCode>.
+      </>,
+    ],
+    cons: [
+      "No ranking.",
+      "No typos, no word forms: 'indexing' doesn't find 'Indexes'.",
+      "Without an index, it reads every row.",
+    ],
+    lesson: { href: "/lessons/text-search-basics", label: "Text search basics" },
+  },
+  {
+    name: "Fuzzy search (pg_trgm)",
+    summary: "Compares strings by the 3-letter chunks they share.",
+    example: {
+      search: "nueral netwrks",
+      result: <>Neural networks, despite two typos.</>,
+    },
+    warning: (
+      <>
+        Search &quot;speed up my database&quot;: nothing. No title is spelled like it, and
+        trigrams don&apos;t know what it means.
+      </>
+    ),
+    matches: [
+      { search: "dogz", result: "dog, Dog, dogs, doggo", note: "a typo still matches" },
+      { search: "pupy", result: "puppy" },
+      { search: "dgo", result: "nothing", note: "too short: too few chunks in common" },
+      { search: "puppy", result: "puppy", note: "not dog: no meaning" },
+    ],
+    pros: [
+      "Tolerates typos.",
+      "Gives a score to sort by.",
+      "Great for short text: names, titles, autocomplete.",
+    ],
+    cons: [
+      "Knows nothing about words or meaning.",
+      "Weak on long text and on very short queries.",
+      "Trigram indexes are large.",
+    ],
+    lesson: { href: "/lessons/fuzzy-search", label: "Fuzzy search with pg_trgm" },
+  },
+  {
+    name: "Full-text search",
+    summary: "Matches words and their forms: 'indexing' finds 'Indexes'.",
+    example: {
+      search: "indexing tables",
+      result: (
+        <>
+          SQL indexes: &quot;indexing&quot; and &quot;tables&quot; become the words index
+          and tabl.
+        </>
+      ),
+    },
+    warning: (
+      <>
+        Search &quot;postgress&quot; (a typo) or &quot;speed up&quot;: nothing, though
+        Query tuning is all about getting faster.
+      </>
+    ),
+    matches: [
+      { search: "dogs", result: "dog, Dog, dogs", note: "same word, any form or case" },
+      { search: "dog:*", result: "dog, Dog, dogs, doggo", note: "prefix search" },
+      { search: "hot dog", result: "nothing", note: "hotdog is a different word" },
+      { search: "doing", result: "nothing", note: "a stop word, ignored like 'the'" },
+      { search: "canine", result: "canine", note: "no synonyms" },
+    ],
+    pros: [
+      "Built in.",
+      "Stemming, stop words, search-box syntax (quotes, OR, -word).",
+      "Ranking and highlighting.",
+      "A GIN index scales to millions of rows.",
+    ],
+    cons: [
+      "No typos, no synonyms, no meaning.",
+      "One language configuration per tsvector.",
+      "Basic ranking: no BM25 out of the box.",
+    ],
+    lesson: { href: "/lessons/full-text-search", label: "Full-text search" },
+  },
+];
+
+const vectorApproaches: readonly ApproachSummary[] = [
+  {
+    name: "Arrays and SQL functions",
+    summary: "Embeddings in a DOUBLE PRECISION[] column, distance written in SQL.",
+    example: {
+      search: "speed up my database",
+      result: (
+        <>JOIN patterns, SQL indexes, Query tuning: no shared words, same meaning.</>
+      ),
+    },
+    warning: (
+      <>The same search on a million rows computes a million distances, every time.</>
+    ),
+    pros: ["No extension: works on any Postgres.", "Every step of the math is visible."],
+    cons: [
+      "No index: every search computes the distance for every row.",
+      "Nothing checks that vectors have the same number of dimensions.",
+    ],
+    lesson: { href: "/lessons/vectors", label: "Vectors" },
+  },
+  {
+    name: "pgvector, no index",
+    summary: "A vector column and distance operators, searched by a full scan.",
+    example: {
+      search: "speed up my database",
+      result: <>The same three documents, always the exact nearest ones.</>,
+    },
+    warning: <>Still reads every row: fine for thousands, slow for millions.</>,
+    pros: [
+      "Exact results: always the true nearest rows.",
+      "Simple: fine up to tens of thousands of rows.",
+      "Type checking and fast distance operators.",
+    ],
+    cons: ["Cost grows with rows × dimensions: every search reads the whole table."],
+    lesson: { href: "/lessons/pgvector", label: "pgvector" },
+  },
+  {
+    name: "pgvector + HNSW index",
+    summary: "A graph of neighbours that a search walks towards the question.",
+    example: {
+      search: "speed up my database",
+      result: <>The same three, in milliseconds even on millions of rows.</>,
+    },
+    warning: (
+      <>
+        On a big table it can now and then miss one of the true nearest rows. Add a
+        selective WHERE (say, one author&apos;s documents) and you can get fewer than 3
+        results.
+      </>
+    ),
+    pros: [
+      "Fast, with high recall.",
+      "Can be created on an empty table; stays good as rows arrive.",
+      <>
+        Tunable at query time with <InlineCode>hnsw.ef_search</InlineCode>.
+      </>,
+    ],
+    cons: [
+      "Approximate: can miss a true neighbour.",
+      "Slow to build, and uses a lot of memory.",
+      "A selective WHERE filter can return fewer rows than the LIMIT.",
+    ],
+    lesson: { href: "/lessons/pgvector#an-index", label: "pgvector" },
+  },
+  {
+    name: "pgvector + IVFFlat index",
+    summary: "Groups vectors into clusters and only searches the nearest ones.",
+    example: {
+      search: "speed up my database",
+      result: <>The same three, if the index was built after the data was loaded.</>,
+    },
+    warning: (
+      <>
+        Built on an empty table, the clusters mean nothing and results get worse. With the
+        default of searching 1 cluster, a neighbour in the next cluster is missed.
+      </>
+    ),
+    pros: ["Faster to build and smaller than HNSW."],
+    cons: [
+      "Must be created after the data is loaded: the clusters come from it.",
+      "Lower recall than HNSW at the same speed.",
+      "Needs rebuilding when the data changes a lot.",
+    ],
+  },
+  {
+    name: "Smaller vectors (halfvec, binary quantization)",
+    summary: "Store each number in 16 bits, or even 1 bit, instead of 32.",
+    example: {
+      search: "speed up my database",
+      result: <>the same three in the same order with halfvec, in half the space.</>,
+    },
+    warning: (
+      <>
+        With binary quantization, this lesson&apos;s 3-number vectors all become the bits
+        111, except CSS grid layouts (110): 7 of 8 documents look identical. Real
+        1,536-number vectors fare much better, but re-rank the top results with the full
+        vectors.
+      </>
+    ),
+    pros: [
+      "Half the storage with halfvec, 1/32 with bits; faster indexes.",
+      "halfvec indexes up to 4,000 dimensions; vector stops at 2,000.",
+    ],
+    cons: [
+      "Some accuracy lost.",
+      "Binary quantization usually needs a second pass that re-ranks with the full vectors.",
+    ],
+  },
+  {
+    name: "Embeddings computed in the database (pgai)",
+    summary:
+      "The database calls the embedding model itself, for every new or changed row.",
+    example: {
+      verb: "insert",
+      search: "Indexing JSON columns",
+      result: <>its embedding in documents_embeddings shortly after, with no app code.</>,
+    },
+    warning: (
+      <>
+        If the model API is down or its key expires, the row is saved without an embedding
+        yet, and vector search silently misses it.
+      </>
+    ),
+    pros: ["Embeddings stay in sync automatically, like an index.", "No app code."],
+    cons: [
+      "The database calls an external API: latency, API keys, and failures inside Postgres.",
+      "pgai has not been maintained since February 2026.",
+    ],
+  },
+];
+
+const hybridApproach: ApproachSummary = {
+  name: "Hybrid: full-text + vectors",
+  summary: "Runs both searches and merges the two rankings.",
+  example: {
+    search: "find meaning",
+    result: (
+      <>
+        Vector search first: top of both lists. SQL indexes second: it matches the word
+        &quot;find&quot;, though it is only 5th by meaning.
+      </>
+    ),
+  },
+  warning: (
+    <>
+      If the embedding model is down, only the keyword half can run: plan for that
+      fallback.
+    </>
+  ),
+  pros: ["Exact words and names, and meaning when the words differ.", "One SQL query."],
+  cons: [
+    "Two indexes and two searches to tune.",
+    "Still needs an embedding for every document and every search.",
+  ],
+};
+
+function ApproachCard({ approach }: { approach: ApproachSummary }) {
+  return (
+    <div>
+      <h3 className="text-lg font-semibold text-zinc-950">{approach.name}</h3>
+      <p className="mt-1 text-base leading-7 text-zinc-800">{approach.summary}</p>
+      {approach.matches ? <MatchList matches={approach.matches} /> : null}
+      <p className="mt-2 text-base leading-7 text-zinc-800">
+        You {approach.example.verb ?? "search"}{" "}
+        <span className="font-semibold">&quot;{approach.example.search}&quot;</span>, you
+        get {approach.example.result}
+      </p>
+      {approach.warning ? (
+        <p className="mt-2 border-l-2 border-amber-400 pl-3 text-sm leading-6 text-amber-900">
+          {approach.warning}
+        </p>
+      ) : null}
+      <div className="mt-3 grid gap-4 sm:grid-cols-2">
+        <div>
+          <h4 className="font-mono text-xs font-semibold uppercase tracking-wide text-emerald-700">
+            Pros
+          </h4>
+          <ul className="mt-1 list-disc pl-5 text-sm leading-6 text-zinc-800">
+            {approach.pros.map((pro, index) => (
+              <li key={index}>{pro}</li>
+            ))}
+          </ul>
+        </div>
+        <div>
+          <h4 className="font-mono text-xs font-semibold uppercase tracking-wide text-rose-700">
+            Cons
+          </h4>
+          <ul className="mt-1 list-disc pl-5 text-sm leading-6 text-zinc-800">
+            {approach.cons.map((con, index) => (
+              <li key={index}>{con}</li>
+            ))}
+          </ul>
+        </div>
+      </div>
+      {approach.lesson ? (
+        <p className="mt-3 text-sm text-zinc-700">
+          Lesson:{" "}
+          <LessonLink to={approach.lesson.href}>{approach.lesson.label}</LessonLink>
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+function ApproachCards({ approaches }: { approaches: readonly ApproachSummary[] }) {
+  return (
+    <div className="mt-4 flex flex-col gap-8">
+      {approaches.map((approach) => (
+        <ApproachCard approach={approach} key={approach.name} />
+      ))}
+    </div>
+  );
 }
 
 type Approach = {
@@ -90,7 +444,7 @@ const approaches: readonly Approach[] = [
     ranking: "Rank fusion",
     index: "GIN + HNSW",
     needs: "Both of the above",
-    lessons: [{ href: `#${SQL_EXAMPLE_IDS.textSearchInPostgresHybrid}`, label: "Above" }],
+    lessons: [{ href: `#${SQL_EXAMPLE_IDS.textSearchInPostgresHybrid}`, label: "Below" }],
   },
 ];
 
@@ -195,14 +549,51 @@ export default function TextSearchInPostgres() {
           data.
         </p>
         <p className="mt-3">
-          PostgreSQL can often do the job itself. This lesson puts every approach from the
-          previous lessons on one table, with the same eight documents, so you can compare
-          them side by side. It repeats a little of each lesson on purpose; follow the
-          links for the details.
+          PostgreSQL can often do the job itself. First, every approach in brief, with its
+          pros and cons, and a table to compare them. Then all of them on one table, with
+          the same eight documents as the previous lessons. It repeats a little of each
+          lesson on purpose; follow the links for the details.
         </p>
       </Paragraphs>
 
-      <Section>
+      <LessonSection>
+        <Title2 id="the-approaches">The approaches</Title2>
+        <Paragraph>
+          Keyword search: match the text the user typed. The short examples search a
+          column holding the words {matchWords}.
+        </Paragraph>
+        <ApproachCards approaches={textApproaches} />
+      </LessonSection>
+
+      <LessonSection>
+        <Title2 id="vector-approaches">Vector search, in several flavours</Title2>
+        <Paragraph>
+          Vector search matches meaning. Every flavour needs an embedding model to turn
+          text into a vector, for every document and for every search: an extra
+          dependency, with its own cost and latency. They differ in how the vectors are
+          stored and searched, and in who computes them. With a typical embedding model,
+          on the same words ({matchWords}), every flavour matches like this:
+        </Paragraph>
+        <MatchList matches={vectorMatches} />
+        <ApproachCards approaches={vectorApproaches} />
+      </LessonSection>
+
+      <LessonSection>
+        <Title2 id="hybrid-approach">Both at once</Title2>
+        <ApproachCards approaches={[hybridApproach]} />
+      </LessonSection>
+
+      <LessonSection>
+        <Title2 id="comparison">Comparison</Title2>
+        <ComparisonTable />
+        <Paragraph>
+          They are not exclusive: one table can have all of them, as the one below does.
+          Start with the simplest one that answers what your users type, and add the next
+          when search results show you why.
+        </Paragraph>
+      </LessonSection>
+
+      <LessonSection>
         <Title2 id="one-table">One table, every kind of search</Title2>
         <Paragraph>
           A trigram index for <InlineCode>ILIKE</InlineCode> and typos, a tsvector column
@@ -215,7 +606,7 @@ export default function TextSearchInPostgres() {
         <div className="mt-4">
           <SqlCodeViewer code={seed} databaseInitId={databaseInit.id} />
         </div>
-      </Section>
+      </LessonSection>
 
       <Example id={SQL_EXAMPLE_IDS.textSearchInPostgresIlike} />
       <Paragraph>
@@ -264,16 +655,6 @@ export default function TextSearchInPostgres() {
         <div className="mt-4">
           <SqlCodeViewer code={pgaiExample} />
         </div>
-      </LessonSection>
-
-      <LessonSection>
-        <Title2 id="comparison">Comparison</Title2>
-        <ComparisonTable />
-        <Paragraph>
-          They are not exclusive: one table can have all of them, as this one does. Start
-          with the simplest one that answers what your users type, and add the next when
-          search results show you why.
-        </Paragraph>
       </LessonSection>
 
       <LessonSection>
