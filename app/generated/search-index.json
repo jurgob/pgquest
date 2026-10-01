@@ -885,7 +885,7 @@
     "anchor": null,
     "heading": null,
     "lessonId": "pgvector",
-    "text": "pgvector Draft The vectors lesson computed distances by hand, with arrays. It worked, but every search read and sorted every row. pgvector is the PostgreSQL extension that turns this into a real feature: a vector column type, distance operators, and indexes that find the nearest rows without reading them all. Same eight documents, same hand-made embeddings ([databases, web, AI]), same questions. Only the column type changes."
+    "text": "pgvector Draft The vectors lesson computed distances by hand, with arrays. It worked, but every search read and sorted every row. pgvector is the PostgreSQL extension that turns this into a real feature: a vector column type, distance operators, and indexes that find the nearest rows without reading them all. Same eight documents, same hand-made embeddings ([databases, web, AI]), same questions. Only the column type changes. Then four ways to search many rows: exact, HNSW, IVFFlat, and smaller vectors."
   },
   {
     "anchor": "the-documents",
@@ -924,22 +924,76 @@
     "text": "Related documents, with the stored embedding as the question. It's still SQL: joins and WHERE work as usual. Loaded Database: pgvector.database-init title Chatbots Neural networks Query tuning"
   },
   {
-    "anchor": "an-index",
-    "heading": "An index for nearest neighbours",
+    "anchor": "searching-thousands",
+    "heading": "Searching thousands of rows",
     "lessonId": "pgvector",
-    "text": "All the plans so far are Seq Scan + Sort : fine for eight rows. A B-tree can't help: \"closest to this point in 1,536 dimensions\" has no sort order. pgvector adds two index types: HNSW (better recall and speed, slower to build) and IVFFlat (fast to build, needs data before you create it). Start with HNSW. Loaded Database: pgvector.indexed-database-init"
+    "text": "All the plans so far are Seq Scan + Sort : fine for eight rows. To compare the ways pgvector can search, the next examples use the eight documents plus 5,000 generated ones, and the same question: \"speed up my database\"."
+  },
+  {
+    "anchor": "exact-search",
+    "heading": "Exact search: no index",
+    "lessonId": "pgvector",
+    "text": "Without a vector index, Postgres measures the distance to every row and sorts. A B-tree can't help: \"closest to this point in 1,536 dimensions\" has no sort order. Exact search is always right, and fine up to tens of thousands of rows."
+  },
+  {
+    "anchor": "pgvector.exact-scan",
+    "heading": "Exact search on 5,008 rows",
+    "lessonId": "pgvector",
+    "text": "No vector index: the plan is a Seq Scan and a Sort. Postgres measures the distance to all 5,008 rows and sorts them. Slow on big tables, but always the true nearest rows: SQL indexes and JOIN patterns come first. Loaded Database: pgvector.large-database-init title SQL indexes JOIN patterns Svelte joins note 4337 Sqlite networks note 4692 Sqlite chatbots note 3982"
+  },
+  {
+    "anchor": "hnsw",
+    "heading": "HNSW: a graph of neighbours",
+    "lessonId": "pgvector",
+    "text": "HNSW links every vector to its nearest neighbours, in layers. Upper layers hold fewer vectors and longer links. A search enters at the top, jumps towards the question (★), drops down a layer, and repeats, reaching the nearest vectors in a few hops instead of measuring every one. The usual choice: fast, with high recall, and it can be created on an empty table. Building it is slow and memory hungry. Loaded Database: pgvector.indexed-database-init"
   },
   {
     "anchor": "pgvector.index-scan",
-    "heading": "An HNSW index",
+    "heading": "The same search with HNSW",
     "lessonId": "pgvector",
-    "text": "5,008 documents and an HNSW index. The plan is an Index Scan whose Order By is the distance: Postgres reads the nearest rows straight from the index, instead of sorting all of them. Loaded Database: pgvector.indexed-database-init title Sqlite networks note 4692 Svelte joins note 4337 Sqlite chatbots note 3982 Svelte tuning note 3627 Sqlite search note 3272"
+    "text": "Same rows, same query, with an HNSW index. The plan is an Index Scan whose Order By is the distance: Postgres walks the graph instead of sorting every row. Compare the results with the exact search: an approximate index can miss some of the true nearest rows. Loaded Database: pgvector.indexed-database-init title Sqlite networks note 4692 Svelte joins note 4337 Sqlite chatbots note 3982 Svelte tuning note 3627 Sqlite search note 3272"
   },
   {
     "anchor": "approximate",
     "heading": "Approximate, on purpose",
     "lessonId": "pgvector",
-    "text": "HNSW is an approximate index: to be fast, it can miss a true neighbour now and then. SET hnsw.ef_search = 100 (default 40) searches more of the graph: better recall, slower queries. With a WHERE filter, the index returns the nearest rows first and the filter runs after, so a very selective filter can return fewer rows than the LIMIT ; recent pgvector versions add hnsw.iterative_scan for that."
+    "text": "To be fast, an approximate index can miss a true neighbour now and then. SET hnsw.ef_search = 100 (default 40) searches more of the graph: better recall, slower queries. With a WHERE filter, the index returns the nearest rows first and the filter runs after, so a very selective filter can return fewer rows than the LIMIT ; recent pgvector versions add hnsw.iterative_scan for that."
+  },
+  {
+    "anchor": "ivfflat",
+    "heading": "IVFFlat: search the nearest lists",
+    "lessonId": "pgvector",
+    "text": "IVFFlat splits the vectors into lists around centroids (×). A search reads only the list whose centroid is nearest to the question (★), here the blue one. The vector circled in red is closer, but sits in another list, so it is missed unless ivfflat.probes reads more lists. IVFFlat partitions the vectors: it picks centroids from the rows already in the table, and files every vector in the list of its nearest centroid. Quicker to build and smaller than HNSW, but lower recall at the same speed. Create it after loading the data, and rebuild it when the data changes a lot: centroids picked from an empty or different table describe the wrong clusters. Loaded Database: pgvector.ivfflat-database-init"
+  },
+  {
+    "anchor": "pgvector.ivfflat-scan",
+    "heading": "The same search with IVFFlat",
+    "lessonId": "pgvector",
+    "text": "Same rows, same query, with an IVFFlat index of 50 lists. The plan is an Index Scan again. With the default ivfflat.probes = 1 it reads only the nearest list, so a true neighbour sitting in the next list is missed: compare with the exact search. Loaded Database: pgvector.ivfflat-database-init title JOIN patterns Sqlite networks note 4692 Svelte joins note 4337 Sqlite chatbots note 3982 Svelte tuning note 3627"
+  },
+  {
+    "anchor": "smaller-vectors",
+    "heading": "Smaller vectors: halfvec and bits",
+    "lessonId": "pgvector",
+    "text": "A 1,536-dimension vector takes 6 KB per row, and HNSW indexes stop at 2,000 dimensions. pgvector has smaller types: halfvec stores 16 bits per number (half the space, indexes up to 4,000 dimensions), and bit stores 1 bit per number (32 times smaller, much rougher)."
+  },
+  {
+    "anchor": "pgvector.smaller-vectors",
+    "heading": "halfvec and bits",
+    "lessonId": "pgvector",
+    "text": "The same embeddings in smaller types. halfvec keeps 16 bits per number: 0.90 becomes 0.89990234, close enough. binary_quantize keeps 1 bit per number, positive or not: every document here becomes 111, except CSS grid layouts, whose third number is 0. Loaded Database: pgvector.database-init title half bits SQL indexes [0.89990234,0.099975586,0.099975586] 111 JOIN patterns [0.85009766,0.049987793,0.049987793] 111 Query tuning [0.7998047,0.15002441,0.099975586] 111 React components [0.049987793,0.9501953,0.099975586] 111 CSS grid layouts [0.049987793,0.89990234,0] 110 Neural networks [0.049987793,0.049987793,0.9501953] 111 Chatbots [0.099975586,0.25,0.89990234] 111 Vector search [0.60009766,0.049987793,0.7998047] 111"
+  },
+  {
+    "anchor": "pgvector.binary-rerank",
+    "heading": "Bits first, then re-rank",
+    "lessonId": "pgvector",
+    "text": "Bits alone can't tell these documents apart. The usual fix: let the cheap bit distance (<~>, Hamming) pick a few candidates, then order only those by the full vectors. Same top 3 as the exact search. Loaded Database: pgvector.database-init title SQL indexes JOIN patterns Query tuning"
+  },
+  {
+    "anchor": "smaller-vector-indexes",
+    "heading": "Indexing smaller vectors",
+    "lessonId": "pgvector",
+    "text": "You don't need a second column: index an expression that casts the embedding, and use the same expression in the query."
   },
   {
     "anchor": "in-a-real-app",
@@ -957,7 +1011,7 @@
     "anchor": "what-we-learned",
     "heading": "What We Learned",
     "lessonId": "pgvector",
-    "text": "vector(n) a column type for embeddings, with a fixed number of dimensions. <-> L2 (Euclidean) distance. <=> cosine distance: 1 - cosine similarity. The usual choice for text. <#> negative inner product: fastest, for vectors of length 1. HNSW index approximate nearest-neighbour search: an Index Scan ordered by distance instead of a full sort."
+    "text": "vector(n) a column type for embeddings, with a fixed number of dimensions. <-> L2 (Euclidean) distance. <=> cosine distance: 1 - cosine similarity. The usual choice for text. <#> negative inner product: fastest, for vectors of length 1. Exact search no index: always the true nearest rows, but every row is read. HNSW index a layered graph of neighbours: fast, approximate, slow to build. IVFFlat index lists around centroids: quick to build, approximate, create it after the data. halfvec, bit smaller vectors: less space, less precision; re-rank with the full ones."
   },
   {
     "anchor": null,
@@ -1131,7 +1185,7 @@
     "anchor": "vector-approaches",
     "heading": "Vector search, in several flavours",
     "lessonId": "text-search-in-postgres",
-    "text": "Vector search matches meaning. Every flavour needs an embedding model to turn text into a vector, for every document and for every search: an extra dependency, with its own cost and latency. They differ in how the vectors are stored and searched, and in who computes them. With a typical embedding model, on the same words (dog, Dog, dogs, hotdog, doggo, doing, puppy, canine), every flavour matches like this: puppy → puppy, dog, doggo, canine (all close in meaning) canine → canine, dog, puppy (no shared letters needed) dgo → unpredictable (a typo is a different text, so a different vector) Arrays and SQL functions Embeddings in a DOUBLE PRECISION[] column, distance written in SQL. You search \"speed up my database\" , you get JOIN patterns, SQL indexes, Query tuning: no shared words, same meaning. The same search on a million rows computes a million distances, every time. Pros No extension: works on any Postgres. Every step of the math is visible. Cons No index: every search computes the distance for every row. Nothing checks that vectors have the same number of dimensions. Lesson: Vectors pgvector, no index A vector column and distance operators, searched by a full scan. You search \"speed up my database\" , you get The same three documents, always the exact nearest ones. Still reads every row: fine for thousands, slow for millions. Pros Exact results: always the true nearest rows. Simple: fine up to tens of thousands of rows. Type checking and fast distance operators. Cons Cost grows with rows × dimensions: every search reads the whole table. Lesson: pgvector pgvector + HNSW index A graph of neighbours that a search walks towards the question. You search \"speed up my database\" , you get The same three, in milliseconds even on millions of rows. On a big table it can now and then miss one of the true nearest rows. Add a selective WHERE (say, one author's documents) and you can get fewer than 3 results. Pros Fast, with high recall. Can be created on an empty table; stays good as rows arrive. Tunable at query time with hnsw.ef_search . Cons Approximate: can miss a true neighbour. Slow to build, and uses a lot of memory. A selective WHERE filter can return fewer rows than the LIMIT. Lesson: pgvector pgvector + IVFFlat index Groups vectors into clusters and only searches the nearest ones. You search \"speed up my database\" , you get The same three, if the index was built after the data was loaded. Built on an empty table, the clusters mean nothing and results get worse. With the default of searching 1 cluster, a neighbour in the next cluster is missed. Pros Faster to build and smaller than HNSW. Cons Must be created after the data is loaded: the clusters come from it. Lower recall than HNSW at the same speed. Needs rebuilding when the data changes a lot. Smaller vectors (halfvec, binary quantization) Store each number in 16 bits, or even 1 bit, instead of 32. You search \"speed up my database\" , you get the same three in the same order with halfvec, in half the space. With binary quantization, this lesson's 3-number vectors all become the bits 111, except CSS grid layouts (110): 7 of 8 documents look identical. Real 1,536-number vectors fare much better, but re-rank the top results with the full vectors. Pros Half the storage with halfvec, 1/32 with bits; faster indexes. halfvec indexes up to 4,000 dimensions; vector stops at 2,000. Cons Some accuracy lost. Binary quantization usually needs a second pass that re-ranks with the full vectors. Embeddings computed in the database (pgai) The database calls the embedding model itself, for every new or changed row. You insert \"Indexing JSON columns\" , you get its embedding in documents_embeddings shortly after, with no app code. If the model API is down or its key expires, the row is saved without an embedding yet, and vector search silently misses it. Pros Embeddings stay in sync automatically, like an index. No app code. Cons The database calls an external API: latency, API keys, and failures inside Postgres. pgai has not been maintained since February 2026."
+    "text": "Vector search matches meaning. Every flavour needs an embedding model to turn text into a vector, for every document and for every search: an extra dependency, with its own cost and latency. They differ in how the vectors are stored and searched, and in who computes them. With a typical embedding model, on the same words (dog, Dog, dogs, hotdog, doggo, doing, puppy, canine), every flavour matches like this: puppy → puppy, dog, doggo, canine (all close in meaning) canine → canine, dog, puppy (no shared letters needed) dgo → unpredictable (a typo is a different text, so a different vector) Arrays and SQL functions Embeddings in a DOUBLE PRECISION[] column, distance written in SQL. You search \"speed up my database\" , you get JOIN patterns, SQL indexes, Query tuning: no shared words, same meaning. The same search on a million rows computes a million distances, every time. Pros No extension: works on any Postgres. Every step of the math is visible. Cons No index: every search computes the distance for every row. Nothing checks that vectors have the same number of dimensions. Lesson: Vectors pgvector, no index A vector column and distance operators, searched by a full scan. You search \"speed up my database\" , you get The same three documents, always the exact nearest ones. Still reads every row: fine for thousands, slow for millions. Pros Exact results: always the true nearest rows. Simple: fine up to tens of thousands of rows. Type checking and fast distance operators. Cons Cost grows with rows × dimensions: every search reads the whole table. Lesson: pgvector: exact search pgvector + HNSW index A graph of neighbours that a search walks towards the question. You search \"speed up my database\" , you get The same three, in milliseconds even on millions of rows. On a big table it can now and then miss one of the true nearest rows. Add a selective WHERE (say, one author's documents) and you can get fewer than 3 results. Pros Fast, with high recall. Can be created on an empty table; stays good as rows arrive. Tunable at query time with hnsw.ef_search . Cons Approximate: can miss a true neighbour. Slow to build, and uses a lot of memory. A selective WHERE filter can return fewer rows than the LIMIT. Lesson: pgvector: HNSW pgvector + IVFFlat index Groups vectors into clusters and only searches the nearest ones. You search \"speed up my database\" , you get The same three, if the index was built after the data was loaded. Built on an empty table, the clusters mean nothing and results get worse. With the default of searching 1 cluster, a neighbour in the next cluster is missed. Pros Faster to build and smaller than HNSW. Cons Must be created after the data is loaded: the clusters come from it. Lower recall than HNSW at the same speed. Needs rebuilding when the data changes a lot. Lesson: pgvector: IVFFlat pgvector + smaller vectors (halfvec, binary quantization) Store each number in 16 bits, or even 1 bit, instead of 32. You search \"speed up my database\" , you get the same three in the same order with halfvec, in half the space. With binary quantization, this lesson's 3-number vectors all become the bits 111, except CSS grid layouts (110): 7 of 8 documents look identical. Real 1,536-number vectors fare much better, but re-rank the top results with the full vectors. Pros Half the storage with halfvec, 1/32 with bits; faster indexes. halfvec indexes up to 4,000 dimensions; vector stops at 2,000. Cons Some accuracy lost. Binary quantization usually needs a second pass that re-ranks with the full vectors. Lesson: pgvector: smaller vectors Embeddings computed in the database (pgai) The database calls the embedding model itself, for every new or changed row. It's here because it comes up a lot when you search for AI in Postgres, but it is no longer maintained. You insert \"Indexing JSON columns\" , you get its embedding in documents_embeddings shortly after, with no app code. If the model API is down or its key expires, the row is saved without an embedding yet, and vector search silently misses it. Pros Embeddings stay in sync automatically, like an index. No app code. Cons Network calls to a model from inside the database: slow, failure-prone, and holding a connection while they wait. Not available on most managed Postgres services, which don't allow the extension. pgai has not been maintained since February 2026. Lesson: why it is deprecated"
   },
   {
     "anchor": "hybrid-approach",
@@ -1185,7 +1239,7 @@
     "anchor": "where-embeddings-come-from",
     "heading": "Where embeddings come from",
     "lessonId": "text-search-in-postgres",
-    "text": "Every approach except vectors works on the text alone. Vectors need a model to compute the embedding of each document, and of each search. Usually the app does it: call the model, then INSERT the vector, as shown in the pgvector lesson . Timescale's pgai took the other route: a vectorizer, declared in SQL, that watches a table and keeps an embeddings table in sync by calling the model for every new or changed row. It can't run here, since it calls a model API from the database, and the project has not been maintained since February 2026. The idea is still worth knowing: treat embeddings like an index that the system keeps up to date."
+    "text": "Every approach except vectors works on the text alone. Vectors need a model to compute the embedding of each document, and of each search. Usually the app does it: call the model, then INSERT the vector, as shown in the pgvector lesson . Timescale's pgai took the other route, and it's in this lesson because it comes up a lot when you search for AI in Postgres. Its PostgreSQL extension called embedding models straight from SQL, and its vectorizer kept an embeddings table in sync with a source table, like an index. It is deprecated: the project has not been maintained since February 2026, and its README doesn't give a reason. Its own history points at the problem with the approach. In 2025 the vectorizer moved out of the extension into a separate Python worker, because managed Postgres services (Amazon RDS, Supabase, ...) don't let you install the extension. And calling a model over the network from inside the database is a poor fit anyway: a SQL statement waits on an outside API, holding its connection and any locks; the API's timeouts, rate limits and outages become database errors; and the API keys have to live in the database. Computing embeddings in the app, or in a worker next to it, keeps the database doing what it is good at. The vectorizer, for reference (not runnable here):"
   },
   {
     "anchor": "when-postgres-is-not-enough",

@@ -29,6 +29,34 @@ CREATE INDEX documents_embedding_idx ON documents
 USING hnsw (embedding vector_cosine_ops);
 `;
 
+export const ivfflatIndex = `
+-- IVFFlat: split the vectors into lists (clusters) around centroids.
+-- A search only reads the lists whose centroids are nearest to the question.
+-- The centroids come from the rows already in the table: create it after
+-- loading the data. Rule of thumb: lists = rows / 1000 up to 1M rows.
+CREATE INDEX documents_embedding_ivfflat_idx ON documents
+USING ivfflat (embedding vector_cosine_ops) WITH (lists = 50);
+
+-- How many lists a search reads (default 1). More: better recall, slower.
+SET ivfflat.probes = 5;
+`;
+
+export const smallerVectorIndexes = `
+-- Index a smaller copy of the vector, without storing a second column.
+-- halfvec: 16-bit numbers. Half the index size, almost the same results.
+CREATE INDEX ON documents
+USING hnsw ((embedding::halfvec(1536)) halfvec_cosine_ops);
+
+-- bit: 1 bit per number (positive or not). 32x smaller, much rougher.
+CREATE INDEX ON documents
+USING hnsw ((binary_quantize(embedding)::bit(1536)) bit_hamming_ops);
+
+-- Queries must use the same expression to hit the index:
+SELECT title FROM documents
+ORDER BY embedding::halfvec(1536) <=> $1::halfvec(1536)
+LIMIT 10;
+`;
+
 export const realWorld = `
 -- A real embedding model, e.g. text-embedding-3-small, returns 1,536 numbers.
 CREATE TABLE documents (
@@ -72,7 +100,35 @@ export const indexedDatabaseInit: SqlExample = {
   ].join("\n"),
 };
 
-export const database_inits = [databaseInit, indexedDatabaseInit] as const;
+export const largeDatabaseInit: SqlExample = {
+  id: SQL_EXAMPLE_IDS.pgvectorLargeDatabaseInit,
+  name: "pgvector database, 5,000 documents, no index",
+  description: "The eight documents plus 5,000 generated ones, without a vector index.",
+  query: [migration, seed, generatedDocumentsSeed({ count: 5000, embedding: true })].join(
+    "\n",
+  ),
+};
+
+export const ivfflatDatabaseInit: SqlExample = {
+  id: SQL_EXAMPLE_IDS.pgvectorIvfflatDatabaseInit,
+  name: "pgvector database, 5,000 documents, IVFFlat",
+  description:
+    "The eight documents plus 5,000 generated ones, with an IVFFlat index of 50 lists.",
+  query: [
+    migration,
+    seed,
+    generatedDocumentsSeed({ count: 5000, embedding: true }),
+    `CREATE INDEX documents_embedding_ivfflat_idx ON documents
+USING ivfflat (embedding vector_cosine_ops) WITH (lists = 50);`,
+  ].join("\n"),
+};
+
+export const database_inits = [
+  databaseInit,
+  largeDatabaseInit,
+  indexedDatabaseInit,
+  ivfflatDatabaseInit,
+] as const;
 
 export const examples: SqlExample[] = [
   {
@@ -138,16 +194,74 @@ LIMIT 3;
 `,
   },
   {
-    id: SQL_EXAMPLE_IDS.pgvectorIndexScan,
-    name: "An HNSW index",
+    id: SQL_EXAMPLE_IDS.pgvectorExactScan,
+    name: "Exact search on 5,008 rows",
     description:
-      "5,008 documents and an HNSW index. The plan is an Index Scan whose Order By is the distance: Postgres reads the nearest rows straight from the index, instead of sorting all of them.",
+      "No vector index: the plan is a Seq Scan and a Sort. Postgres measures the distance to all 5,008 rows and sorts them. Slow on big tables, but always the true nearest rows: SQL indexes and JOIN patterns come first.",
+    database_init: largeDatabaseInit,
+    query: `
+SELECT title
+FROM documents
+ORDER BY embedding <=> '[0.85, 0.10, 0.05]'
+LIMIT 5;
+`,
+  },
+  {
+    id: SQL_EXAMPLE_IDS.pgvectorIndexScan,
+    name: "The same search with HNSW",
+    description:
+      "Same rows, same query, with an HNSW index. The plan is an Index Scan whose Order By is the distance: Postgres walks the graph instead of sorting every row. Compare the results with the exact search: an approximate index can miss some of the true nearest rows.",
     database_init: indexedDatabaseInit,
     query: `
 SELECT title
 FROM documents
 ORDER BY embedding <=> '[0.85, 0.10, 0.05]'
 LIMIT 5;
+`,
+  },
+  {
+    id: SQL_EXAMPLE_IDS.pgvectorIvfflatScan,
+    name: "The same search with IVFFlat",
+    description:
+      "Same rows, same query, with an IVFFlat index of 50 lists. The plan is an Index Scan again. With the default ivfflat.probes = 1 it reads only the nearest list, so a true neighbour sitting in the next list is missed: compare with the exact search.",
+    database_init: ivfflatDatabaseInit,
+    query: `
+SELECT title
+FROM documents
+ORDER BY embedding <=> '[0.85, 0.10, 0.05]'
+LIMIT 5;
+`,
+  },
+  {
+    id: SQL_EXAMPLE_IDS.pgvectorSmallerVectors,
+    name: "halfvec and bits",
+    description:
+      "The same embeddings in smaller types. halfvec keeps 16 bits per number: 0.90 becomes 0.89990234, close enough. binary_quantize keeps 1 bit per number, positive or not: every document here becomes 111, except CSS grid layouts, whose third number is 0.",
+    database_init: databaseInit,
+    query: `
+SELECT
+  title,
+  embedding::halfvec(3)::text AS half,
+  binary_quantize(embedding)::text AS bits
+FROM documents;
+`,
+  },
+  {
+    id: SQL_EXAMPLE_IDS.pgvectorBinaryRerank,
+    name: "Bits first, then re-rank",
+    description:
+      "Bits alone can't tell these documents apart. The usual fix: let the cheap bit distance (<~>, Hamming) pick a few candidates, then order only those by the full vectors. Same top 3 as the exact search.",
+    database_init: databaseInit,
+    query: `
+SELECT title
+FROM (
+  SELECT title, embedding
+  FROM documents
+  ORDER BY binary_quantize(embedding)::bit(3) <~> binary_quantize('[0.85, 0.10, 0.05]'::vector(3))
+  LIMIT 6
+) AS candidates
+ORDER BY embedding <=> '[0.85, 0.10, 0.05]'
+LIMIT 3;
 `,
   },
 ];
