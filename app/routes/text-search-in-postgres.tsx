@@ -26,305 +26,173 @@ function Example({ id }: { id: SqlExampleId }) {
   return <ExampleBlock example={getSqlExample(examples, id)} />;
 }
 
+// The overview: one line per idea, examples on this lesson's eight documents.
 type ApproachSummary = {
   name: string;
-  summary: React.ReactNode;
-  pros: readonly React.ReactNode[];
-  cons: readonly React.ReactNode[];
-  // What a search returns on this lesson's eight documents.
-  example: { search: string; result: React.ReactNode; verb?: "search" | "insert" };
-  warning?: React.ReactNode;
+  summary: string;
+  // "search" → what comes back.
+  examples: readonly (readonly [string, string])[];
+  warning?: string;
+  pros: string;
+  cons: string;
   lesson?: { href: string; label: string };
 };
 
-const textApproaches: readonly ApproachSummary[] = [
+const approachGroups: readonly {
+  title: string;
+  intro?: string;
+  approaches: readonly ApproachSummary[];
+}[] = [
   {
-    name: "ILIKE",
-    summary: "Finds a piece of text anywhere in a column.",
-    example: { search: "index", result: <>SQL indexes, Query tuning.</> },
-    warning: (
-      <>Search &quot;indexing&quot;: nothing. No document contains that exact text.</>
-    ),
-    pros: [
-      "Built in, nothing to set up.",
-      "Exact and predictable.",
-      <>
-        With a trigram index, fast even for <InlineCode>&apos;%...%&apos;</InlineCode>.
-      </>,
-    ],
-    cons: [
-      "No ranking.",
-      "No typos, no word forms: 'indexing' doesn't find 'Indexes'.",
-      "Without an index, it reads every row.",
-    ],
-    lesson: { href: "/lessons/text-search-basics", label: "Text search basics" },
-  },
-  {
-    name: "Fuzzy search (pg_trgm)",
-    summary: "Compares strings by the 3-letter chunks they share.",
-    example: {
-      search: "nueral netwrks",
-      result: <>Neural networks, despite two typos.</>,
-    },
-    warning: (
-      <>
-        Search &quot;speed up my database&quot;: nothing. No title is spelled like it, and
-        trigrams don&apos;t know what it means.
-      </>
-    ),
-    pros: [
-      "Tolerates typos.",
-      "Gives a score to sort by.",
-      "Great for short text: names, titles, autocomplete.",
-    ],
-    cons: [
-      "Knows nothing about words or meaning.",
-      "Weak on long text and on very short queries.",
-      "Trigram indexes are large.",
-    ],
-    lesson: { href: "/lessons/fuzzy-search", label: "Fuzzy search with pg_trgm" },
-  },
-  {
-    name: "Full-text search",
-    summary: "Matches words and their forms: 'indexing' finds 'Indexes'.",
-    example: {
-      search: "indexing tables",
-      result: (
-        <>
-          SQL indexes: &quot;indexing&quot; and &quot;tables&quot; become the words index
-          and tabl.
-        </>
-      ),
-    },
-    warning: (
-      <>
-        Search &quot;postgress&quot; (a typo) or &quot;speed up&quot;: nothing, though
-        Query tuning is all about getting faster.
-      </>
-    ),
-    pros: [
-      "Built in.",
-      "Stemming, stop words, search-box syntax (quotes, OR, -word).",
-      "Ranking and highlighting.",
-      "A GIN index scales to millions of rows.",
-    ],
-    cons: [
-      "No typos, no synonyms, no meaning.",
-      "One language configuration per tsvector.",
-      "Basic ranking: no BM25 out of the box.",
-    ],
-    lesson: { href: "/lessons/full-text-search", label: "Full-text search" },
-  },
-];
-
-const vectorApproaches: readonly ApproachSummary[] = [
-  {
-    name: "Arrays and SQL functions",
-    summary: "Embeddings in a DOUBLE PRECISION[] column, distance written in SQL.",
-    example: {
-      search: "speed up my database",
-      result: (
-        <>JOIN patterns, SQL indexes, Query tuning: no shared words, same meaning.</>
-      ),
-    },
-    warning: (
-      <>The same search on a million rows computes a million distances, every time.</>
-    ),
-    pros: ["No extension: works on any Postgres.", "Every step of the math is visible."],
-    cons: [
-      "No index: every search computes the distance for every row.",
-      "Nothing checks that vectors have the same number of dimensions.",
-    ],
-    lesson: { href: "/lessons/vectors", label: "Vectors" },
-  },
-  {
-    name: "pgvector, no index",
-    summary: "A vector column and distance operators, searched by a full scan.",
-    example: {
-      search: "speed up my database",
-      result: <>The same three documents, always the exact nearest ones.</>,
-    },
-    warning: <>Still reads every row: fine for thousands, slow for millions.</>,
-    pros: [
-      "Exact results: always the true nearest rows.",
-      "Simple: fine up to tens of thousands of rows.",
-      "Type checking and fast distance operators.",
-    ],
-    cons: ["Cost grows with rows × dimensions: every search reads the whole table."],
-    lesson: { href: "/lessons/pgvector", label: "pgvector" },
-  },
-  {
-    name: "pgvector + HNSW index",
-    summary: "A graph of neighbours that a search walks towards the question.",
-    example: {
-      search: "speed up my database",
-      result: <>The same three, in milliseconds even on millions of rows.</>,
-    },
-    warning: (
-      <>
-        On a big table it can now and then miss one of the true nearest rows. Add a
-        selective WHERE (say, one author&apos;s documents) and you can get fewer than 3
-        results.
-      </>
-    ),
-    pros: [
-      "Fast, with high recall.",
-      "Can be created on an empty table; stays good as rows arrive.",
-      <>
-        Tunable at query time with <InlineCode>hnsw.ef_search</InlineCode>.
-      </>,
-    ],
-    cons: [
-      "Approximate: can miss a true neighbour.",
-      "Slow to build, and uses a lot of memory.",
-      "A selective WHERE filter can return fewer rows than the LIMIT.",
-    ],
-    lesson: { href: "/lessons/pgvector#an-index", label: "pgvector" },
-  },
-  {
-    name: "pgvector + IVFFlat index",
-    summary: "Groups vectors into clusters and only searches the nearest ones.",
-    example: {
-      search: "speed up my database",
-      result: <>The same three, if the index was built after the data was loaded.</>,
-    },
-    warning: (
-      <>
-        Built on an empty table, the clusters mean nothing and results get worse. With the
-        default of searching 1 cluster, a neighbour in the next cluster is missed.
-      </>
-    ),
-    pros: ["Faster to build and smaller than HNSW."],
-    cons: [
-      "Must be created after the data is loaded: the clusters come from it.",
-      "Lower recall than HNSW at the same speed.",
-      "Needs rebuilding when the data changes a lot.",
+    title: "Keyword search",
+    approaches: [
+      {
+        name: "ILIKE",
+        summary: "Finds a piece of text anywhere.",
+        examples: [
+          ["index", "SQL indexes, Query tuning"],
+          ["indexing", "nothing"],
+        ],
+        pros: "built in, exact",
+        cons: "no ranking, no typos, no word forms",
+        lesson: { href: "/lessons/text-search-basics", label: "Text search basics" },
+      },
+      {
+        name: "Fuzzy search (pg_trgm)",
+        summary: "Matches similar spellings.",
+        examples: [
+          ["nueral netwrks", "Neural networks"],
+          ["speed up my database", "nothing"],
+        ],
+        pros: "forgives typos, great for names and autocomplete",
+        cons: "no meaning, weak on long text",
+        lesson: { href: "/lessons/fuzzy-search", label: "Fuzzy search" },
+      },
+      {
+        name: "Full-text search",
+        summary: "Matches words and their forms.",
+        examples: [
+          ["indexing tables", "SQL indexes"],
+          ["postgress", "nothing"],
+        ],
+        pros: "built in, ranking, search-box syntax, scales",
+        cons: "no typos, no synonyms, no meaning",
+        lesson: { href: "/lessons/full-text-search", label: "Full-text search" },
+      },
     ],
   },
   {
-    name: "Smaller vectors (halfvec, binary quantization)",
-    summary: "Store each number in 16 bits, or even 1 bit, instead of 32.",
-    example: {
-      search: "speed up my database",
-      result: <>the same three in the same order with halfvec, in half the space.</>,
-    },
-    warning: (
-      <>
-        With binary quantization, this lesson&apos;s 3-number vectors all become the bits
-        111, except CSS grid layouts (110): 7 of 8 documents look identical. Real
-        1,536-number vectors fare much better, but re-rank the top results with the full
-        vectors.
-      </>
-    ),
-    pros: [
-      "Half the storage with halfvec, 1/32 with bits; faster indexes.",
-      "halfvec indexes up to 4,000 dimensions; vector stops at 2,000.",
-    ],
-    cons: [
-      "Some accuracy lost.",
-      "Binary quantization usually needs a second pass that re-ranks with the full vectors.",
+    title: "Vector search",
+    intro:
+      "Matches meaning. Every flavour needs an embedding model for each document and each search.",
+    approaches: [
+      {
+        name: "Arrays + SQL functions",
+        summary: "Plain arrays, distance written by hand.",
+        examples: [["speed up my database", "JOIN patterns, SQL indexes, Query tuning"]],
+        pros: "no extension",
+        cons: "no index: every search reads every row",
+        lesson: { href: "/lessons/vectors", label: "Vectors" },
+      },
+      {
+        name: "pgvector, no index",
+        summary: "A vector type, searched by a full scan.",
+        examples: [["speed up my database", "the same three, always exact"]],
+        pros: "exact, simple",
+        cons: "slow beyond tens of thousands of rows",
+        lesson: { href: "/lessons/pgvector", label: "pgvector" },
+      },
+      {
+        name: "pgvector + HNSW",
+        summary: "A graph index walked towards the question.",
+        examples: [["speed up my database", "the same three, fast on millions of rows"]],
+        warning: "approximate: can miss a neighbour, or return fewer rows with a filter",
+        pros: "fast, high recall",
+        cons: "slow to build, memory hungry",
+        lesson: { href: "/lessons/pgvector", label: "pgvector" },
+      },
+      {
+        name: "pgvector + IVFFlat",
+        summary: "Clusters vectors, searches the nearest clusters.",
+        examples: [["speed up my database", "the same three"]],
+        warning: "built on an empty table, results get poor",
+        pros: "quick to build, small",
+        cons: "lower recall, rebuild as data changes",
+      },
+      {
+        name: "halfvec / binary quantization",
+        summary: "Smaller numbers: 16 bits or 1 bit instead of 32.",
+        examples: [["speed up my database", "the same three with halfvec"]],
+        warning: "in binary, 7 of these 8 documents become the same bits: re-rank",
+        pros: "½ or 1/32 of the storage",
+        cons: "less accurate",
+      },
+      {
+        name: "pgai",
+        summary: "The database computes embeddings itself.",
+        examples: [["speed up my database", "the same three, embedded by Postgres"]],
+        warning: "if the model API fails, rows go unembedded and unfound",
+        pros: "always in sync, no app code",
+        cons: "API calls inside Postgres; unmaintained since Feb 2026",
+      },
     ],
   },
   {
-    name: "Embeddings computed in the database (pgai)",
-    summary:
-      "The database calls the embedding model itself, for every new or changed row.",
-    example: {
-      verb: "insert",
-      search: "Indexing JSON columns",
-      result: <>its embedding in documents_embeddings shortly after, with no app code.</>,
-    },
-    warning: (
-      <>
-        If the model API is down or its key expires, the row is saved without an embedding
-        yet, and vector search silently misses it.
-      </>
-    ),
-    pros: ["Embeddings stay in sync automatically, like an index.", "No app code."],
-    cons: [
-      "The database calls an external API: latency, API keys, and failures inside Postgres.",
-      "pgai has not been maintained since February 2026.",
+    title: "Hybrid",
+    approaches: [
+      {
+        name: "Full-text + vectors",
+        summary: "Runs both and merges the rankings.",
+        examples: [["find meaning", "Vector search first: top of both lists"]],
+        pros: "exact words and meaning",
+        cons: "two searches to tune, still needs embeddings",
+      },
     ],
   },
 ];
 
-const hybridApproach: ApproachSummary = {
-  name: "Hybrid: full-text + vectors",
-  summary: "Runs both searches and merges the two rankings.",
-  example: {
-    search: "find meaning",
-    result: (
-      <>
-        Vector search first: top of both lists. SQL indexes second: it matches the word
-        &quot;find&quot;, though it is only 5th by meaning.
-      </>
-    ),
-  },
-  warning: (
-    <>
-      If the embedding model is down, only the keyword half can run: plan for that
-      fallback.
-    </>
-  ),
-  pros: ["Exact words and names, and meaning when the words differ.", "One SQL query."],
-  cons: [
-    "Two indexes and two searches to tune.",
-    "Still needs an embedding for every document and every search.",
-  ],
-};
-
-function ApproachCard({ approach }: { approach: ApproachSummary }) {
+function ApproachOverview() {
   return (
-    <div>
-      <h3 className="text-lg font-semibold text-zinc-950">{approach.name}</h3>
-      <p className="mt-1 text-base leading-7 text-zinc-800">{approach.summary}</p>
-      <p className="mt-2 text-base leading-7 text-zinc-800">
-        You {approach.example.verb ?? "search"}{" "}
-        <span className="font-semibold">&quot;{approach.example.search}&quot;</span>, you
-        get {approach.example.result}
-      </p>
-      {approach.warning ? (
-        <p className="mt-2 border-l-2 border-amber-400 pl-3 text-sm leading-6 text-amber-900">
-          {approach.warning}
-        </p>
-      ) : null}
-      <div className="mt-3 grid gap-4 sm:grid-cols-2">
-        <div>
-          <h4 className="font-mono text-xs font-semibold uppercase tracking-wide text-emerald-700">
-            Pros
-          </h4>
-          <ul className="mt-1 list-disc pl-5 text-sm leading-6 text-zinc-800">
-            {approach.pros.map((pro, index) => (
-              <li key={index}>{pro}</li>
+    <div className="flex flex-col gap-6">
+      {approachGroups.map((group) => (
+        <div key={group.title}>
+          <h3 className="text-lg font-semibold text-zinc-950">{group.title}</h3>
+          {group.intro ? (
+            <p className="mt-1 text-base leading-7 text-zinc-800">{group.intro}</p>
+          ) : null}
+          <ul className="mt-3 flex flex-col gap-4">
+            {group.approaches.map((approach) => (
+              <li className="text-sm leading-6 text-zinc-800" key={approach.name}>
+                <span className="font-semibold text-zinc-950">{approach.name}</span>:{" "}
+                {approach.summary}
+                {approach.lesson ? (
+                  <>
+                    {" "}
+                    <LessonLink to={approach.lesson.href}>
+                      {approach.lesson.label}
+                    </LessonLink>
+                  </>
+                ) : null}
+                <div>
+                  {approach.examples.map(([search, result], index) => (
+                    <span key={search}>
+                      {index > 0 ? " · " : null}
+                      <span className="font-mono">&quot;{search}&quot;</span> → {result}
+                    </span>
+                  ))}
+                  {approach.warning ? (
+                    <span className="text-amber-800"> · ⚠ {approach.warning}</span>
+                  ) : null}
+                </div>
+                <div>
+                  <span className="text-emerald-700">+ {approach.pros}</span>
+                  <span className="text-zinc-400"> · </span>
+                  <span className="text-rose-700">− {approach.cons}</span>
+                </div>
+              </li>
             ))}
           </ul>
         </div>
-        <div>
-          <h4 className="font-mono text-xs font-semibold uppercase tracking-wide text-rose-700">
-            Cons
-          </h4>
-          <ul className="mt-1 list-disc pl-5 text-sm leading-6 text-zinc-800">
-            {approach.cons.map((con, index) => (
-              <li key={index}>{con}</li>
-            ))}
-          </ul>
-        </div>
-      </div>
-      {approach.lesson ? (
-        <p className="mt-3 text-sm text-zinc-700">
-          Lesson:{" "}
-          <LessonLink to={approach.lesson.href}>{approach.lesson.label}</LessonLink>
-        </p>
-      ) : null}
-    </div>
-  );
-}
-
-function ApproachCards({ approaches }: { approaches: readonly ApproachSummary[] }) {
-  return (
-    <div className="mt-4 flex flex-col gap-8">
-      {approaches.map((approach) => (
-        <ApproachCard approach={approach} key={approach.name} />
       ))}
     </div>
   );
@@ -498,33 +366,15 @@ export default function TextSearchInPostgres() {
           data.
         </p>
         <p className="mt-3">
-          PostgreSQL can often do the job itself. First, every approach in brief, with its
-          pros and cons, and a table to compare them. Then all of them on one table, with
-          the same eight documents as the previous lessons. It repeats a little of each
-          lesson on purpose; follow the links for the details.
+          PostgreSQL can often do the job itself. First, every approach in brief, and a
+          table to compare them. Then all of them on one table, with the same eight
+          documents as the previous lessons.
         </p>
       </Paragraphs>
 
       <LessonSection>
         <Title2 id="the-approaches">The approaches</Title2>
-        <Paragraph>Keyword search: match the text the user typed.</Paragraph>
-        <ApproachCards approaches={textApproaches} />
-      </LessonSection>
-
-      <LessonSection>
-        <Title2 id="vector-approaches">Vector search, in several flavours</Title2>
-        <Paragraph>
-          Vector search matches meaning. Every flavour needs an embedding model to turn
-          text into a vector, for every document and for every search: an extra
-          dependency, with its own cost and latency. They differ in how the vectors are
-          stored and searched, and in who computes them.
-        </Paragraph>
-        <ApproachCards approaches={vectorApproaches} />
-      </LessonSection>
-
-      <LessonSection>
-        <Title2 id="hybrid-approach">Both at once</Title2>
-        <ApproachCards approaches={[hybridApproach]} />
+        <ApproachOverview />
       </LessonSection>
 
       <LessonSection>
