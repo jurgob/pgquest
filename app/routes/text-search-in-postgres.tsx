@@ -31,6 +31,9 @@ type ApproachSummary = {
   summary: React.ReactNode;
   pros: readonly React.ReactNode[];
   cons: readonly React.ReactNode[];
+  // What a search returns on this lesson's eight documents.
+  example: { search: string; result: React.ReactNode; verb?: "search" | "insert" };
+  warning?: React.ReactNode;
   lesson?: { href: string; label: string };
 };
 
@@ -38,6 +41,10 @@ const textApproaches: readonly ApproachSummary[] = [
   {
     name: "ILIKE",
     summary: "Finds a piece of text anywhere in a column.",
+    example: { search: "index", result: <>SQL indexes, Query tuning.</> },
+    warning: (
+      <>Search &quot;indexing&quot;: nothing. No document contains that exact text.</>
+    ),
     pros: [
       "Built in, nothing to set up.",
       "Exact and predictable.",
@@ -55,6 +62,16 @@ const textApproaches: readonly ApproachSummary[] = [
   {
     name: "Fuzzy search (pg_trgm)",
     summary: "Compares strings by the 3-letter chunks they share.",
+    example: {
+      search: "nueral netwrks",
+      result: <>Neural networks, despite two typos.</>,
+    },
+    warning: (
+      <>
+        Search &quot;speed up my database&quot;: nothing. No title is spelled like it, and
+        trigrams don&apos;t know what it means.
+      </>
+    ),
     pros: [
       "Tolerates typos.",
       "Gives a score to sort by.",
@@ -70,6 +87,21 @@ const textApproaches: readonly ApproachSummary[] = [
   {
     name: "Full-text search",
     summary: "Matches words and their forms: 'indexing' finds 'Indexes'.",
+    example: {
+      search: "indexing tables",
+      result: (
+        <>
+          SQL indexes: &quot;indexing&quot; and &quot;tables&quot; become the words index
+          and tabl.
+        </>
+      ),
+    },
+    warning: (
+      <>
+        Search &quot;postgress&quot; (a typo) or &quot;speed up&quot;: nothing, though
+        Query tuning is all about getting faster.
+      </>
+    ),
     pros: [
       "Built in.",
       "Stemming, stop words, search-box syntax (quotes, OR, -word).",
@@ -89,6 +121,15 @@ const vectorApproaches: readonly ApproachSummary[] = [
   {
     name: "Arrays and SQL functions",
     summary: "Embeddings in a DOUBLE PRECISION[] column, distance written in SQL.",
+    example: {
+      search: "speed up my database",
+      result: (
+        <>JOIN patterns, SQL indexes, Query tuning: no shared words, same meaning.</>
+      ),
+    },
+    warning: (
+      <>The same search on a million rows computes a million distances, every time.</>
+    ),
     pros: ["No extension: works on any Postgres.", "Every step of the math is visible."],
     cons: [
       "No index: every search computes the distance for every row.",
@@ -99,6 +140,11 @@ const vectorApproaches: readonly ApproachSummary[] = [
   {
     name: "pgvector, no index",
     summary: "A vector column and distance operators, searched by a full scan.",
+    example: {
+      search: "speed up my database",
+      result: <>The same three documents, always the exact nearest ones.</>,
+    },
+    warning: <>Still reads every row: fine for thousands, slow for millions.</>,
     pros: [
       "Exact results: always the true nearest rows.",
       "Simple: fine up to tens of thousands of rows.",
@@ -110,6 +156,17 @@ const vectorApproaches: readonly ApproachSummary[] = [
   {
     name: "pgvector + HNSW index",
     summary: "A graph of neighbours that a search walks towards the question.",
+    example: {
+      search: "speed up my database",
+      result: <>The same three, in milliseconds even on millions of rows.</>,
+    },
+    warning: (
+      <>
+        On a big table it can now and then miss one of the true nearest rows. Add a
+        selective WHERE (say, one author&apos;s documents) and you can get fewer than 3
+        results.
+      </>
+    ),
     pros: [
       "Fast, with high recall.",
       "Can be created on an empty table; stays good as rows arrive.",
@@ -127,6 +184,16 @@ const vectorApproaches: readonly ApproachSummary[] = [
   {
     name: "pgvector + IVFFlat index",
     summary: "Groups vectors into clusters and only searches the nearest ones.",
+    example: {
+      search: "speed up my database",
+      result: <>The same three, if the index was built after the data was loaded.</>,
+    },
+    warning: (
+      <>
+        Built on an empty table, the clusters mean nothing and results get worse. With the
+        default of searching 1 cluster, a neighbour in the next cluster is missed.
+      </>
+    ),
     pros: ["Faster to build and smaller than HNSW."],
     cons: [
       "Must be created after the data is loaded: the clusters come from it.",
@@ -137,6 +204,18 @@ const vectorApproaches: readonly ApproachSummary[] = [
   {
     name: "Smaller vectors (halfvec, binary quantization)",
     summary: "Store each number in 16 bits, or even 1 bit, instead of 32.",
+    example: {
+      search: "speed up my database",
+      result: <>the same three in the same order with halfvec, in half the space.</>,
+    },
+    warning: (
+      <>
+        With binary quantization, this lesson&apos;s 3-number vectors all become the bits
+        111, except CSS grid layouts (110): 7 of 8 documents look identical. Real
+        1,536-number vectors fare much better, but re-rank the top results with the full
+        vectors.
+      </>
+    ),
     pros: [
       "Half the storage with halfvec, 1/32 with bits; faster indexes.",
       "halfvec indexes up to 4,000 dimensions; vector stops at 2,000.",
@@ -150,6 +229,17 @@ const vectorApproaches: readonly ApproachSummary[] = [
     name: "Embeddings computed in the database (pgai)",
     summary:
       "The database calls the embedding model itself, for every new or changed row.",
+    example: {
+      verb: "insert",
+      search: "Indexing JSON columns",
+      result: <>its embedding in documents_embeddings shortly after, with no app code.</>,
+    },
+    warning: (
+      <>
+        If the model API is down or its key expires, the row is saved without an embedding
+        yet, and vector search silently misses it.
+      </>
+    ),
     pros: ["Embeddings stay in sync automatically, like an index.", "No app code."],
     cons: [
       "The database calls an external API: latency, API keys, and failures inside Postgres.",
@@ -161,6 +251,21 @@ const vectorApproaches: readonly ApproachSummary[] = [
 const hybridApproach: ApproachSummary = {
   name: "Hybrid: full-text + vectors",
   summary: "Runs both searches and merges the two rankings.",
+  example: {
+    search: "find meaning",
+    result: (
+      <>
+        Vector search first: top of both lists. SQL indexes second: it matches the word
+        &quot;find&quot;, though it is only 5th by meaning.
+      </>
+    ),
+  },
+  warning: (
+    <>
+      If the embedding model is down, only the keyword half can run: plan for that
+      fallback.
+    </>
+  ),
   pros: ["Exact words and names, and meaning when the words differ.", "One SQL query."],
   cons: [
     "Two indexes and two searches to tune.",
@@ -170,9 +275,19 @@ const hybridApproach: ApproachSummary = {
 
 function ApproachCard({ approach }: { approach: ApproachSummary }) {
   return (
-    <div className="rounded-md border border-zinc-200 p-4">
+    <div>
       <h3 className="text-lg font-semibold text-zinc-950">{approach.name}</h3>
       <p className="mt-1 text-base leading-7 text-zinc-800">{approach.summary}</p>
+      <p className="mt-2 text-base leading-7 text-zinc-800">
+        You {approach.example.verb ?? "search"}{" "}
+        <span className="font-semibold">&quot;{approach.example.search}&quot;</span>, you
+        get {approach.example.result}
+      </p>
+      {approach.warning ? (
+        <p className="mt-2 border-l-2 border-amber-400 pl-3 text-sm leading-6 text-amber-900">
+          {approach.warning}
+        </p>
+      ) : null}
       <div className="mt-3 grid gap-4 sm:grid-cols-2">
         <div>
           <h4 className="font-mono text-xs font-semibold uppercase tracking-wide text-emerald-700">
@@ -207,7 +322,7 @@ function ApproachCard({ approach }: { approach: ApproachSummary }) {
 
 function ApproachCards({ approaches }: { approaches: readonly ApproachSummary[] }) {
   return (
-    <div className="mt-4 flex flex-col gap-4">
+    <div className="mt-4 flex flex-col gap-8">
       {approaches.map((approach) => (
         <ApproachCard approach={approach} key={approach.name} />
       ))}
