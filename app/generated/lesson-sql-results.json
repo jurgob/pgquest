@@ -563,6 +563,71 @@
     },
     "status": "done"
   },
+  "05933b33ed9500": {
+    "output": {
+      "rows": [
+        {
+          "title": "SQL indexes"
+        },
+        {
+          "title": "JOIN patterns"
+        },
+        {
+          "title": "Query tuning"
+        }
+      ],
+      "plan": "Limit  (cost=32.49..32.49 rows=3 width=40)\n  ->  Sort  (cost=32.49..32.50 rows=6 width=40)\n        Sort Key: ((candidates.embedding <=> '[0.85,0.1,0.05]'::vector))\n        ->  Subquery Scan on candidates  (cost=32.32..32.41 rows=6 width=40)\n              ->  Limit  (cost=32.32..32.33 rows=6 width=72)\n                    ->  Sort  (cost=32.32..33.89 rows=630 width=72)\n                          Sort Key: (((binary_quantize(documents.embedding))::bit(3) <~> '111'::\"bit\"))\n                          ->  Seq Scan on documents  (cost=0.00..21.02 rows=630 width=72)"
+    },
+    "status": "done"
+  },
+  "05d17a17e4a4ee": {
+    "output": {
+      "rows": [
+        {
+          "title": "SQL indexes",
+          "half": "[0.89990234,0.099975586,0.099975586]",
+          "bits": "111"
+        },
+        {
+          "title": "JOIN patterns",
+          "half": "[0.85009766,0.049987793,0.049987793]",
+          "bits": "111"
+        },
+        {
+          "title": "Query tuning",
+          "half": "[0.7998047,0.15002441,0.099975586]",
+          "bits": "111"
+        },
+        {
+          "title": "React components",
+          "half": "[0.049987793,0.9501953,0.099975586]",
+          "bits": "111"
+        },
+        {
+          "title": "CSS grid layouts",
+          "half": "[0.049987793,0.89990234,0]",
+          "bits": "110"
+        },
+        {
+          "title": "Neural networks",
+          "half": "[0.049987793,0.049987793,0.9501953]",
+          "bits": "111"
+        },
+        {
+          "title": "Chatbots",
+          "half": "[0.099975586,0.25,0.89990234]",
+          "bits": "111"
+        },
+        {
+          "title": "Vector search",
+          "half": "[0.60009766,0.049987793,0.7998047]",
+          "bits": "111"
+        }
+      ],
+      "plan": "Seq Scan on documents  (cost=0.00..25.75 rows=630 width=96)"
+    },
+    "status": "done"
+  },
   "05f7e3c675e2eb": {
     "output": {
       "rows": [
@@ -842,6 +907,29 @@
     },
     "status": "done"
   },
+  "081c7e1d02bf30": {
+    "output": {
+      "rows": [
+        {
+          "title": "JOIN patterns"
+        },
+        {
+          "title": "Sqlite networks note 4692"
+        },
+        {
+          "title": "Svelte joins note 4337"
+        },
+        {
+          "title": "Sqlite chatbots note 3982"
+        },
+        {
+          "title": "Svelte tuning note 3627"
+        }
+      ],
+      "plan": "Limit  (cost=3.50..4.00 rows=5 width=32)\n  ->  Index Scan using documents_embedding_ivfflat_idx on documents  (cost=3.50..505.66 rows=5008 width=32)\n        Order By: (embedding <=> '[0.85,0.1,0.05]'::vector)"
+    },
+    "status": "done"
+  },
   "084cbef6368c9f": {
     "output": {
       "rows": [
@@ -949,6 +1037,29 @@
         }
       ],
       "plan": "Unavailable: EXPLAIN doesn't support this statement."
+    },
+    "status": "done"
+  },
+  "0c61bc92cd645f": {
+    "output": {
+      "rows": [
+        {
+          "title": "SQL indexes"
+        },
+        {
+          "title": "JOIN patterns"
+        },
+        {
+          "title": "Svelte joins note 4337"
+        },
+        {
+          "title": "Sqlite networks note 4692"
+        },
+        {
+          "title": "Sqlite chatbots note 3982"
+        }
+      ],
+      "plan": "Limit  (cost=212.78..212.79 rows=5 width=32)\n  ->  Sort  (cost=212.78..225.30 rows=5008 width=32)\n        Sort Key: ((embedding <=> '[0.85,0.1,0.05]'::vector))\n        ->  Seq Scan on documents  (cost=0.00..129.60 rows=5008 width=32)"
     },
     "status": "done"
   },

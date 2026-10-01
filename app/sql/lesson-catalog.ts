@@ -281,8 +281,8 @@ export const lessons: readonly LessonCatalogItem[] = [
     cliExampleModule: "pgvector.sql.ts",
     href: "/lessons/pgvector",
     summary:
-      "The vectors lesson again, with pgvector: a real vector type, distance operators, and an HNSW index for fast nearest-neighbour search.",
-    meta: "PGVECTOR · HNSW",
+      "The vectors lesson again, with pgvector: a real vector type, distance operators, and four ways to search many rows: exact, HNSW, IVFFlat, and smaller vectors.",
+    meta: "PGVECTOR · HNSW · IVFFLAT · HALFVEC",
     time: "20 min",
     draft: true,
   },

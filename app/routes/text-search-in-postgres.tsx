@@ -201,7 +201,7 @@ const vectorApproaches: readonly ApproachSummary[] = [
       "Type checking and fast distance operators.",
     ],
     cons: ["Cost grows with rows × dimensions: every search reads the whole table."],
-    lesson: { href: "/lessons/pgvector", label: "pgvector" },
+    lesson: { href: "/lessons/pgvector#exact-search", label: "pgvector: exact search" },
   },
   {
     name: "pgvector + HNSW index",
@@ -229,7 +229,7 @@ const vectorApproaches: readonly ApproachSummary[] = [
       "Slow to build, and uses a lot of memory.",
       "A selective WHERE filter can return fewer rows than the LIMIT.",
     ],
-    lesson: { href: "/lessons/pgvector#an-index", label: "pgvector" },
+    lesson: { href: "/lessons/pgvector#hnsw", label: "pgvector: HNSW" },
   },
   {
     name: "pgvector + IVFFlat index",
@@ -250,9 +250,10 @@ const vectorApproaches: readonly ApproachSummary[] = [
       "Lower recall than HNSW at the same speed.",
       "Needs rebuilding when the data changes a lot.",
     ],
+    lesson: { href: "/lessons/pgvector#ivfflat", label: "pgvector: IVFFlat" },
   },
   {
-    name: "Smaller vectors (halfvec, binary quantization)",
+    name: "pgvector + smaller vectors (halfvec, binary quantization)",
     summary: "Store each number in 16 bits, or even 1 bit, instead of 32.",
     example: {
       search: "speed up my database",
@@ -274,11 +275,15 @@ const vectorApproaches: readonly ApproachSummary[] = [
       "Some accuracy lost.",
       "Binary quantization usually needs a second pass that re-ranks with the full vectors.",
     ],
+    lesson: {
+      href: "/lessons/pgvector#smaller-vectors",
+      label: "pgvector: smaller vectors",
+    },
   },
   {
     name: "Embeddings computed in the database (pgai)",
     summary:
-      "The database calls the embedding model itself, for every new or changed row.",
+      "The database calls the embedding model itself, for every new or changed row. It's here because it comes up a lot when you search for AI in Postgres, but it is no longer maintained.",
     example: {
       verb: "insert",
       search: "Indexing JSON columns",
@@ -292,9 +297,11 @@ const vectorApproaches: readonly ApproachSummary[] = [
     ),
     pros: ["Embeddings stay in sync automatically, like an index.", "No app code."],
     cons: [
-      "The database calls an external API: latency, API keys, and failures inside Postgres.",
+      "Network calls to a model from inside the database: slow, failure-prone, and holding a connection while they wait.",
+      "Not available on most managed Postgres services, which don't allow the extension.",
       "pgai has not been maintained since February 2026.",
     ],
+    lesson: { href: "#where-embeddings-come-from", label: "why it is deprecated" },
   },
 ];
 
@@ -645,13 +652,24 @@ export default function TextSearchInPostgres() {
           the <LessonLink to="/lessons/pgvector">pgvector lesson</LessonLink>.
         </Paragraph>
         <Paragraph>
-          Timescale&apos;s pgai took the other route: a vectorizer, declared in SQL, that
-          watches a table and keeps an embeddings table in sync by calling the model for
-          every new or changed row. It can&apos;t run here, since it calls a model API
-          from the database, and the project has not been maintained since February 2026.
-          The idea is still worth knowing: treat embeddings like an index that the system
-          keeps up to date.
+          Timescale&apos;s pgai took the other route, and it&apos;s in this lesson because
+          it comes up a lot when you search for AI in Postgres. Its PostgreSQL extension
+          called embedding models straight from SQL, and its vectorizer kept an embeddings
+          table in sync with a source table, like an index.
         </Paragraph>
+        <Paragraph>
+          It is deprecated: the project has not been maintained since February 2026, and
+          its README doesn&apos;t give a reason. Its own history points at the problem
+          with the approach. In 2025 the vectorizer moved out of the extension into a
+          separate Python worker, because managed Postgres services (Amazon RDS, Supabase,
+          ...) don&apos;t let you install the extension. And calling a model over the
+          network from inside the database is a poor fit anyway: a SQL statement waits on
+          an outside API, holding its connection and any locks; the API&apos;s timeouts,
+          rate limits and outages become database errors; and the API keys have to live in
+          the database. Computing embeddings in the app, or in a worker next to it, keeps
+          the database doing what it is good at.
+        </Paragraph>
+        <Paragraph>The vectorizer, for reference (not runnable here):</Paragraph>
         <div className="mt-4">
           <SqlCodeViewer code={pgaiExample} />
         </div>
