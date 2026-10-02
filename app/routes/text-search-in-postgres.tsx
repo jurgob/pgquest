@@ -27,6 +27,8 @@ function Example({ id }: { id: SqlExampleId }) {
 }
 
 type ApproachSummary = {
+  // Anchor for the card, so the comparison table and other pages can link to it.
+  id: string;
   name: string;
   summary: React.ReactNode;
   pros: readonly React.ReactNode[];
@@ -69,6 +71,7 @@ function MatchList({ matches }: { matches: readonly Match[] }) {
 
 const textApproaches: readonly ApproachSummary[] = [
   {
+    id: "ilike",
     name: "ILIKE",
     summary: "Finds a piece of text anywhere in a column.",
     example: { search: "index", result: <>SQL indexes, Query tuning.</> },
@@ -97,6 +100,7 @@ const textApproaches: readonly ApproachSummary[] = [
     lesson: { href: "/lessons/text-search-basics", label: "Text search basics" },
   },
   {
+    id: "fuzzy-search",
     name: "Fuzzy search (pg_trgm)",
     summary: "Compares strings by the 3-letter chunks they share.",
     example: {
@@ -128,8 +132,22 @@ const textApproaches: readonly ApproachSummary[] = [
     lesson: { href: "/lessons/fuzzy-search", label: "Fuzzy search with pg_trgm" },
   },
   {
-    name: "Full-text search",
-    summary: "Matches words and their forms: 'indexing' finds 'Indexes'.",
+    id: "full-text-search",
+    name: "Full-text search (to_tsvector, to_tsquery)",
+    summary: (
+      <>
+        Matches words and their forms using{" "}
+        <a
+          className="text-sky-700 underline decoration-sky-300 underline-offset-2 hover:text-sky-900"
+          href="https://www.postgresql.org/docs/current/textsearch-intro.html"
+          rel="noreferrer"
+          target="_blank"
+        >
+          lexemes
+        </a>
+        : &apos;indexing&apos; finds &apos;Indexes&apos;.
+      </>
+    ),
     example: {
       search: "indexing tables",
       result: (
@@ -169,6 +187,7 @@ const textApproaches: readonly ApproachSummary[] = [
 
 const vectorApproaches: readonly ApproachSummary[] = [
   {
+    id: "vectors-in-arrays",
     name: "Arrays and SQL functions",
     summary: "Embeddings in a DOUBLE PRECISION[] column, distance written in SQL.",
     example: {
@@ -188,6 +207,7 @@ const vectorApproaches: readonly ApproachSummary[] = [
     lesson: { href: "/lessons/vectors", label: "Vectors" },
   },
   {
+    id: "pgvector-exact",
     name: "pgvector, no index",
     summary: "A vector column and distance operators, searched by a full scan.",
     example: {
@@ -204,6 +224,7 @@ const vectorApproaches: readonly ApproachSummary[] = [
     lesson: { href: "/lessons/pgvector#exact-search", label: "pgvector: exact search" },
   },
   {
+    id: "pgvector-hnsw",
     name: "pgvector + HNSW index",
     summary: "A graph of neighbours that a search walks towards the question.",
     example: {
@@ -232,6 +253,7 @@ const vectorApproaches: readonly ApproachSummary[] = [
     lesson: { href: "/lessons/pgvector#hnsw", label: "pgvector: HNSW" },
   },
   {
+    id: "pgvector-ivfflat",
     name: "pgvector + IVFFlat index",
     summary: "Groups vectors into clusters and only searches the nearest ones.",
     example: {
@@ -253,6 +275,7 @@ const vectorApproaches: readonly ApproachSummary[] = [
     lesson: { href: "/lessons/pgvector#ivfflat", label: "pgvector: IVFFlat" },
   },
   {
+    id: "pgvector-smaller-vectors",
     name: "pgvector + smaller vectors (halfvec, binary quantization)",
     summary: "Store each number in 16 bits, or even 1 bit, instead of 32.",
     example: {
@@ -280,6 +303,7 @@ const vectorApproaches: readonly ApproachSummary[] = [
     },
   },
   {
+    id: "pgai",
     name: "Embeddings computed in the database (pgai)",
     summary:
       "The database calls the embedding model itself, for every new or changed row. It's here because it comes up a lot when you search for AI in Postgres, but it is no longer maintained.",
@@ -305,6 +329,7 @@ const vectorApproaches: readonly ApproachSummary[] = [
 ];
 
 const hybridApproach: ApproachSummary = {
+  id: "hybrid",
   name: "Hybrid: full-text + vectors",
   summary: "Runs both searches and merges the two rankings.",
   example: {
@@ -332,7 +357,11 @@ const hybridApproach: ApproachSummary = {
 function ApproachCard({ approach }: { approach: ApproachSummary }) {
   return (
     <div>
-      <h3 className="text-lg font-semibold text-zinc-950">{approach.name}</h3>
+      <h3 className="scroll-mt-4 text-lg font-semibold text-zinc-950" id={approach.id}>
+        <a className="hover:text-sky-700 hover:underline" href={`#${approach.id}`}>
+          {approach.name}
+        </a>
+      </h3>
       <p className="mt-1 text-base leading-7 text-zinc-800">{approach.summary}</p>
       {approach.matches ? <MatchList matches={approach.matches} /> : null}
       <p className="mt-2 text-base leading-7 text-zinc-800">
@@ -381,7 +410,7 @@ function ApproachCards({ approaches }: { approaches: readonly ApproachSummary[] 
   return (
     <div className="mt-4 flex flex-col gap-8">
       {approaches.map((approach) => (
-        <ApproachCard approach={approach} key={approach.name} />
+        <ApproachCard approach={approach} key={approach.id} />
       ))}
     </div>
   );
@@ -389,6 +418,8 @@ function ApproachCards({ approaches }: { approaches: readonly ApproachSummary[] 
 
 type Approach = {
   name: string;
+  // The approach's card (or section) on this page.
+  ref: string;
   finds: string;
   typos: string;
   meaning: string;
@@ -401,6 +432,7 @@ type Approach = {
 const approaches: readonly Approach[] = [
   {
     name: "ILIKE",
+    ref: "ilike",
     finds: "Substrings",
     typos: "No",
     meaning: "No",
@@ -411,6 +443,7 @@ const approaches: readonly Approach[] = [
   },
   {
     name: "pg_trgm",
+    ref: "fuzzy-search",
     finds: "Similar spellings",
     typos: "Yes",
     meaning: "No",
@@ -420,7 +453,8 @@ const approaches: readonly Approach[] = [
     lessons: [{ href: "/lessons/fuzzy-search", label: "Fuzzy search" }],
   },
   {
-    name: "Full-text",
+    name: "Full-text (to_tsvector, to_tsquery)",
+    ref: "full-text-search",
     finds: "Words and their forms",
     typos: "No",
     meaning: "No",
@@ -431,6 +465,7 @@ const approaches: readonly Approach[] = [
   },
   {
     name: "pgvector",
+    ref: "vector-approaches",
     finds: "Similar meaning",
     typos: "Mostly",
     meaning: "Yes",
@@ -444,6 +479,7 @@ const approaches: readonly Approach[] = [
   },
   {
     name: "Hybrid",
+    ref: "hybrid",
     finds: "Words and meaning",
     typos: "Mostly",
     meaning: "Yes",
@@ -484,7 +520,14 @@ function ComparisonTable() {
         <tbody>
           {approaches.map((approach) => (
             <tr className="border-b border-zinc-100 last:border-b-0" key={approach.name}>
-              <td className="px-3 py-2 font-semibold text-zinc-950">{approach.name}</td>
+              <td className="px-3 py-2 font-semibold">
+                <a
+                  className="text-sky-700 underline decoration-sky-300 underline-offset-2 hover:text-sky-900"
+                  href={`#${approach.ref}`}
+                >
+                  {approach.name}
+                </a>
+              </td>
               <td className="px-3 py-2 text-zinc-800">{approach.finds}</td>
               <td className="px-3 py-2 text-zinc-800">{approach.typos}</td>
               <td className="px-3 py-2 text-zinc-800">{approach.meaning}</td>

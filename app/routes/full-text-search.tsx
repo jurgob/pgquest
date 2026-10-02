@@ -70,10 +70,18 @@ export default function FullTextSearch() {
         <p>
           <LessonLink to="/lessons/text-search-basics">LIKE and ILIKE</LessonLink> match
           characters: <InlineCode>&apos;%indexing%&apos;</InlineCode> never finds
-          &quot;Indexes&quot;. Full-text search matches words. It reduces text to lexemes,
-          so &quot;indexing&quot;, &quot;indexes&quot; and &quot;index&quot; are the same
-          word, understands search-box syntax, ranks the results, and has an index. It is
-          built into PostgreSQL: no extension needed.
+          &quot;Indexes&quot;. Full-text search matches words. It reduces text to{" "}
+          <a
+            className="text-sky-700 underline decoration-sky-300 underline-offset-2 hover:text-sky-900"
+            href="https://www.postgresql.org/docs/current/textsearch-intro.html"
+            rel="noreferrer"
+            target="_blank"
+          >
+            lexemes
+          </a>
+          , so &quot;indexing&quot;, &quot;indexes&quot; and &quot;index&quot; are the
+          same word, understands search-box syntax, ranks the results, and has an index.
+          It is built into PostgreSQL: no extension needed.
         </p>
         <p className="mt-3">
           Same eight documents as the{" "}
