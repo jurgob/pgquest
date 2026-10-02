@@ -22,6 +22,7 @@ import {
   Title2,
 } from "../sql/lesson-layout";
 import { SqlCodeViewer } from "../sql/sql-editor";
+import { VectorScorer } from "../sql/vector-scorer";
 
 function Example({ id }: { id: SqlExampleId }) {
   return <ExampleBlock example={getSqlExample(examples, id)} />;
@@ -86,6 +87,11 @@ export default function Vectors() {
           search with a real vector type and index.
         </p>
       </Paragraphs>
+      <Paragraph>
+        Try a real model: mobilebert-uncased-mnli, running in your browser, scores how
+        much a text is about each of the three topics.
+      </Paragraph>
+      <VectorScorer />
 
       <Section>
         <Title2 id="the-documents">The documents</Title2>
