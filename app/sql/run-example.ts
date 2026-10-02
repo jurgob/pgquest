@@ -50,39 +50,94 @@ export async function createSqlDatabase(sqlLoad: string, signal?: AbortSignal) {
     console.time(timer);
   }
 
-  const extensionNames = pgliteExtensionNamesFor(sqlLoad);
-  const db =
-    import.meta.env.SSR || import.meta.env.MODE === "test"
-      ? new (await import("@electric-sql/pglite")).PGlite({
-          extensions: pgliteExtensions(extensionNames),
-        })
-      : await (async () => {
-          const { PGliteWorker } = await import("@electric-sql/pglite/worker");
-          const databaseId = crypto.randomUUID();
-          return PGliteWorker.create(
-            new Worker(new URL("./pglite-worker.ts", import.meta.url), {
-              type: "module",
-            }),
-            {
-              dataDir: `memory://pgquest-${databaseId}`,
-              id: `pgquest-${databaseId}`,
-              meta: { extensionNames } satisfies PgliteWorkerMeta,
-            },
-          );
-        })();
-
   try {
-    await db.exec(sqlLoad);
-    throwIfAborted(signal);
-    return db;
-  } catch (error) {
-    await db.close();
-    throw error;
+    if (import.meta.env.SSR || import.meta.env.MODE === "test") {
+      const db = await createServerSqlDatabase(sqlLoad);
+      if (signal?.aborted) {
+        await db.close();
+        throwIfAborted(signal);
+      }
+      return db;
+    }
+
+    const { PGliteWorker } = await import("@electric-sql/pglite/worker");
+    const databaseId = crypto.randomUUID();
+    const db = await PGliteWorker.create(
+      new Worker(new URL("./pglite-worker.ts", import.meta.url), {
+        type: "module",
+      }),
+      {
+        dataDir: `memory://pgquest-${databaseId}`,
+        id: `pgquest-${databaseId}`,
+        meta: {
+          extensionNames: pgliteExtensionNamesFor(sqlLoad),
+        } satisfies PgliteWorkerMeta,
+      },
+    );
+
+    try {
+      await db.exec(sqlLoad);
+      throwIfAborted(signal);
+      return db;
+    } catch (error) {
+      await db.close();
+      throw error;
+    }
   } finally {
     if (isTimingEnabled()) {
       console.timeEnd(timer);
     }
   }
+}
+
+// Server-side (tests, build scripts) the same setup SQL runs over and over: once
+// per example, twice per exercise check. Starting PGlite alone takes ~2.5s, plus
+// the setup itself, so each distinct setup runs once and every later database
+// starts from a gzipped snapshot of the result (~1s, ~5 MB each).
+const setupSnapshots = new Map<string, Promise<File | Blob>>();
+
+// Setups that are always run from scratch:
+// - A snapshot only holds what is on disk. SET and temporary tables live in the
+//   session that ran the setup, and pg_stat_statements counts in shared memory.
+// - A snapshot freezes time. A setup that stores the current time (a seat hold
+//   that expires after 30s) would look older and older to later queries.
+const uncacheableSetupPattern =
+  /^\s*SET\s|\bTEMP(?:ORARY)?\s+TABLE\b|\bpg_stat_statements\b|\b(?:now|statement_timestamp|clock_timestamp|transaction_timestamp)\s*\(|\b(?:current_timestamp|current_date|current_time|localtimestamp|localtime)\b/im;
+
+async function createServerSqlDatabase(sqlLoad: string) {
+  const { PGlite } = await import("@electric-sql/pglite");
+  const extensions = pgliteExtensions(pgliteExtensionNamesFor(sqlLoad));
+
+  const runSetup = async () => {
+    const db = await PGlite.create({ extensions });
+    try {
+      await db.exec(sqlLoad);
+      return db;
+    } catch (error) {
+      await db.close();
+      throw error;
+    }
+  };
+
+  if (uncacheableSetupPattern.test(sqlLoad)) {
+    return runSetup();
+  }
+
+  let snapshot = setupSnapshots.get(sqlLoad);
+  if (!snapshot) {
+    snapshot = runSetup().then(async (db) => {
+      try {
+        return await db.dumpDataDir("gzip");
+      } finally {
+        await db.close();
+      }
+    });
+    setupSnapshots.set(sqlLoad, snapshot);
+    // A failed setup is not cached: the next caller retries it and gets the error.
+    snapshot.catch(() => setupSnapshots.delete(sqlLoad));
+  }
+
+  return PGlite.create({ extensions, loadDataDir: await snapshot });
 }
 
 async function executeSqlQuery(
