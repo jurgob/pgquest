@@ -11,7 +11,6 @@ import {
   migrationWithLockTimeoutScript,
   seed,
   selectTakesAccessShareQuery,
-  SESSION_IDS,
   updateTakesRowExclusiveQuery,
 } from "../../cli_examples/postgres-locks.sql";
 import { CourseLessonPage } from "../sql/course-lesson-page";
@@ -23,47 +22,9 @@ import {
   Section,
   Title2,
 } from "../sql/lesson-layout";
-import { getPostgresTranscriptSteps } from "../sql/postgres-examples";
-import type {
-  PostgresExampleStepOutcome,
-  PostgresExampleStepResult,
-  PostgresExampleStepResultWithObservers,
-} from "../sql/run-example";
+import { flattenTranscript, Timeline } from "../sql/session-timeline";
 import { SqlCodeViewer } from "../sql/sql-editor";
 import { SqlResult, useLessonSqlExample } from "../sql/use-lesson-sql-example";
-import type { LessonSqlState } from "../sql/use-lesson-sql-example";
-import type { SqlExampleId } from "../../cli_examples/types";
-
-type SessionId = (typeof SESSION_IDS)[number];
-
-type TimelineEntry = {
-  explanation?: string;
-  step: PostgresExampleStepResult<SessionId>;
-};
-
-function transcriptSteps(
-  id: SqlExampleId,
-): readonly PostgresExampleStepResultWithObservers<SessionId>[] {
-  return getPostgresTranscriptSteps(
-    id,
-  ) as readonly PostgresExampleStepResultWithObservers<SessionId>[];
-}
-
-// Flattens a transcript into one in-order timeline (each step, then its observedBy
-// checkpoints, if any). `explanations` is keyed by position in that flat list.
-function flattenTranscript(
-  id: SqlExampleId,
-  explanations: Readonly<Record<number, string>>,
-): readonly TimelineEntry[] {
-  const entries = transcriptSteps(id).flatMap((step) => [
-    step,
-    ...(step.observedBy ?? []),
-  ]);
-  return entries.map((step, index) => {
-    const explanation = explanations[index];
-    return explanation === undefined ? { step } : { explanation, step };
-  });
-}
 
 const tableLockTimeline = flattenTranscript(
   SQL_EXAMPLE_IDS.postgresLocksTableLockTranscript,
@@ -241,12 +202,6 @@ const ROW_LOCK_MODES: readonly {
 
 const linkClassName =
   "text-sky-700 underline decoration-sky-300 underline-offset-2 hover:text-sky-900";
-
-function toLessonSqlState(outcome: PostgresExampleStepOutcome): LessonSqlState {
-  return outcome.status === "done"
-    ? { output: outcome.output, status: "done" }
-    : { message: outcome.message, status: "error" };
-}
 
 export default function PostgresLocks() {
   const selectTakesAccessShare = useLessonSqlExample({
@@ -761,7 +716,11 @@ export default function PostgresLocks() {
             anyway.
           </li>
           <li>
-            For work queues, use <InlineCode>FOR UPDATE SKIP LOCKED</InlineCode>.
+            For work queues, use <InlineCode>FOR UPDATE SKIP LOCKED</InlineCode>. The{" "}
+            <Link className={linkClassName} to="/lessons/postgres-job-queue">
+              job queue lesson
+            </Link>{" "}
+            builds a complete one.
           </li>
           <li>
             When something is stuck, <InlineCode>pg_locks</InlineCode> and{" "}
@@ -771,69 +730,5 @@ export default function PostgresLocks() {
         </ul>
       </LessonSection>
     </CourseLessonPage>
-  );
-}
-
-function Timeline({ entries }: { entries: readonly TimelineEntry[] }) {
-  return (
-    <div className="flex flex-col gap-4">
-      {entries.map((entry, index) => (
-        <TranscriptStep
-          explanation={entry.explanation}
-          key={index}
-          step={entry.step}
-          stepNumber={index + 1}
-        />
-      ))}
-    </div>
-  );
-}
-
-const SESSION_BADGE_CLASSNAMES: Record<SessionId, string> = {
-  A: "bg-zinc-950",
-  B: "bg-sky-700",
-  C: "bg-emerald-700",
-  D: "bg-violet-700",
-};
-
-// Every step is precomputed, static data from app/generated/postgres-examples.json;
-// nothing executes at render time.
-function TranscriptStep({
-  explanation,
-  step,
-  stepNumber,
-}: {
-  explanation?: string | undefined;
-  step: PostgresExampleStepResult<SessionId>;
-  stepNumber: number;
-}) {
-  return (
-    <div className="border border-zinc-200 p-4">
-      <div className="flex flex-wrap items-center gap-3">
-        <span
-          className={`rounded-sm px-2 py-0.5 font-mono text-xs font-semibold uppercase text-white ${SESSION_BADGE_CLASSNAMES[step.pgSessionId]}`}
-        >
-          Session {step.pgSessionId}
-        </span>
-        <span className="font-mono text-xs uppercase tracking-wide text-zinc-500">
-          Step {stepNumber}
-        </span>
-        {step.label ? <span className="text-sm text-zinc-700">{step.label}</span> : null}
-        {step.blocks && step.unblockedAfter !== undefined ? (
-          <span className="rounded-sm border border-amber-300 bg-amber-50 px-2 py-0.5 font-mono text-xs font-semibold text-amber-800">
-            Waits for a lock · finished after step {step.unblockedAfter + 1}
-          </span>
-        ) : null}
-      </div>
-      <div className="mt-3">
-        <SqlCodeViewer code={step.query} />
-      </div>
-      <div className="mt-3">
-        <SqlResult execution={toLessonSqlState(step)} />
-      </div>
-      {explanation ? (
-        <p className="mt-3 text-base leading-7 text-zinc-800">{explanation}</p>
-      ) : null}
-    </div>
   );
 }

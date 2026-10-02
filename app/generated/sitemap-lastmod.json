@@ -4,7 +4,7 @@
   "/search": "2026-09-20T15:09:03Z",
   "/feedback": "2026-09-20T15:09:03Z",
   "/license": "2026-09-21T22:39:57Z",
-  "/changelog": "2026-09-27T17:25:05Z",
+  "/changelog": "2026-09-27T21:52:09Z",
   "/lessons/my-first-query": "2026-09-23T23:55:35Z",
   "/lessons/introduction-to-join": "2026-09-17T22:21:47Z",
   "/lessons/schemas-tables-and-types": "2026-09-19T22:48:31Z",
@@ -29,6 +29,7 @@
   "/lessons/text-search-in-postgres": "2026-10-01T22:15:17Z",
   "/lessons/concurrency-reservation-system": "2026-09-20T07:54:57Z",
   "/lessons/transaction-isolation-levels": "2026-09-23T23:55:35Z",
-  "/lessons/postgres-locks": "2026-09-26T22:24:25Z",
-  "/lessons/slow-queries": "2026-09-27T16:07:30Z"
+  "/lessons/postgres-locks": "2026-09-27T21:52:09Z",
+  "/lessons/slow-queries": "2026-09-27T16:07:30Z",
+  "/lessons/postgres-job-queue": "2026-09-27T22:05:35Z"
 }

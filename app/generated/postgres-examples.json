@@ -619,5 +619,416 @@
         "status": "done"
       }
     ]
+  },
+  "postgres-job-queue.naive-transcript": {
+    "inputHash": "45267ab0cd21bc5a35065d79ac368f52f924e128aa648b13cfb05c94b682d388",
+    "steps": [
+      {
+        "label": "Worker A looks for the next job",
+        "pgSessionId": "A",
+        "query": "SELECT id, kind, payload\nFROM jobs\nWHERE status = 'pending'\nORDER BY id\nLIMIT 1;",
+        "output": {
+          "plan": "Unavailable: plan not requested.",
+          "rows": [
+            {
+              "id": 1,
+              "kind": "send_receipt",
+              "payload": {
+                "order_id": 1
+              }
+            }
+          ]
+        },
+        "status": "done"
+      },
+      {
+        "label": "Worker B looks for the next job",
+        "pgSessionId": "B",
+        "query": "SELECT id, kind, payload\nFROM jobs\nWHERE status = 'pending'\nORDER BY id\nLIMIT 1;",
+        "output": {
+          "plan": "Unavailable: plan not requested.",
+          "rows": [
+            {
+              "id": 1,
+              "kind": "send_receipt",
+              "payload": {
+                "order_id": 1
+              }
+            }
+          ]
+        },
+        "status": "done"
+      },
+      {
+        "label": "Worker A claims job 1",
+        "pgSessionId": "A",
+        "query": "UPDATE jobs SET status = 'running' WHERE id = 1\nRETURNING id, status;",
+        "output": {
+          "plan": "Unavailable: plan not requested.",
+          "rows": [
+            {
+              "id": 1,
+              "status": "running"
+            }
+          ]
+        },
+        "status": "done"
+      },
+      {
+        "label": "Worker B claims job 1 too",
+        "pgSessionId": "B",
+        "query": "UPDATE jobs SET status = 'running' WHERE id = 1\nRETURNING id, status;",
+        "output": {
+          "plan": "Unavailable: plan not requested.",
+          "rows": [
+            {
+              "id": 1,
+              "status": "running"
+            }
+          ]
+        },
+        "status": "done"
+      }
+    ]
+  },
+  "postgres-job-queue.skip-locked-transcript": {
+    "inputHash": "f4bf085f89f9ef69989237f1730c8bd51be07748390592c202c1361ccadfe318",
+    "steps": [
+      {
+        "label": "Worker A claims a job",
+        "pgSessionId": "A",
+        "query": "BEGIN;\n\nUPDATE jobs\nSET attempts = attempts + 1\nWHERE id = (\n  SELECT id\n  FROM jobs\n  WHERE status = 'pending'\n    AND run_at <= now()\n  ORDER BY run_at, id\n  LIMIT 1\n  FOR UPDATE SKIP LOCKED\n)\nRETURNING id, kind, payload, attempts;",
+        "output": {
+          "plan": "Unavailable for a multi-statement SQL example.",
+          "rows": [
+            {
+              "id": 1,
+              "kind": "send_receipt",
+              "payload": {
+                "order_id": 1
+              },
+              "attempts": 1
+            }
+          ]
+        },
+        "status": "done"
+      },
+      {
+        "label": "Worker B claims a job",
+        "pgSessionId": "B",
+        "query": "BEGIN;\n\nUPDATE jobs\nSET attempts = attempts + 1\nWHERE id = (\n  SELECT id\n  FROM jobs\n  WHERE status = 'pending'\n    AND run_at <= now()\n  ORDER BY run_at, id\n  LIMIT 1\n  FOR UPDATE SKIP LOCKED\n)\nRETURNING id, kind, payload, attempts;",
+        "output": {
+          "plan": "Unavailable for a multi-statement SQL example.",
+          "rows": [
+            {
+              "id": 2,
+              "kind": "send_receipt",
+              "payload": {
+                "order_id": 2
+              },
+              "attempts": 1
+            }
+          ]
+        },
+        "status": "done"
+      },
+      {
+        "label": "Worker C claims a job",
+        "pgSessionId": "C",
+        "query": "BEGIN;\n\nUPDATE jobs\nSET attempts = attempts + 1\nWHERE id = (\n  SELECT id\n  FROM jobs\n  WHERE status = 'pending'\n    AND run_at <= now()\n  ORDER BY run_at, id\n  LIMIT 1\n  FOR UPDATE SKIP LOCKED\n)\nRETURNING id, kind, payload, attempts;",
+        "output": {
+          "plan": "Unavailable for a multi-statement SQL example.",
+          "rows": [
+            {
+              "id": 3,
+              "kind": "create_invoice",
+              "payload": {
+                "order_id": 3
+              },
+              "attempts": 1
+            }
+          ]
+        },
+        "status": "done"
+      },
+      {
+        "label": "Worker D claims a job",
+        "pgSessionId": "D",
+        "query": "BEGIN;\n\nUPDATE jobs\nSET attempts = attempts + 1\nWHERE id = (\n  SELECT id\n  FROM jobs\n  WHERE status = 'pending'\n    AND run_at <= now()\n  ORDER BY run_at, id\n  LIMIT 1\n  FOR UPDATE SKIP LOCKED\n)\nRETURNING id, kind, payload, attempts;",
+        "output": {
+          "plan": "Unavailable for a multi-statement SQL example.",
+          "rows": []
+        },
+        "status": "done"
+      },
+      {
+        "label": "Worker A finishes job 1",
+        "pgSessionId": "A",
+        "query": "UPDATE jobs SET status = 'done' WHERE id = 1;\n\nCOMMIT;",
+        "output": {
+          "plan": "Unavailable for a multi-statement SQL example.",
+          "rows": []
+        },
+        "status": "done"
+      },
+      {
+        "label": "Worker B crashes",
+        "pgSessionId": "B",
+        "query": "ROLLBACK;",
+        "output": {
+          "plan": "Unavailable: plan not requested.",
+          "rows": []
+        },
+        "status": "done"
+      },
+      {
+        "label": "Worker D tries again",
+        "pgSessionId": "D",
+        "query": "UPDATE jobs\nSET attempts = attempts + 1\nWHERE id = (\n  SELECT id\n  FROM jobs\n  WHERE status = 'pending'\n    AND run_at <= now()\n  ORDER BY run_at, id\n  LIMIT 1\n  FOR UPDATE SKIP LOCKED\n)\nRETURNING id, kind, payload, attempts;",
+        "output": {
+          "plan": "Unavailable: plan not requested.",
+          "rows": [
+            {
+              "id": 2,
+              "kind": "send_receipt",
+              "payload": {
+                "order_id": 2
+              },
+              "attempts": 1
+            }
+          ]
+        },
+        "status": "done"
+      }
+    ]
+  },
+  "postgres-job-queue.lease-transcript": {
+    "inputHash": "28904990d3aab34f4e442ba2291480a575f457e072dd49bded0dbbe22d3f5133",
+    "steps": [
+      {
+        "label": "Worker A claims a job with a 5-minute lease",
+        "pgSessionId": "A",
+        "query": "UPDATE jobs\nSET status = 'running',\n    attempts = attempts + 1,\n    locked_until = now() + interval '5 minutes'\nWHERE id = (\n  SELECT id\n  FROM jobs\n  WHERE status = 'pending'\n    AND run_at <= now()\n  ORDER BY run_at, id\n  LIMIT 1\n  FOR UPDATE SKIP LOCKED\n)\nRETURNING id, kind, payload, attempts;",
+        "output": {
+          "plan": "Unavailable: plan not requested.",
+          "rows": [
+            {
+              "id": 1,
+              "kind": "send_receipt",
+              "payload": {
+                "order_id": 1
+              },
+              "attempts": 1
+            }
+          ]
+        },
+        "status": "done"
+      },
+      {
+        "label": "Which running jobs have an expired lease?",
+        "pgSessionId": "B",
+        "query": "SELECT id, kind, attempts, locked_until < now() AS lease_expired\nFROM jobs\nWHERE status = 'running'\nORDER BY id;",
+        "output": {
+          "plan": "Unavailable: plan not requested.",
+          "rows": [
+            {
+              "id": 1,
+              "kind": "send_receipt",
+              "attempts": 1,
+              "lease_expired": false
+            },
+            {
+              "id": 4,
+              "kind": "send_receipt",
+              "attempts": 1,
+              "lease_expired": true
+            },
+            {
+              "id": 5,
+              "kind": "sync_crm",
+              "attempts": 3,
+              "lease_expired": true
+            }
+          ]
+        },
+        "status": "done"
+      },
+      {
+        "label": "Reclaim the expired leases",
+        "pgSessionId": "B",
+        "query": "UPDATE jobs\nSET status = CASE WHEN attempts >= max_attempts THEN 'failed' ELSE 'pending' END,\n    locked_until = NULL,\n    last_error = 'lease expired'\nWHERE status = 'running'\n  AND locked_until < now()\nRETURNING id, kind, status, attempts;",
+        "output": {
+          "plan": "Unavailable: plan not requested.",
+          "rows": [
+            {
+              "id": 4,
+              "kind": "send_receipt",
+              "status": "pending",
+              "attempts": 1
+            },
+            {
+              "id": 5,
+              "kind": "sync_crm",
+              "status": "failed",
+              "attempts": 3
+            }
+          ]
+        },
+        "status": "done"
+      },
+      {
+        "label": "Worker C claims a job",
+        "pgSessionId": "C",
+        "query": "UPDATE jobs\nSET status = 'running',\n    attempts = attempts + 1,\n    locked_until = now() + interval '5 minutes'\nWHERE id = (\n  SELECT id\n  FROM jobs\n  WHERE status = 'pending'\n    AND run_at <= now()\n  ORDER BY run_at, id\n  LIMIT 1\n  FOR UPDATE SKIP LOCKED\n)\nRETURNING id, kind, payload, attempts;",
+        "output": {
+          "plan": "Unavailable: plan not requested.",
+          "rows": [
+            {
+              "id": 4,
+              "kind": "send_receipt",
+              "payload": {
+                "order_id": 3
+              },
+              "attempts": 2
+            }
+          ]
+        },
+        "status": "done"
+      },
+      {
+        "label": "Job 4's original worker wakes up and reports it done",
+        "pgSessionId": "D",
+        "query": "UPDATE jobs SET status = 'done', locked_until = NULL\nWHERE id = 4\n  AND attempts = 1\nRETURNING id, status;",
+        "output": {
+          "plan": "Unavailable: plan not requested.",
+          "rows": []
+        },
+        "status": "done"
+      },
+      {
+        "label": "Worker A reports job 1 done",
+        "pgSessionId": "A",
+        "query": "UPDATE jobs SET status = 'done', locked_until = NULL\nWHERE id = 1\n  AND attempts = 1\nRETURNING id, status;",
+        "output": {
+          "plan": "Unavailable: plan not requested.",
+          "rows": [
+            {
+              "id": 1,
+              "status": "done"
+            }
+          ]
+        },
+        "status": "done"
+      }
+    ]
+  },
+  "postgres-job-queue.exactly-once-transcript": {
+    "inputHash": "3527433ab333cd5ad80f2b0400a3afb3452d6ccd590fd86f4a8bbe7ef5beada6",
+    "steps": [
+      {
+        "label": "Worker A claims the invoice job",
+        "pgSessionId": "A",
+        "query": "BEGIN;\n\nUPDATE jobs\nSET attempts = attempts + 1\nWHERE id = (\n  SELECT id\n  FROM jobs\n  WHERE status = 'pending'\n    AND run_at <= now()\n    AND kind = 'create_invoice'\n  ORDER BY run_at, id\n  LIMIT 1\n  FOR UPDATE SKIP LOCKED\n)\nRETURNING id, kind, payload, attempts;",
+        "output": {
+          "plan": "Unavailable for a multi-statement SQL example.",
+          "rows": [
+            {
+              "id": 3,
+              "kind": "create_invoice",
+              "payload": {
+                "order_id": 3
+              },
+              "attempts": 1
+            }
+          ]
+        },
+        "status": "done"
+      },
+      {
+        "label": "Worker A writes the invoice",
+        "pgSessionId": "A",
+        "query": "INSERT INTO invoices (order_id, total_cents)\nSELECT id, total_cents FROM orders WHERE id = 3\nRETURNING order_id, total_cents;",
+        "output": {
+          "plan": "Unavailable: plan not requested.",
+          "rows": [
+            {
+              "order_id": 3,
+              "total_cents": 9900
+            }
+          ]
+        },
+        "status": "done"
+      },
+      {
+        "label": "Worker A crashes before committing",
+        "pgSessionId": "A",
+        "query": "ROLLBACK;",
+        "output": {
+          "plan": "Unavailable: plan not requested.",
+          "rows": []
+        },
+        "status": "done"
+      },
+      {
+        "label": "Worker B claims the invoice job",
+        "pgSessionId": "B",
+        "query": "BEGIN;\n\nUPDATE jobs\nSET attempts = attempts + 1\nWHERE id = (\n  SELECT id\n  FROM jobs\n  WHERE status = 'pending'\n    AND run_at <= now()\n    AND kind = 'create_invoice'\n  ORDER BY run_at, id\n  LIMIT 1\n  FOR UPDATE SKIP LOCKED\n)\nRETURNING id, kind, payload, attempts;",
+        "output": {
+          "plan": "Unavailable for a multi-statement SQL example.",
+          "rows": [
+            {
+              "id": 3,
+              "kind": "create_invoice",
+              "payload": {
+                "order_id": 3
+              },
+              "attempts": 1
+            }
+          ]
+        },
+        "status": "done"
+      },
+      {
+        "label": "Worker B writes the invoice",
+        "pgSessionId": "B",
+        "query": "INSERT INTO invoices (order_id, total_cents)\nSELECT id, total_cents FROM orders WHERE id = 3\nRETURNING order_id, total_cents;",
+        "output": {
+          "plan": "Unavailable: plan not requested.",
+          "rows": [
+            {
+              "order_id": 3,
+              "total_cents": 9900
+            }
+          ]
+        },
+        "status": "done"
+      },
+      {
+        "label": "Worker B marks the job done and commits",
+        "pgSessionId": "B",
+        "query": "UPDATE jobs SET status = 'done' WHERE id = 3;\n\nCOMMIT;",
+        "output": {
+          "plan": "Unavailable for a multi-statement SQL example.",
+          "rows": []
+        },
+        "status": "done"
+      },
+      {
+        "label": "How many invoices for order 3?",
+        "pgSessionId": "C",
+        "query": "SELECT invoices.order_id, invoices.total_cents, jobs.status AS job_status\nFROM invoices\nJOIN jobs ON jobs.id = 3\nWHERE invoices.order_id = 3;",
+        "output": {
+          "plan": "Unavailable: plan not requested.",
+          "rows": [
+            {
+              "order_id": 3,
+              "total_cents": 9900,
+              "job_status": "done"
+            }
+          ]
+        },
+        "status": "done"
+      }
+    ]
   }
 }

@@ -1479,7 +1479,7 @@
     "anchor": "rules-of-thumb",
     "heading": "Rules of thumb",
     "lessonId": "postgres-locks",
-    "text": "Keep transactions short. Every lock is held until the transaction ends, so a transaction left open while your app calls another service holds its locks the whole time. Set lock_timeout in migrations, and prefer CREATE INDEX CONCURRENTLY , which takes SHARE UPDATE EXCLUSIVE instead of SHARE and so doesn't block writes. Use FOR NO KEY UPDATE rather than FOR UPDATE unless you're deleting the row or changing its key. Lock rows in a consistent order to avoid deadlocks, and retry when one happens anyway. For work queues, use FOR UPDATE SKIP LOCKED . When something is stuck, pg_locks and pg_blocking_pids(pid) tell you who is waiting on whom. Try Yourself Loaded Database: postgres-locks.database-init The database for this lesson is already loaded. Write any query you want and run it directly in your browser."
+    "text": "Keep transactions short. Every lock is held until the transaction ends, so a transaction left open while your app calls another service holds its locks the whole time. Set lock_timeout in migrations, and prefer CREATE INDEX CONCURRENTLY , which takes SHARE UPDATE EXCLUSIVE instead of SHARE and so doesn't block writes. Use FOR NO KEY UPDATE rather than FOR UPDATE unless you're deleting the row or changing its key. Lock rows in a consistent order to avoid deadlocks, and retry when one happens anyway. For work queues, use FOR UPDATE SKIP LOCKED . The job queue lesson builds a complete one. When something is stuck, pg_locks and pg_blocking_pids(pid) tell you who is waiting on whom. Try Yourself Loaded Database: postgres-locks.database-init The database for this lesson is already loaded. Write any query you want and run it directly in your browser."
   },
   {
     "anchor": "exercises",
@@ -1558,5 +1558,83 @@
     "heading": "What We Learned",
     "lessonId": "slow-queries",
     "text": "pg_stat_statements Groups every statement by its shape and keeps running totals: calls, time, rows, buffer blocks. EXPLAIN (ANALYZE, BUFFERS) Runs the query and shows what each step of the plan really did. pg_trgm Trigram indexes: make ILIKE '%...%' use an index. Keyset pagination WHERE id > last_id instead of OFFSET : every page costs the same."
+  },
+  {
+    "anchor": null,
+    "heading": null,
+    "lessonId": "postgres-job-queue",
+    "text": "Building a job queue with Postgres Draft Emails, webhooks, PDFs, image resizing, delayed reminders: work that shouldn't block a request goes to a job queue. A table is enough, building on SKIP LOCKED from the locks lesson . It's what Solid Queue , Oban , River , graphile-worker , pg-boss and pgmq do."
+  },
+  {
+    "anchor": "delivery-guarantees",
+    "heading": "Delivery guarantees",
+    "lessonId": "postgres-job-queue",
+    "text": "Each job goes to one of N workers. What happens when that worker crashes? Guarantee How Worker crashes mid-job At most once Mark done, then work Job lost At least once Work, then mark done Job runs again Exactly once Impossible — Nobody can do exactly-once delivery : not Postgres, Kafka, or SQS. If a worker's \"done\" never arrives, the queue can't tell \"done, then crashed\" from \"crashed first\". That's the Two Generals' Problem (a simpler cousin of the Byzantine Generals Problem ; see also You Cannot Have Exactly-Once Delivery ). You get at-least-once plus idempotent work, or exactly-once processing inside Postgres, shown below."
+  },
+  {
+    "anchor": "the-migration",
+    "heading": "The migration",
+    "lessonId": "postgres-job-queue",
+    "text": "Loaded Database: postgres-job-queue.database-init"
+  },
+  {
+    "anchor": "the-naive-queue",
+    "heading": "The naive queue",
+    "lessonId": "postgres-job-queue",
+    "text": "Each session is a real, separate worker connection. Session A Step 1 Worker A looks for the next job id kind payload 1 send_receipt [object Object] Session B Step 2 Worker B looks for the next job id kind payload 1 send_receipt [object Object] Session A Step 3 Worker A claims job 1 id status 1 running Session B Step 4 Worker B claims job 1 too id status 1 running Both workers own job 1. Alice gets two receipts."
+  },
+  {
+    "anchor": "claiming-with-skip-locked",
+    "heading": "Claiming with SKIP LOCKED",
+    "lessonId": "postgres-job-queue",
+    "text": "Session A Step 1 Worker A claims a job id kind payload attempts 1 send_receipt [object Object] 1 Session B Step 2 Worker B claims a job id kind payload attempts 2 send_receipt [object Object] 1 Job 1 is locked, so SKIP LOCKED takes job 2 instead of waiting. Session C Step 3 Worker C claims a job id kind payload attempts 3 create_invoice [object Object] 1 Session D Step 4 Worker D claims a job No rows Everything is locked: no job, no waiting. Session A Step 5 Worker A finishes job 1 No rows Session B Step 6 Worker B crashes No rows A crash never commits: Postgres rolls the transaction back, like this ROLLBACK. Session D Step 7 Worker D tries again id kind payload attempts 2 send_receipt [object Object] 1 Job 2 is back, so nothing is lost. But attempts is 1 again: the crash rolled it back too. Correct and at-least-once, but a job that always crashes retries forever, and long jobs hold transactions open."
+  },
+  {
+    "anchor": "leases",
+    "heading": "Leases: claim, commit, then work",
+    "lessonId": "postgres-job-queue",
+    "text": "Like SQS's visibility timeout: Reclaiming expired leases: Session A Step 1 Worker A claims a job with a 5-minute lease id kind payload attempts 1 send_receipt [object Object] 1 The claim commits immediately. No transaction stays open while Worker A works. Session B Step 2 Which running jobs have an expired lease? id kind attempts lease_expired 1 send_receipt 1 false 4 send_receipt 1 true 5 sync_crm 3 true Session B Step 3 Reclaim the expired leases id kind status attempts 4 send_receipt pending 1 5 sync_crm failed 3 Job 4 is retried. Job 5 is out of attempts: it goes to 'failed', the dead-letter queue. Session C Step 4 Worker C claims a job id kind payload attempts 4 send_receipt [object Object] 2 Attempt 2 of job 4: the counter survived the crash. Session D Step 5 Job 4's original worker wakes up and reports it done No rows Job 4's first worker was only slow. attempts = 1 no longer matches, so it can't overwrite Worker C's claim. Session A Step 6 Worker A reports job 1 done id status 1 done On an error, retry with exponential backoff:"
+  },
+  {
+    "anchor": "exactly-once-processing",
+    "heading": "Exactly-once processing",
+    "lessonId": "postgres-job-queue",
+    "text": "When the work is a write to the same database: Session A Step 1 Worker A claims the invoice job id kind payload attempts 3 create_invoice [object Object] 1 Session A Step 2 Worker A writes the invoice order_id total_cents 3 9900 Session A Step 3 Worker A crashes before committing No rows The invoice is rolled back together with the claim. Session B Step 4 Worker B claims the invoice job id kind payload attempts 3 create_invoice [object Object] 1 Session B Step 5 Worker B writes the invoice order_id total_cents 3 9900 Session B Step 6 Worker B marks the job done and commits No rows Session C Step 7 How many invoices for order 3? order_id total_cents job_status 3 9900 done Delivered twice, invoiced once. For emails or payments, pass the job id as an idempotency key ."
+  },
+  {
+    "anchor": "enqueueing",
+    "heading": "Enqueue with your data",
+    "lessonId": "postgres-job-queue",
+    "text": "No order without its job, no job without its order. With a separate broker you need an outbox table for this, which is a Postgres queue anyway."
+  },
+  {
+    "anchor": "listen-notify",
+    "heading": "LISTEN / NOTIFY",
+    "lessonId": "postgres-job-queue",
+    "text": "Only a hint: keep polling slowly as a safety net."
+  },
+  {
+    "anchor": "postgres-or-a-broker",
+    "heading": "Postgres or a broker?",
+    "lessonId": "postgres-job-queue",
+    "text": "Not the goal of this lesson, just the high-level idea: Postgres Transactional with your data, nothing new to run. Thousands of jobs/s. Redis Very fast; Streams add consumer groups. Memory-bound, weaker durability. RabbitMQ Routing, acks, dead-letter exchanges, push delivery. One more cluster. Kafka Replayable log, huge throughput, many consumer groups. Heavy to operate. SQS / SNS Managed; visibility timeouts, DLQs, SNS fan-out. AWS only."
+  },
+  {
+    "anchor": "rules-of-thumb",
+    "heading": "Rules of thumb",
+    "lessonId": "postgres-job-queue",
+    "text": "Claim with FOR UPDATE SKIP LOCKED . Assume every job runs twice: make it idempotent. Short in-database work: one transaction. Long work: a lease. Limit attempts, back off, keep a dead-letter status. Delete finished jobs so vacuum keeps up. Try Yourself Loaded Database: postgres-job-queue.database-init The database for this lesson is already loaded. Write any query you want and run it directly in your browser."
+  },
+  {
+    "anchor": "exercises",
+    "heading": "Exercises",
+    "lessonId": "postgres-job-queue",
+    "text": "0 OF 2 DONE 1. Claim the next job with a lease: using a subquery with FOR UPDATE SKIP LOCKED that picks the oldest due pending job (by run_at, then id), set its status to 'running', add 1 to attempts, and set locked_until to 5 minutes from now. Return id, kind, and attempts. 2. In a single statement, insert order 4 for dave with total_cents 2500 and enqueue a 'send_receipt' job whose payload is {\"order_id\": 4}. Use a data-modifying CTE so both rows are written or neither is, and return the job's id, kind, and payload."
+  },
+  {
+    "anchor": "what-we-learned",
+    "heading": "What We Learned",
+    "lessonId": "postgres-job-queue",
+    "text": "FOR UPDATE SKIP LOCKED Many workers, one table, no job handed out twice. Delivery guarantees At-most-once or at-least-once. Exactly-once is impossible. Leases and fencing locked_until recovers dead workers' jobs; the attempt number rejects stale reports. Exactly-once processing Work and \"done\" in one transaction. Transactional enqueue (outbox) Enqueue in the same transaction as your data. LISTEN / NOTIFY Wake workers on commit instead of polling."
   }
 ]

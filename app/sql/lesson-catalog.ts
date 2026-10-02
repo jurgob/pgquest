@@ -389,6 +389,21 @@ export const lessons: readonly LessonCatalogItem[] = [
     time: "25 min",
     draft: true,
   },
+  {
+    id: "postgres-job-queue",
+    label: "Lesson 23",
+    number: "23",
+    title: "Building a job queue with Postgres",
+    slug: "postgres-job-queue",
+    routeModule: "routes/postgres-job-queue.tsx",
+    cliExampleModule: "postgres-job-queue.sql.ts",
+    href: "/lessons/postgres-job-queue",
+    summary:
+      "Build a job queue on a plain table: hand each job to one of many workers with SKIP LOCKED, survive crashes with leases and retries, and see why exactly-once delivery is impossible but exactly-once processing isn't.",
+    meta: "SKIP LOCKED · DELIVERY GUARANTEES · OUTBOX",
+    time: "30 min",
+    draft: true,
+  },
 ] as const satisfies readonly LessonCatalogItem[];
 
 export const lessonSummaries = lessons.map(({ id, number, title, href }) => ({

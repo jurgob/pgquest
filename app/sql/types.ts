@@ -46,4 +46,5 @@ export type LessonId =
   | "concurrency-reservation-system"
   | "transaction-isolation-levels"
   | "postgres-locks"
-  | "slow-queries";
+  | "slow-queries"
+  | "postgres-job-queue";
