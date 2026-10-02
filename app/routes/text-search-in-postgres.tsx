@@ -134,7 +134,20 @@ const textApproaches: readonly ApproachSummary[] = [
   {
     id: "full-text-search",
     name: "Full-text search (to_tsvector, to_tsquery)",
-    summary: "Matches words and their forms: 'indexing' finds 'Indexes'.",
+    summary: (
+      <>
+        Matches words and their forms using{" "}
+        <a
+          className="text-sky-700 underline decoration-sky-300 underline-offset-2 hover:text-sky-900"
+          href="https://www.postgresql.org/docs/current/textsearch-intro.html"
+          rel="noreferrer"
+          target="_blank"
+        >
+          lexemes
+        </a>
+        : &apos;indexing&apos; finds &apos;Indexes&apos;.
+      </>
+    ),
     example: {
       search: "indexing tables",
       result: (
