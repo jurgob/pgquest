@@ -813,7 +813,7 @@
     "anchor": null,
     "heading": null,
     "lessonId": "vectors",
-    "text": "Vectors and similarity search Draft Keyword search matches characters. Vector search matches meaning. An embedding model reads a text and returns a list of numbers, a vector, chosen so that texts with similar meaning get vectors that are close together. Searching then means: turn the question into a vector too, and return the rows whose vectors are nearest. Real models return hundreds or thousands of numbers that no human can name. Here each document has three hand-made ones, so you can read them: how much it is about databases, the web, and AI. The lesson uses plain PostgreSQL arrays so every step of the math is visible. The pgvector lesson does the same search with a real vector type and index."
+    "text": "Vectors and similarity search Draft Keyword search matches characters. Vector search matches meaning. An embedding model reads a text and returns a list of numbers, a vector, chosen so that texts with similar meaning get vectors that are close together. Searching then means: turn the question into a vector too, and return the rows whose vectors are nearest. Real models return hundreds or thousands of numbers that no human can name. Here each document has three hand-made ones, so you can read them: how much it is about databases, the web, and AI. The lesson uses plain PostgreSQL arrays so every step of the math is visible. The pgvector lesson does the same search with a real vector type and index. Try a real model: mobilebert-uncased-mnli, running in your browser, scores how much a text is about each of the three topics. Score your text for [databases, web, AI]"
   },
   {
     "anchor": "vectors.show-embeddings",
