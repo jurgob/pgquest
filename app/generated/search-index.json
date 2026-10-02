@@ -945,7 +945,7 @@
     "anchor": "hnsw",
     "heading": "HNSW: a graph of neighbours",
     "lessonId": "pgvector",
-    "text": "HNSW links every vector to its nearest neighbours, in layers. Upper layers hold fewer vectors and longer links. A search enters at the top, jumps towards the question (★), drops down a layer, and repeats, reaching the nearest vectors in a few hops instead of measuring every one. The usual choice: fast, with high recall, and it can be created on an empty table. Building it is slow and memory hungry. Loaded Database: pgvector.indexed-database-init"
+    "text": "HNSW stands for Hierarchical Navigable Small World. It links the vectors into a graph of layers: the top layers have few, long links to cross the space quickly, the bottom one links every vector to its close neighbours. A search starts at the top and moves towards the question, one layer down each time it can't get closer. HNSW links every vector to its nearest neighbours, in layers. Upper layers hold fewer vectors and longer links. A search enters at the top, jumps towards the question (★), drops down a layer, and repeats, reaching the nearest vectors in a few hops instead of measuring every one. The usual choice: fast, with high recall, and it can be created on an empty table. Building it is slow and memory hungry. Loaded Database: pgvector.indexed-database-init"
   },
   {
     "anchor": "pgvector.index-scan",
@@ -963,7 +963,7 @@
     "anchor": "ivfflat",
     "heading": "IVFFlat: search the nearest lists",
     "lessonId": "pgvector",
-    "text": "IVFFlat splits the vectors into lists around centroids (×). A search reads only the list whose centroid is nearest to the question (★), here the blue one. The vector circled in red is closer, but sits in another list, so it is missed unless ivfflat.probes reads more lists. IVFFlat partitions the vectors: it picks centroids from the rows already in the table, and files every vector in the list of its nearest centroid. Quicker to build and smaller than HNSW, but lower recall at the same speed. Create it after loading the data, and rebuild it when the data changes a lot: centroids picked from an empty or different table describe the wrong clusters. Loaded Database: pgvector.ivfflat-database-init"
+    "text": "IVFFlat stands for Inverted File with Flat storage. Inverted file: the vectors are filed in lists, one per cluster centre, and a search reads only the lists nearest to the question. Flat: inside each list the vectors are stored whole and compared exactly, not compressed. IVFFlat splits the vectors into lists around centroids (×). A search reads only the list whose centroid is nearest to the question (★), here the blue one. The vector circled in red is closer, but sits in another list, so it is missed unless ivfflat.probes reads more lists. IVFFlat partitions the vectors: it picks centroids from the rows already in the table, and files every vector in the list of its nearest centroid. Quicker to build and smaller than HNSW, but lower recall at the same speed. Create it after loading the data, and rebuild it when the data changes a lot: centroids picked from an empty or different table describe the wrong clusters. Loaded Database: pgvector.ivfflat-database-init"
   },
   {
     "anchor": "pgvector.ivfflat-scan",
