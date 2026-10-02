@@ -2,12 +2,15 @@
 
 Notable changes to PgQuest, newest first.
 
-## 2026-09-27
+## 2026-10-02
 
 - New lesson (draft): Building a job queue with Postgres. Workers claim jobs with
   `SKIP LOCKED`, recover from crashes with leases and fencing, and process jobs
   exactly once inside a transaction, with real multi-worker transcripts and a short
   note on why exactly-once delivery is impossible.
+
+## 2026-09-27
+
 - Added a changelog page at `/changelog`, linked from the header next to search,
   plus a header link to the license page.
 - New lesson: Finding and fixing slow queries, built around an app's endpoints with

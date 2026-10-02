@@ -391,8 +391,8 @@ export const lessons: readonly LessonCatalogItem[] = [
   },
   {
     id: "postgres-job-queue",
-    label: "Lesson 23",
-    number: "23",
+    label: "Lesson 27",
+    number: "27",
     title: "Building a job queue with Postgres",
     slug: "postgres-job-queue",
     routeModule: "routes/postgres-job-queue.tsx",
