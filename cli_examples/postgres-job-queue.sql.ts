@@ -54,7 +54,7 @@ VALUES
 
 export const databaseInit: SqlExample = {
   id: SQL_EXAMPLE_IDS.postgresJobQueueDatabaseInit,
-  name: "Lesson 23 database",
+  name: "Lesson 27 database",
   description:
     "Three orders, a jobs table used as a queue (three pending jobs and two whose workers died), and an invoices table that one kind of job writes to.",
   query: `${migration}\n${seed}`,
