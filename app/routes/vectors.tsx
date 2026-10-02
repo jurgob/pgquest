@@ -22,7 +22,7 @@ import {
   Title2,
 } from "../sql/lesson-layout";
 import { SqlCodeViewer } from "../sql/sql-editor";
-import { VectorScorer } from "../sql/vector-scorer";
+import { ScoringModelLink, VectorScorer } from "../sql/vector-scorer";
 
 function Example({ id }: { id: SqlExampleId }) {
   return <ExampleBlock example={getSqlExample(examples, id)} />;
@@ -79,18 +79,19 @@ export default function Vectors() {
           nearest.
         </p>
         <p className="mt-3">
-          Real models return hundreds or thousands of numbers that no human can name. Here
-          each document has three hand-made ones, so you can read them: how much it is
-          about databases, the web, and AI. The lesson uses plain PostgreSQL arrays so
-          every step of the math is visible. The{" "}
-          <LessonLink to="/lessons/pgvector">pgvector lesson</LessonLink> does the same
-          search with a real vector type and index.
+          Real embedding models return hundreds of numbers that no human can name. To keep
+          the math readable, every vector here has just three, from <ScoringModelLink />,
+          a small model that scores how much a text is about [databases, web, AI]. The
+          documents and the questions were all scored by it. It isn&apos;t perfect: it
+          rates React components as more about AI than the web. Search is only as good as
+          its embeddings.
+        </p>
+        <p className="mt-3">
+          The lesson uses plain PostgreSQL arrays so every step of the math is visible.
+          The <LessonLink to="/lessons/pgvector">pgvector lesson</LessonLink> does the
+          same search with a real vector type and index.
         </p>
       </Paragraphs>
-      <Paragraph>
-        Try a real model: mobilebert-uncased-mnli, running in your browser, scores how
-        much a text is about each of the three topics.
-      </Paragraph>
       <VectorScorer />
 
       <Section>

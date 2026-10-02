@@ -813,13 +813,13 @@
     "anchor": null,
     "heading": null,
     "lessonId": "vectors",
-    "text": "Vectors and similarity search Draft Keyword search matches characters. Vector search matches meaning. An embedding model reads a text and returns a list of numbers, a vector, chosen so that texts with similar meaning get vectors that are close together. Searching then means: turn the question into a vector too, and return the rows whose vectors are nearest. Real models return hundreds or thousands of numbers that no human can name. Here each document has three hand-made ones, so you can read them: how much it is about databases, the web, and AI. The lesson uses plain PostgreSQL arrays so every step of the math is visible. The pgvector lesson does the same search with a real vector type and index. Try a real model: mobilebert-uncased-mnli, running in your browser, scores how much a text is about each of the three topics. Score your text for [databases, web, AI]"
+    "text": "Vectors and similarity search Draft Keyword search matches characters. Vector search matches meaning. An embedding model reads a text and returns a list of numbers, a vector, chosen so that texts with similar meaning get vectors that are close together. Searching then means: turn the question into a vector too, and return the rows whose vectors are nearest. Real embedding models return hundreds of numbers that no human can name. To keep the math readable, every vector here has just three, from mobilebert-uncased-mnli , a small model that scores how much a text is about [databases, web, AI]. The documents and the questions were all scored by it. It isn't perfect: it rates React components as more about AI than the web. Search is only as good as its embeddings. The lesson uses plain PostgreSQL arrays so every step of the math is visible. The pgvector lesson does the same search with a real vector type and index. Score your text for [databases, web, AI]"
   },
   {
     "anchor": "vectors.show-embeddings",
     "heading": "The embeddings",
     "lessonId": "vectors",
-    "text": "Each document has three numbers: how much it is about databases, the web, and AI. Loaded Database: vectors.database-init title embedding SQL indexes {0.9,0.1,0.1} JOIN patterns {0.85,0.05,0.05} Query tuning {0.8,0.15,0.1} React components {0.05,0.95,0.1} CSS grid layouts {0.05,0.9,0} Neural networks {0.05,0.05,0.95} Chatbots {0.1,0.25,0.9} Vector search {0.6,0.05,0.8}"
+    "text": "Each document has three numbers: how much it is about databases, the web, and AI. Loaded Database: vectors.database-init title embedding SQL indexes {0.95,0.03,0.02} JOIN patterns {0.66,0.17,0.17} Query tuning {0.62,0.15,0.23} React components {0.25,0.26,0.49} CSS grid layouts {0.15,0.82,0.03} Neural networks {0.14,0.08,0.78} Chatbots {0.32,0.26,0.42} Vector search {0.91,0.04,0.04}"
   },
   {
     "anchor": "vectors.keywords-miss",
@@ -831,7 +831,7 @@
     "anchor": "vectors.distance-score",
     "heading": "The question is a vector too",
     "lessonId": "vectors",
-    "text": "The same embedding model turns 'speed up my database' into ARRAY[0.85, 0.10, 0.05]: mostly databases. Distance is Pythagoras in three dimensions: the smaller it is, the closer the meaning. Loaded Database: vectors.database-init title distance JOIN patterns 0.050 SQL indexes 0.071 Query tuning 0.087 Vector search 0.792 CSS grid layouts 1.132 Chatbots 1.143 React components 1.168 Neural networks 1.205"
+    "text": "The same model scores 'speed up my database' as ARRAY[0.94, 0.04, 0.03]: mostly databases. Distance is Pythagoras in three dimensions: the smaller it is, the closer the meaning. Loaded Database: vectors.database-init title distance SQL indexes 0.017 Vector search 0.032 JOIN patterns 0.339 Query tuning 0.393 Chatbots 0.765 React components 0.858 Neural networks 1.097 CSS grid layouts 1.110"
   },
   {
     "anchor": "distance-functions",
@@ -843,25 +843,25 @@
     "anchor": "vectors.nearest-vector",
     "heading": "Nearest neighbours",
     "lessonId": "vectors",
-    "text": "The same math, written once as a function. ORDER BY distance plus LIMIT is the whole of vector search: the k nearest neighbours. Loaded Database: vectors.database-init title JOIN patterns SQL indexes Query tuning"
+    "text": "The same math, written once as a function. ORDER BY distance plus LIMIT is the whole of vector search: the k nearest neighbours. Loaded Database: vectors.database-init title SQL indexes Vector search JOIN patterns"
   },
   {
     "anchor": "vectors.cosine-similarity",
     "heading": "Cosine similarity",
     "lessonId": "vectors",
-    "text": "'AI that understands text' becomes ARRAY[0.20, 0.10, 0.95]. Cosine similarity compares the direction of two vectors and ignores their length. Most embedding models return vectors of length 1, so both measures give the same order; cosine is the usual default. Loaded Database: vectors.database-init title distance similarity Neural networks 0.158 0.987 Chatbots 0.187 0.982 Vector search 0.430 0.906 Query tuning 1.042 0.337 SQL indexes 1.101 0.321 JOIN patterns 1.111 0.267 React components 1.211 0.214 CSS grid layouts 1.251 0.114"
+    "text": "'AI that understands text' becomes ARRAY[0.16, 0.10, 0.75]. Cosine similarity compares the direction of two vectors and ignores their length. Most embedding models return vectors of length 1, so both measures give the same order; cosine is the usual default. Loaded Database: vectors.database-init title distance similarity Neural networks 0.041 0.999 React components 0.318 0.921 Chatbots 0.400 0.862 Query tuning 0.696 0.547 JOIN patterns 0.769 0.460 Vector search 1.035 0.255 SQL indexes 1.078 0.231 CSS grid layouts 1.018 0.199"
   },
   {
     "anchor": "vectors.cutoff",
     "heading": "Set a cutoff",
     "lessonId": "vectors",
-    "text": "Nearest neighbours always returns rows, even when nothing is really close. A WHERE on the distance keeps only good matches. Loaded Database: vectors.database-init title Neural networks Chatbots"
+    "text": "Nearest neighbours always returns rows, even when nothing is really close. A WHERE on the distance keeps only good matches. Loaded Database: vectors.database-init title Neural networks"
   },
   {
     "anchor": "vectors.more-like-this",
     "heading": "More like this",
     "lessonId": "vectors",
-    "text": "A 'related articles' box: use a stored document's embedding as the question, and skip the document itself. Loaded Database: vectors.database-init title Chatbots Neural networks Query tuning"
+    "text": "A 'related articles' box: use a stored document's embedding as the question, and skip the document itself. Loaded Database: vectors.database-init title SQL indexes JOIN patterns Query tuning"
   },
   {
     "anchor": "why-pgvector",
@@ -873,7 +873,7 @@
     "anchor": "exercises",
     "heading": "Exercises",
     "lessonId": "vectors",
-    "text": "0 OF 2 DONE 1. 'How do I build a web UI?' has the embedding ARRAY[0.05, 0.90, 0.05]. Return the title of the closest document by l2_distance. 2. Return the titles of the 3 documents most similar to ARRAY[0.60, 0.00, 0.80] by cosine_similarity, most similar first."
+    "text": "0 OF 2 DONE 1. 'How do I build a web UI?' has the embedding ARRAY[0.01, 0.97, 0.02]. Return the title of the closest document by l2_distance. 2. Return the titles of the 3 documents most similar to ARRAY[0.60, 0.00, 0.80] by cosine_similarity, most similar first."
   },
   {
     "anchor": "what-we-learned",
@@ -885,7 +885,7 @@
     "anchor": null,
     "heading": null,
     "lessonId": "pgvector",
-    "text": "pgvector Draft The vectors lesson computed distances by hand, with arrays. It worked, but every search read and sorted every row. pgvector is the PostgreSQL extension that turns this into a real feature: a vector column type, distance operators, and indexes that find the nearest rows without reading them all. Same eight documents, same hand-made embeddings ([databases, web, AI]), same questions. Only the column type changes. Then four ways to search many rows: exact, HNSW, IVFFlat, and smaller vectors."
+    "text": "pgvector Draft The vectors lesson computed distances by hand, with arrays. It worked, but every search read and sorted every row. pgvector is the PostgreSQL extension that turns this into a real feature: a vector column type, distance operators, and indexes that find the nearest rows without reading them all. Same eight documents, same questions, same embeddings: three numbers from mobilebert-uncased-mnli , scoring how much a text is about [databases, web, AI]. Score your own question and use its vector in any query below. Only the column type changes. Then four ways to search many rows: exact, HNSW, IVFFlat, and smaller vectors. Score your text for [databases, web, AI]"
   },
   {
     "anchor": "the-documents",
@@ -897,13 +897,13 @@
     "anchor": "pgvector.nearest",
     "heading": "Same question, one operator",
     "lessonId": "pgvector",
-    "text": "'speed up my database' is '[0.85, 0.10, 0.05]'. <-> is the L2 distance: the same l2_distance the vectors lesson wrote by hand, and the same three results. Loaded Database: pgvector.database-init title distance JOIN patterns 0.050 SQL indexes 0.071 Query tuning 0.087"
+    "text": "'speed up my database' is '[0.94, 0.04, 0.03]'. <-> is the L2 distance: the same l2_distance the vectors lesson wrote by hand, and the same three results. Loaded Database: pgvector.database-init title distance SQL indexes 0.017 Vector search 0.032 JOIN patterns 0.339"
   },
   {
     "anchor": "pgvector.operators",
     "heading": "The distance operators",
     "lessonId": "pgvector",
-    "text": "'AI that understands text' is '[0.20, 0.10, 0.95]'. <=> is cosine distance (1 - cosine similarity). <#> is the negative inner product, negative so that ascending order still means closest first. All three: smaller is closer. Loaded Database: pgvector.database-init title l2 cosine inner_product Neural networks 0.158 0.013 -0.917 Chatbots 0.187 0.018 -0.900 Vector search 0.430 0.094 -0.885 Query tuning 1.042 0.663 -0.270 SQL indexes 1.101 0.679 -0.285 JOIN patterns 1.111 0.733 -0.222 React components 1.211 0.786 -0.200 CSS grid layouts 1.251 0.886 -0.100"
+    "text": "'AI that understands text' is '[0.16, 0.10, 0.75]'. <=> is cosine distance (1 - cosine similarity). <#> is the negative inner product, negative so that ascending order still means closest first. All three: smaller is closer. Loaded Database: pgvector.database-init title l2 cosine inner_product Neural networks 0.041 0.001 -0.615 React components 0.318 0.079 -0.433 Chatbots 0.400 0.138 -0.392 Query tuning 0.696 0.453 -0.287 JOIN patterns 0.769 0.540 -0.250 Vector search 1.035 0.745 -0.180 SQL indexes 1.078 0.769 -0.170 CSS grid layouts 1.018 0.801 -0.128"
   },
   {
     "anchor": "which-operator",
@@ -915,13 +915,13 @@
     "anchor": "pgvector.helpers",
     "heading": "A real type",
     "lessonId": "pgvector",
-    "text": "vector(3) is checked: inserting '[1, 2]' fails with 'expected 3 dimensions, not 2'. pgvector also ships helper functions, and casts to and from arrays. Loaded Database: pgvector.database-init title dims length as_array SQL indexes 3 0.911 {0.9,0.1,0.1} JOIN patterns 3 0.853 {0.85,0.05,0.05} Query tuning 3 0.820 {0.8,0.15,0.1}"
+    "text": "vector(3) is checked: inserting '[1, 2]' fails with 'expected 3 dimensions, not 2'. pgvector also ships helper functions, and casts to and from arrays. Loaded Database: pgvector.database-init title dims length as_array SQL indexes 3 0.951 {0.95,0.03,0.02} JOIN patterns 3 0.702 {0.66,0.17,0.17} Query tuning 3 0.678 {0.62,0.15,0.23}"
   },
   {
     "anchor": "pgvector.more-like-this",
     "heading": "More like this",
     "lessonId": "pgvector",
-    "text": "Related documents, with the stored embedding as the question. It's still SQL: joins and WHERE work as usual. Loaded Database: pgvector.database-init title Chatbots Neural networks Query tuning"
+    "text": "Related documents, with the stored embedding as the question. It's still SQL: joins and WHERE work as usual. Loaded Database: pgvector.database-init title SQL indexes JOIN patterns Query tuning"
   },
   {
     "anchor": "searching-thousands",
@@ -939,7 +939,7 @@
     "anchor": "pgvector.exact-scan",
     "heading": "Exact search on 5,008 rows",
     "lessonId": "pgvector",
-    "text": "No vector index: the plan is a Seq Scan and a Sort. Postgres measures the distance to all 5,008 rows and sorts them. Slow on big tables, but always the true nearest rows: SQL indexes and JOIN patterns come first. Loaded Database: pgvector.large-database-init title SQL indexes JOIN patterns Svelte joins note 4337 Sqlite networks note 4692 Sqlite chatbots note 3982"
+    "text": "No vector index: the plan is a Seq Scan and a Sort. Postgres measures the distance to all 5,008 rows and sorts them. Slow on big tables, but always the true nearest rows: Vector search and SQL indexes come first. Loaded Database: pgvector.large-database-init title Vector search SQL indexes Python indexes note 4648 Redis networks note 4293 Python joins note 3938"
   },
   {
     "anchor": "hnsw",
@@ -951,7 +951,7 @@
     "anchor": "pgvector.index-scan",
     "heading": "The same search with HNSW",
     "lessonId": "pgvector",
-    "text": "Same rows, same query, with an HNSW index. The plan is an Index Scan whose Order By is the distance: Postgres walks the graph instead of sorting every row. Compare the results with the exact search: an approximate index can miss some of the true nearest rows. Loaded Database: pgvector.indexed-database-init title Sqlite networks note 4692 Svelte joins note 4337 Sqlite chatbots note 3982 Svelte tuning note 3627 Sqlite search note 3272"
+    "text": "Same rows, same query, with an HNSW index. The plan is an Index Scan whose Order By is the distance: Postgres walks the graph instead of sorting every row. Compare the results with the exact search: an approximate index can miss some of the true nearest rows. Loaded Database: pgvector.indexed-database-init title Vector search SQL indexes Python indexes note 4648 Redis networks note 4293 Python joins note 3938"
   },
   {
     "anchor": "approximate",
@@ -969,7 +969,7 @@
     "anchor": "pgvector.ivfflat-scan",
     "heading": "The same search with IVFFlat",
     "lessonId": "pgvector",
-    "text": "Same rows, same query, with an IVFFlat index of 50 lists. The plan is an Index Scan again. With the default ivfflat.probes = 1 it reads only the nearest list, so a true neighbour sitting in the next list is missed: compare with the exact search. Loaded Database: pgvector.ivfflat-database-init title JOIN patterns Sqlite networks note 4692 Svelte joins note 4337 Sqlite chatbots note 3982 Svelte tuning note 3627"
+    "text": "Same rows, same query, with an IVFFlat index of 50 lists. The plan is an Index Scan again. With the default ivfflat.probes = 1 it reads only the nearest list, so a true neighbour sitting in the next list can be missed. Here it isn't: compare with the exact search. Loaded Database: pgvector.ivfflat-database-init title Vector search SQL indexes Python indexes note 4648 Redis networks note 4293 Python joins note 3938"
   },
   {
     "anchor": "smaller-vectors",
@@ -981,13 +981,13 @@
     "anchor": "pgvector.smaller-vectors",
     "heading": "halfvec and bits",
     "lessonId": "pgvector",
-    "text": "The same embeddings in smaller types. halfvec keeps 16 bits per number: 0.90 becomes 0.89990234, close enough. binary_quantize keeps 1 bit per number, positive or not: every document here becomes 111, except CSS grid layouts, whose third number is 0. Loaded Database: pgvector.database-init title half bits SQL indexes [0.89990234,0.099975586,0.099975586] 111 JOIN patterns [0.85009766,0.049987793,0.049987793] 111 Query tuning [0.7998047,0.15002441,0.099975586] 111 React components [0.049987793,0.9501953,0.099975586] 111 CSS grid layouts [0.049987793,0.89990234,0] 110 Neural networks [0.049987793,0.049987793,0.9501953] 111 Chatbots [0.099975586,0.25,0.89990234] 111 Vector search [0.60009766,0.049987793,0.7998047] 111"
+    "text": "The same embeddings in smaller types. halfvec keeps 16 bits per number: 0.95 becomes 0.9501953, close enough. binary_quantize keeps 1 bit per number, positive or not: every document here becomes 111, because the model never scores a topic exactly 0. Loaded Database: pgvector.database-init title half bits SQL indexes [0.9501953,0.02999878,0.020004272] 111 JOIN patterns [0.66015625,0.17004395,0.17004395] 111 Query tuning [0.6201172,0.15002441,0.22998047] 111 React components [0.25,0.26000977,0.48999023] 111 CSS grid layouts [0.15002441,0.8198242,0.02999878] 111 Neural networks [0.14001465,0.08001709,0.77978516] 111 Chatbots [0.32006836,0.26000977,0.41992188] 111 Vector search [0.91015625,0.040008545,0.040008545] 111"
   },
   {
     "anchor": "pgvector.binary-rerank",
     "heading": "Bits first, then re-rank",
     "lessonId": "pgvector",
-    "text": "Bits alone can't tell these documents apart. The usual fix: let the cheap bit distance (<~>, Hamming) pick a few candidates, then order only those by the full vectors. Same top 3 as the exact search. Loaded Database: pgvector.database-init title SQL indexes JOIN patterns Query tuning"
+    "text": "The usual pattern: let the cheap bit distance (<~>, Hamming) pick a few candidates, then order only those by the full vectors. Here it fails: all eight documents are 111, so the 6 candidates are arbitrary and Vector search, the true nearest, isn't among them. With 1,536-number vectors the bits differ and the candidates are good. Loaded Database: pgvector.database-init title SQL indexes JOIN patterns Query tuning"
   },
   {
     "anchor": "smaller-vector-indexes",
@@ -1005,7 +1005,7 @@
     "anchor": "exercises",
     "heading": "Exercises",
     "lessonId": "pgvector",
-    "text": "0 OF 2 DONE 1. 'How do I build a web UI?' is '[0.05, 0.90, 0.05]'. Return the title of the closest document by L2 distance (<->). 2. Return the titles of the 2 documents closest to 'Neural networks' by cosine distance (<=>), without 'Neural networks' itself."
+    "text": "0 OF 2 DONE 1. 'How do I build a web UI?' is '[0.01, 0.97, 0.02]'. Return the title of the closest document by L2 distance (<->). 2. Return the titles of the 2 documents closest to 'Neural networks' by cosine distance (<=>), without 'Neural networks' itself."
   },
   {
     "anchor": "what-we-learned",
@@ -1185,13 +1185,13 @@
     "anchor": "vector-approaches",
     "heading": "Vector search, in several flavours",
     "lessonId": "text-search-in-postgres",
-    "text": "Vector search matches meaning. Every flavour needs an embedding model to turn text into a vector, for every document and for every search: an extra dependency, with its own cost and latency. They differ in how the vectors are stored and searched, and in who computes them. With a typical embedding model, on the same words (dog, Dog, dogs, hotdog, doggo, doing, puppy, canine), every flavour matches like this: puppy → puppy, dog, doggo, canine (all close in meaning) canine → canine, dog, puppy (no shared letters needed) dgo → unpredictable (a typo is a different text, so a different vector) Arrays and SQL functions Embeddings in a DOUBLE PRECISION[] column, distance written in SQL. You search \"speed up my database\" , you get JOIN patterns, SQL indexes, Query tuning: no shared words, same meaning. The same search on a million rows computes a million distances, every time. Pros No extension: works on any Postgres. Every step of the math is visible. Cons No index: every search computes the distance for every row. Nothing checks that vectors have the same number of dimensions. Lesson: Vectors pgvector, no index A vector column and distance operators, searched by a full scan. You search \"speed up my database\" , you get The same three documents, always the exact nearest ones. Still reads every row: fine for thousands, slow for millions. Pros Exact results: always the true nearest rows. Simple: fine up to tens of thousands of rows. Type checking and fast distance operators. Cons Cost grows with rows × dimensions: every search reads the whole table. Lesson: pgvector: exact search pgvector + HNSW index A graph of neighbours that a search walks towards the question. You search \"speed up my database\" , you get The same three, in milliseconds even on millions of rows. On a big table it can now and then miss one of the true nearest rows. Add a selective WHERE (say, one author's documents) and you can get fewer than 3 results. Pros Fast, with high recall. Can be created on an empty table; stays good as rows arrive. Tunable at query time with hnsw.ef_search . Cons Approximate: can miss a true neighbour. Slow to build, and uses a lot of memory. A selective WHERE filter can return fewer rows than the LIMIT. Lesson: pgvector: HNSW pgvector + IVFFlat index Groups vectors into clusters and only searches the nearest ones. You search \"speed up my database\" , you get The same three, if the index was built after the data was loaded. Built on an empty table, the clusters mean nothing and results get worse. With the default of searching 1 cluster, a neighbour in the next cluster is missed. Pros Faster to build and smaller than HNSW. Cons Must be created after the data is loaded: the clusters come from it. Lower recall than HNSW at the same speed. Needs rebuilding when the data changes a lot. Lesson: pgvector: IVFFlat pgvector + smaller vectors (halfvec, binary quantization) Store each number in 16 bits, or even 1 bit, instead of 32. You search \"speed up my database\" , you get the same three in the same order with halfvec, in half the space. With binary quantization, this lesson's 3-number vectors all become the bits 111, except CSS grid layouts (110): 7 of 8 documents look identical. Real 1,536-number vectors fare much better, but re-rank the top results with the full vectors. Pros Half the storage with halfvec, 1/32 with bits; faster indexes. halfvec indexes up to 4,000 dimensions; vector stops at 2,000. Cons Some accuracy lost. Binary quantization usually needs a second pass that re-ranks with the full vectors. Lesson: pgvector: smaller vectors Embeddings computed in the database (pgai) The database calls the embedding model itself, for every new or changed row. It's here because it comes up a lot when you search for AI in Postgres, but it is no longer maintained. You insert \"Indexing JSON columns\" , you get its embedding in documents_embeddings shortly after, with no app code. If the model API is down or its key expires, the row is saved without an embedding yet, and vector search silently misses it. Pros Embeddings stay in sync automatically, like an index. No app code. Cons Network calls to a model from inside the database: slow, failure-prone, and holding a connection while they wait. Not available on most managed Postgres services, which don't allow the extension. pgai has not been maintained since February 2026. Lesson: why it is deprecated"
+    "text": "Vector search matches meaning. Every flavour needs an embedding model to turn text into a vector, for every document and for every search: an extra dependency, with its own cost and latency. They differ in how the vectors are stored and searched, and in who computes them. With a typical embedding model, on the same words (dog, Dog, dogs, hotdog, doggo, doing, puppy, canine), every flavour matches like this: puppy → puppy, dog, doggo, canine (all close in meaning) canine → canine, dog, puppy (no shared letters needed) dgo → unpredictable (a typo is a different text, so a different vector) Arrays and SQL functions Embeddings in a DOUBLE PRECISION[] column, distance written in SQL. You search \"speed up my database\" , you get SQL indexes, Vector search, JOIN patterns: found by meaning, not by words. The same search on a million rows computes a million distances, every time. Pros No extension: works on any Postgres. Every step of the math is visible. Cons No index: every search computes the distance for every row. Nothing checks that vectors have the same number of dimensions. Lesson: Vectors pgvector, no index A vector column and distance operators, searched by a full scan. You search \"speed up my database\" , you get The same three documents, always the exact nearest ones. Still reads every row: fine for thousands, slow for millions. Pros Exact results: always the true nearest rows. Simple: fine up to tens of thousands of rows. Type checking and fast distance operators. Cons Cost grows with rows × dimensions: every search reads the whole table. Lesson: pgvector: exact search pgvector + HNSW index A graph of neighbours that a search walks towards the question. You search \"speed up my database\" , you get The same three, in milliseconds even on millions of rows. On a big table it can now and then miss one of the true nearest rows. Add a selective WHERE (say, one author's documents) and you can get fewer than 3 results. Pros Fast, with high recall. Can be created on an empty table; stays good as rows arrive. Tunable at query time with hnsw.ef_search . Cons Approximate: can miss a true neighbour. Slow to build, and uses a lot of memory. A selective WHERE filter can return fewer rows than the LIMIT. Lesson: pgvector: HNSW pgvector + IVFFlat index Groups vectors into clusters and only searches the nearest ones. You search \"speed up my database\" , you get The same three, if the index was built after the data was loaded. Built on an empty table, the clusters mean nothing and results get worse. With the default of searching 1 cluster, a neighbour in the next cluster is missed. Pros Faster to build and smaller than HNSW. Cons Must be created after the data is loaded: the clusters come from it. Lower recall than HNSW at the same speed. Needs rebuilding when the data changes a lot. Lesson: pgvector: IVFFlat pgvector + smaller vectors (halfvec, binary quantization) Store each number in 16 bits, or even 1 bit, instead of 32. You search \"speed up my database\" , you get the same three with halfvec, in half the space. With binary quantization, this lesson's 3-number vectors all become the bits 111: all 8 documents look identical. Real 1,536-number vectors fare much better, but re-rank the top results with the full vectors. Pros Half the storage with halfvec, 1/32 with bits; faster indexes. halfvec indexes up to 4,000 dimensions; vector stops at 2,000. Cons Some accuracy lost. Binary quantization usually needs a second pass that re-ranks with the full vectors. Lesson: pgvector: smaller vectors Embeddings computed in the database (pgai) The database calls the embedding model itself, for every new or changed row. It's here because it comes up a lot when you search for AI in Postgres, but it is no longer maintained. You insert \"Indexing JSON columns\" , you get its embedding in documents_embeddings shortly after, with no app code. If the model API is down or its key expires, the row is saved without an embedding yet, and vector search silently misses it. Pros Embeddings stay in sync automatically, like an index. No app code. Cons Network calls to a model from inside the database: slow, failure-prone, and holding a connection while they wait. Not available on most managed Postgres services, which don't allow the extension. pgai has not been maintained since February 2026. Lesson: why it is deprecated"
   },
   {
     "anchor": "hybrid-approach",
     "heading": "Both at once",
     "lessonId": "text-search-in-postgres",
-    "text": "Hybrid: full-text + vectors Runs both searches and merges the two rankings. You search \"find meaning\" , you get Vector search first: top of both lists. SQL indexes second: it matches the word \"find\", though it is only 5th by meaning. If the embedding model is down, only the keyword half can run: plan for that fallback. Pros Exact words and names, and meaning when the words differ. One SQL query. Cons Two indexes and two searches to tune. Still needs an embedding for every document and every search."
+    "text": "Hybrid: full-text + vectors Runs both searches and merges the two rankings. You search \"find meaning\" , you get Vector search first: top keyword match, and 5th by meaning. Chatbots second: first by meaning, though it shares no word. If the embedding model is down, only the keyword half can run: plan for that fallback. Pros Exact words and names, and meaning when the words differ. One SQL query. Cons Two indexes and two searches to tune. Still needs an embedding for every document and every search."
   },
   {
     "anchor": "comparison",
@@ -1227,13 +1227,13 @@
     "anchor": "text-search-in-postgres.semantic",
     "heading": "4. Semantic search: pgvector",
     "lessonId": "text-search-in-postgres",
-    "text": "Meaning, not words. 'speed up my database' shares no word with any document, but its embedding, '[0.85, 0.10, 0.05]', is close to the three database ones. Loaded Database: text-search-in-postgres.database-init title distance SQL indexes 0.001 JOIN patterns 0.002 Query tuning 0.004 Details: Vectors for the math, pgvector for the type and index."
+    "text": "Meaning, not words. 'speed up my database' shares no word with any document, but its embedding, '[0.94, 0.04, 0.03]', is close to SQL indexes and to Vector search, which the model rates as mostly about databases. Loaded Database: text-search-in-postgres.database-init title distance Vector search 0.000 SQL indexes 0.000 JOIN patterns 0.044 Details: Vectors for the math, pgvector for the type and index."
   },
   {
     "anchor": "text-search-in-postgres.hybrid",
     "heading": "5. Hybrid: keywords + meaning",
     "lessonId": "text-search-in-postgres",
-    "text": "The search 'find meaning', embedded as '[0.60, 0.05, 0.80]'. Rank the rows once by full-text and once by vector distance, then merge the two lists with reciprocal rank fusion: each list adds 1 / (60 + position). Rows near the top of both lists win. Loaded Database: text-search-in-postgres.database-init title keyword_position semantic_position score Vector search 1 1 0.0328 SQL indexes 2 5 0.0315 Chatbots 2 0.0161 Neural networks 3 0.0159 Query tuning 4 0.0156 Full-text search is precise on exact words and names; vector search catches meaning when the words differ. Hybrid search runs both and merges the rankings. Reciprocal rank fusion only uses positions, so the two scores never need to be on the same scale. The 60 is the usual constant: it keeps one list's top result from drowning out the other list."
+    "text": "The search 'find meaning', embedded as '[0.41, 0.30, 0.28]'. Rank the rows once by full-text and once by vector distance, then merge the two lists with reciprocal rank fusion: each list adds 1 / (60 + position). Rows near the top of both lists win. Loaded Database: text-search-in-postgres.database-init title keyword_position semantic_position score Vector search 1 5 0.0318 Chatbots 1 0.0164 SQL indexes 2 0.0161 Query tuning 2 0.0161 JOIN patterns 3 0.0159 Full-text search is precise on exact words and names; vector search catches meaning when the words differ. Hybrid search runs both and merges the rankings. Reciprocal rank fusion only uses positions, so the two scores never need to be on the same scale. The 60 is the usual constant: it keeps one list's top result from drowning out the other list."
   },
   {
     "anchor": "where-embeddings-come-from",
@@ -1251,7 +1251,7 @@
     "anchor": "exercises",
     "heading": "Exercises",
     "lessonId": "text-search-in-postgres",
-    "text": "0 OF 2 DONE 1. Use the search column to find the documents matching the web search 'language models'. Return their titles. 2. 'make a nice web page' is '[0.10, 0.90, 0.10]'. Return the titles of the 2 closest documents by cosine distance (<=>)."
+    "text": "0 OF 2 DONE 1. Use the search column to find the documents matching the web search 'language models'. Return their titles. 2. 'make a nice web page' is '[0.05, 0.91, 0.04]'. Return the titles of the 2 closest documents by cosine distance (<=>)."
   },
   {
     "anchor": "what-we-learned",

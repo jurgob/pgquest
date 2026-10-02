@@ -1,5 +1,6 @@
 import {
   generatedDocumentsSeed,
+  questions,
   searchDocumentsSeed,
   vectorLiteral,
 } from "./search-documents";
@@ -134,32 +135,30 @@ export const examples: SqlExample[] = [
   {
     id: SQL_EXAMPLE_IDS.pgvectorNearest,
     name: "Same question, one operator",
-    description:
-      "'speed up my database' is '[0.85, 0.10, 0.05]'. <-> is the L2 distance: the same l2_distance the vectors lesson wrote by hand, and the same three results.",
+    description: `'speed up my database' is ${vectorLiteral(questions.speedUpMyDatabase.embedding)}. <-> is the L2 distance: the same l2_distance the vectors lesson wrote by hand, and the same three results.`,
     database_init: databaseInit,
     query: `
 SELECT
   title,
-  round((embedding <-> '[0.85, 0.10, 0.05]')::numeric, 3) AS distance
+  round((embedding <-> ${vectorLiteral(questions.speedUpMyDatabase.embedding)})::numeric, 3) AS distance
 FROM documents
-ORDER BY embedding <-> '[0.85, 0.10, 0.05]'
+ORDER BY embedding <-> ${vectorLiteral(questions.speedUpMyDatabase.embedding)}
 LIMIT 3;
 `,
   },
   {
     id: SQL_EXAMPLE_IDS.pgvectorOperators,
     name: "The distance operators",
-    description:
-      "'AI that understands text' is '[0.20, 0.10, 0.95]'. <=> is cosine distance (1 - cosine similarity). <#> is the negative inner product, negative so that ascending order still means closest first. All three: smaller is closer.",
+    description: `'AI that understands text' is ${vectorLiteral(questions.aiThatUnderstandsText.embedding)}. <=> is cosine distance (1 - cosine similarity). <#> is the negative inner product, negative so that ascending order still means closest first. All three: smaller is closer.`,
     database_init: databaseInit,
     query: `
 SELECT
   title,
-  round((embedding <-> '[0.20, 0.10, 0.95]')::numeric, 3) AS l2,
-  round((embedding <=> '[0.20, 0.10, 0.95]')::numeric, 3) AS cosine,
-  round((embedding <#> '[0.20, 0.10, 0.95]')::numeric, 3) AS inner_product
+  round((embedding <-> ${vectorLiteral(questions.aiThatUnderstandsText.embedding)})::numeric, 3) AS l2,
+  round((embedding <=> ${vectorLiteral(questions.aiThatUnderstandsText.embedding)})::numeric, 3) AS cosine,
+  round((embedding <#> ${vectorLiteral(questions.aiThatUnderstandsText.embedding)})::numeric, 3) AS inner_product
 FROM documents
-ORDER BY embedding <=> '[0.20, 0.10, 0.95]';
+ORDER BY embedding <=> ${vectorLiteral(questions.aiThatUnderstandsText.embedding)};
 `,
   },
   {
@@ -197,12 +196,12 @@ LIMIT 3;
     id: SQL_EXAMPLE_IDS.pgvectorExactScan,
     name: "Exact search on 5,008 rows",
     description:
-      "No vector index: the plan is a Seq Scan and a Sort. Postgres measures the distance to all 5,008 rows and sorts them. Slow on big tables, but always the true nearest rows: SQL indexes and JOIN patterns come first.",
+      "No vector index: the plan is a Seq Scan and a Sort. Postgres measures the distance to all 5,008 rows and sorts them. Slow on big tables, but always the true nearest rows: Vector search and SQL indexes come first.",
     database_init: largeDatabaseInit,
     query: `
 SELECT title
 FROM documents
-ORDER BY embedding <=> '[0.85, 0.10, 0.05]'
+ORDER BY embedding <=> ${vectorLiteral(questions.speedUpMyDatabase.embedding)}
 LIMIT 5;
 `,
   },
@@ -215,7 +214,7 @@ LIMIT 5;
     query: `
 SELECT title
 FROM documents
-ORDER BY embedding <=> '[0.85, 0.10, 0.05]'
+ORDER BY embedding <=> ${vectorLiteral(questions.speedUpMyDatabase.embedding)}
 LIMIT 5;
 `,
   },
@@ -223,12 +222,12 @@ LIMIT 5;
     id: SQL_EXAMPLE_IDS.pgvectorIvfflatScan,
     name: "The same search with IVFFlat",
     description:
-      "Same rows, same query, with an IVFFlat index of 50 lists. The plan is an Index Scan again. With the default ivfflat.probes = 1 it reads only the nearest list, so a true neighbour sitting in the next list is missed: compare with the exact search.",
+      "Same rows, same query, with an IVFFlat index of 50 lists. The plan is an Index Scan again. With the default ivfflat.probes = 1 it reads only the nearest list, so a true neighbour sitting in the next list can be missed. Here it isn't: compare with the exact search.",
     database_init: ivfflatDatabaseInit,
     query: `
 SELECT title
 FROM documents
-ORDER BY embedding <=> '[0.85, 0.10, 0.05]'
+ORDER BY embedding <=> ${vectorLiteral(questions.speedUpMyDatabase.embedding)}
 LIMIT 5;
 `,
   },
@@ -236,7 +235,7 @@ LIMIT 5;
     id: SQL_EXAMPLE_IDS.pgvectorSmallerVectors,
     name: "halfvec and bits",
     description:
-      "The same embeddings in smaller types. halfvec keeps 16 bits per number: 0.90 becomes 0.89990234, close enough. binary_quantize keeps 1 bit per number, positive or not: every document here becomes 111, except CSS grid layouts, whose third number is 0.",
+      "The same embeddings in smaller types. halfvec keeps 16 bits per number: 0.95 becomes 0.9501953, close enough. binary_quantize keeps 1 bit per number, positive or not: every document here becomes 111, because the model never scores a topic exactly 0.",
     database_init: databaseInit,
     query: `
 SELECT
@@ -250,17 +249,17 @@ FROM documents;
     id: SQL_EXAMPLE_IDS.pgvectorBinaryRerank,
     name: "Bits first, then re-rank",
     description:
-      "Bits alone can't tell these documents apart. The usual fix: let the cheap bit distance (<~>, Hamming) pick a few candidates, then order only those by the full vectors. Same top 3 as the exact search.",
+      "The usual pattern: let the cheap bit distance (<~>, Hamming) pick a few candidates, then order only those by the full vectors. Here it fails: all eight documents are 111, so the 6 candidates are arbitrary and Vector search, the true nearest, isn't among them. With 1,536-number vectors the bits differ and the candidates are good.",
     database_init: databaseInit,
     query: `
 SELECT title
 FROM (
   SELECT title, embedding
   FROM documents
-  ORDER BY binary_quantize(embedding)::bit(3) <~> binary_quantize('[0.85, 0.10, 0.05]'::vector(3))
+  ORDER BY binary_quantize(embedding)::bit(3) <~> binary_quantize(${vectorLiteral(questions.speedUpMyDatabase.embedding)}::vector(3))
   LIMIT 6
 ) AS candidates
-ORDER BY embedding <=> '[0.85, 0.10, 0.05]'
+ORDER BY embedding <=> ${vectorLiteral(questions.speedUpMyDatabase.embedding)}
 LIMIT 3;
 `,
   },
@@ -270,13 +269,12 @@ export const exercises: SqlExample[] = [
   {
     id: SQL_EXAMPLE_IDS.pgvectorExerciseClosest,
     name: "Exercise 1",
-    description:
-      "'How do I build a web UI?' is '[0.05, 0.90, 0.05]'. Return the title of the closest document by L2 distance (<->).",
+    description: `'How do I build a web UI?' is ${vectorLiteral(questions.buildAWebUi.embedding)}. Return the title of the closest document by L2 distance (<->).`,
     database_init: databaseInit,
     query: `
 SELECT title
 FROM documents
-ORDER BY embedding <-> '[0.05, 0.90, 0.05]'
+ORDER BY embedding <-> ${vectorLiteral(questions.buildAWebUi.embedding)}
 LIMIT 1;
 `,
   },

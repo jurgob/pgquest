@@ -1,4 +1,4 @@
-import { arrayLiteral, searchDocumentsSeed } from "./search-documents";
+import { arrayLiteral, questions, searchDocumentsSeed } from "./search-documents";
 import { SQL_EXAMPLE_IDS, type SqlExample } from "./types";
 
 export const migration = `
@@ -34,6 +34,8 @@ AS $$
   FROM unnest(a, b) AS t(x, y)
 $$;
 `;
+
+const speed = questions.speedUpMyDatabase.embedding;
 
 export const databaseInit: SqlExample = {
   id: SQL_EXAMPLE_IDS.vectorsDatabaseInit,
@@ -74,16 +76,15 @@ WHERE title ILIKE '%speed up%'
   {
     id: SQL_EXAMPLE_IDS.vectorsDistanceScore,
     name: "The question is a vector too",
-    description:
-      "The same embedding model turns 'speed up my database' into ARRAY[0.85, 0.10, 0.05]: mostly databases. Distance is Pythagoras in three dimensions: the smaller it is, the closer the meaning.",
+    description: `The same model scores 'speed up my database' as ${arrayLiteral(questions.speedUpMyDatabase.embedding)}: mostly databases. Distance is Pythagoras in three dimensions: the smaller it is, the closer the meaning.`,
     database_init: databaseInit,
     query: `
 SELECT
   title,
   round(sqrt(
-    power(embedding[1] - 0.85, 2) +
-    power(embedding[2] - 0.10, 2) +
-    power(embedding[3] - 0.05, 2)
+    power(embedding[1] - ${speed[0].toFixed(2)}, 2) +
+    power(embedding[2] - ${speed[1].toFixed(2)}, 2) +
+    power(embedding[3] - ${speed[2].toFixed(2)}, 2)
   )::numeric, 3) AS distance
 FROM documents
 ORDER BY distance;
@@ -98,21 +99,20 @@ ORDER BY distance;
     query: `
 SELECT title
 FROM documents
-ORDER BY l2_distance(embedding, ARRAY[0.85, 0.10, 0.05])
+ORDER BY l2_distance(embedding, ${arrayLiteral(questions.speedUpMyDatabase.embedding)})
 LIMIT 3;
 `,
   },
   {
     id: SQL_EXAMPLE_IDS.vectorsCosineSimilarity,
     name: "Cosine similarity",
-    description:
-      "'AI that understands text' becomes ARRAY[0.20, 0.10, 0.95]. Cosine similarity compares the direction of two vectors and ignores their length. Most embedding models return vectors of length 1, so both measures give the same order; cosine is the usual default.",
+    description: `'AI that understands text' becomes ${arrayLiteral(questions.aiThatUnderstandsText.embedding)}. Cosine similarity compares the direction of two vectors and ignores their length. Most embedding models return vectors of length 1, so both measures give the same order; cosine is the usual default.`,
     database_init: databaseInit,
     query: `
 SELECT
   title,
-  round(l2_distance(embedding, ARRAY[0.20, 0.10, 0.95])::numeric, 3) AS distance,
-  round(cosine_similarity(embedding, ARRAY[0.20, 0.10, 0.95])::numeric, 3) AS similarity
+  round(l2_distance(embedding, ${arrayLiteral(questions.aiThatUnderstandsText.embedding)})::numeric, 3) AS distance,
+  round(cosine_similarity(embedding, ${arrayLiteral(questions.aiThatUnderstandsText.embedding)})::numeric, 3) AS similarity
 FROM documents
 ORDER BY similarity DESC;
 `,
@@ -126,8 +126,8 @@ ORDER BY similarity DESC;
     query: `
 SELECT title
 FROM documents
-WHERE l2_distance(embedding, ARRAY[0.20, 0.10, 0.95]) < 0.3
-ORDER BY l2_distance(embedding, ARRAY[0.20, 0.10, 0.95]);
+WHERE l2_distance(embedding, ${arrayLiteral(questions.aiThatUnderstandsText.embedding)}) < 0.3
+ORDER BY l2_distance(embedding, ${arrayLiteral(questions.aiThatUnderstandsText.embedding)});
 `,
   },
   {
@@ -151,13 +151,12 @@ export const exercises: SqlExample[] = [
   {
     id: SQL_EXAMPLE_IDS.vectorsExerciseFindSqlVector,
     name: "Exercise 1",
-    description:
-      "'How do I build a web UI?' has the embedding ARRAY[0.05, 0.90, 0.05]. Return the title of the closest document by l2_distance.",
+    description: `'How do I build a web UI?' has the embedding ${arrayLiteral(questions.buildAWebUi.embedding)}. Return the title of the closest document by l2_distance.`,
     database_init: databaseInit,
     query: `
 SELECT title
 FROM documents
-ORDER BY l2_distance(embedding, ARRAY[0.05, 0.90, 0.05])
+ORDER BY l2_distance(embedding, ${arrayLiteral(questions.buildAWebUi.embedding)})
 LIMIT 1;
 `,
   },

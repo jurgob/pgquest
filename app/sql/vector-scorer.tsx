@@ -1,8 +1,9 @@
 import { useState } from "react";
+import { SCORING_MODEL } from "../../cli_examples/search-documents";
 
-// A small zero-shot classifier that runs in the browser through ONNX. It
-// scores a text against each label; the scores sum to 1.
-export const SCORING_MODEL = "Xenova/mobilebert-uncased-mnli";
+// SCORING_MODEL is a small zero-shot classifier that runs in the browser through
+// ONNX. It scores a text against each label; the scores sum to 1. The search
+// lessons' stored vectors were produced with this same form.
 
 // The three dimensions of the search lessons' vectors, in order, with the label
 // the model is given for each.
@@ -44,6 +45,20 @@ async function scoreText(text: string): Promise<readonly number[]> {
   // The output is sorted by score; put it back in [databases, web, AI] order.
   return DIMENSIONS.map(
     (dimension) => output.scores[output.labels.indexOf(dimension.label)] ?? 0,
+  );
+}
+
+// "mobilebert-uncased-mnli", linking to the model's Hugging Face page.
+export function ScoringModelLink() {
+  return (
+    <a
+      className="text-sky-700 underline decoration-sky-300 underline-offset-2 hover:text-sky-900"
+      href={`https://huggingface.co/${SCORING_MODEL}`}
+      rel="noreferrer"
+      target="_blank"
+    >
+      {SCORING_MODEL.split("/")[1]}
+    </a>
   );
 }
 

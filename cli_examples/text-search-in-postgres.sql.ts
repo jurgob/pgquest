@@ -1,4 +1,4 @@
-import { searchDocumentsSeed, vectorLiteral } from "./search-documents";
+import { questions, searchDocumentsSeed, vectorLiteral } from "./search-documents";
 import { SQL_EXAMPLE_IDS, type SqlExample } from "./types";
 
 export const migration = `
@@ -90,21 +90,19 @@ ORDER BY rank DESC;
   {
     id: SQL_EXAMPLE_IDS.textSearchInPostgresSemantic,
     name: "4. Semantic search: pgvector",
-    description:
-      "Meaning, not words. 'speed up my database' shares no word with any document, but its embedding, '[0.85, 0.10, 0.05]', is close to the three database ones.",
+    description: `Meaning, not words. 'speed up my database' shares no word with any document, but its embedding, ${vectorLiteral(questions.speedUpMyDatabase.embedding)}, is close to SQL indexes and to Vector search, which the model rates as mostly about databases.`,
     database_init: databaseInit,
     query: `
-SELECT title, round((embedding <=> '[0.85, 0.10, 0.05]')::numeric, 3) AS distance
+SELECT title, round((embedding <=> ${vectorLiteral(questions.speedUpMyDatabase.embedding)})::numeric, 3) AS distance
 FROM documents
-ORDER BY embedding <=> '[0.85, 0.10, 0.05]'
+ORDER BY embedding <=> ${vectorLiteral(questions.speedUpMyDatabase.embedding)}
 LIMIT 3;
 `,
   },
   {
     id: SQL_EXAMPLE_IDS.textSearchInPostgresHybrid,
     name: "5. Hybrid: keywords + meaning",
-    description:
-      "The search 'find meaning', embedded as '[0.60, 0.05, 0.80]'. Rank the rows once by full-text and once by vector distance, then merge the two lists with reciprocal rank fusion: each list adds 1 / (60 + position). Rows near the top of both lists win.",
+    description: `The search 'find meaning', embedded as ${vectorLiteral(questions.findMeaning.embedding)}. Rank the rows once by full-text and once by vector distance, then merge the two lists with reciprocal rank fusion: each list adds 1 / (60 + position). Rows near the top of both lists win.`,
     database_init: databaseInit,
     query: `
 WITH keyword AS (
@@ -113,9 +111,9 @@ WITH keyword AS (
   WHERE search @@ query
 ),
 semantic AS (
-  SELECT id, row_number() OVER (ORDER BY embedding <=> '[0.60, 0.05, 0.80]') AS position
+  SELECT id, row_number() OVER (ORDER BY embedding <=> ${vectorLiteral(questions.findMeaning.embedding)}) AS position
   FROM documents
-  ORDER BY embedding <=> '[0.60, 0.05, 0.80]'
+  ORDER BY embedding <=> ${vectorLiteral(questions.findMeaning.embedding)}
   LIMIT 5
 )
 SELECT
@@ -152,13 +150,12 @@ WHERE search @@ websearch_to_tsquery('english', 'language models');
   {
     id: SQL_EXAMPLE_IDS.textSearchInPostgresExerciseSemantic,
     name: "Exercise 2",
-    description:
-      "'make a nice web page' is '[0.10, 0.90, 0.10]'. Return the titles of the 2 closest documents by cosine distance (<=>).",
+    description: `'make a nice web page' is ${vectorLiteral(questions.makeANiceWebPage.embedding)}. Return the titles of the 2 closest documents by cosine distance (<=>).`,
     database_init: databaseInit,
     query: `
 SELECT title
 FROM documents
-ORDER BY embedding <=> '[0.10, 0.90, 0.10]'
+ORDER BY embedding <=> ${vectorLiteral(questions.makeANiceWebPage.embedding)}
 LIMIT 2;
 `,
   },
