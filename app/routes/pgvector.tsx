@@ -149,6 +149,13 @@ export default function Pgvector() {
 
       <LessonSection>
         <Title2 id="hnsw">HNSW: a graph of neighbours</Title2>
+        <Paragraph>
+          HNSW stands for Hierarchical Navigable Small World. It links the vectors into a
+          graph of layers: the top layers have few, long links to cross the space quickly,
+          the bottom one links every vector to its close neighbours. A search starts at
+          the top and moves towards the question, one layer down each time it can&apos;t
+          get closer.
+        </Paragraph>
         <HnswDiagram />
         <Paragraph>
           The usual choice: fast, with high recall, and it can be created on an empty
@@ -174,6 +181,12 @@ export default function Pgvector() {
 
       <LessonSection>
         <Title2 id="ivfflat">IVFFlat: search the nearest lists</Title2>
+        <Paragraph>
+          IVFFlat stands for Inverted File with Flat storage. Inverted file: the vectors
+          are filed in lists, one per cluster centre, and a search reads only the lists
+          nearest to the question. Flat: inside each list the vectors are stored whole and
+          compared exactly, not compressed.
+        </Paragraph>
         <IvfflatDiagram />
         <Paragraph>
           IVFFlat partitions the vectors: it picks centroids from the rows already in the
