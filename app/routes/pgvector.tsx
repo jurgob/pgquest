@@ -28,6 +28,7 @@ import {
 } from "../sql/lesson-layout";
 import { SqlCodeViewer } from "../sql/sql-editor";
 import { HnswDiagram, IvfflatDiagram } from "../sql/vector-index-diagrams";
+import { ScoringModelLink, VectorScorer } from "../sql/vector-scorer";
 
 function Example({ id }: { id: SqlExampleId }) {
   return <ExampleBlock example={getSqlExample(examples, id)} />;
@@ -89,11 +90,14 @@ export default function Pgvector() {
           indexes that find the nearest rows without reading them all.
         </p>
         <p className="mt-3">
-          Same eight documents, same hand-made embeddings ([databases, web, AI]), same
-          questions. Only the column type changes. Then four ways to search many rows:
-          exact, HNSW, IVFFlat, and smaller vectors.
+          Same eight documents, same questions, same embeddings: three numbers from{" "}
+          <ScoringModelLink />, scoring how much a text is about [databases, web, AI].
+          Score your own question and use its vector in any query below. Only the column
+          type changes. Then four ways to search many rows: exact, HNSW, IVFFlat, and
+          smaller vectors.
         </p>
       </Paragraphs>
+      <VectorScorer />
 
       <Section>
         <Title2 id="the-documents">The documents</Title2>

@@ -151,6 +151,29 @@
     },
     "status": "done"
   },
+  "0251c3a017f32a": {
+    "output": {
+      "rows": [
+        {
+          "title": "Vector search"
+        },
+        {
+          "title": "SQL indexes"
+        },
+        {
+          "title": "Python indexes note 4648"
+        },
+        {
+          "title": "Redis networks note 4293"
+        },
+        {
+          "title": "Python joins note 3938"
+        }
+      ],
+      "plan": "Limit  (cost=83.96..85.03 rows=5 width=32)\n  ->  Index Scan using documents_embedding_idx on documents  (cost=83.96..1156.16 rows=5008 width=32)\n        Order By: (embedding <=> '[0.94,0.04,0.03]'::vector)"
+    },
+    "status": "done"
+  },
   "0260e7de74c6d4": {
     "output": {
       "rows": [
@@ -194,26 +217,23 @@
     },
     "status": "done"
   },
-  "02c6313269cc80": {
+  "027e2467135b29": {
     "output": {
       "rows": [
         {
-          "title": "Sqlite networks note 4692"
+          "title": "Vector search",
+          "distance": "0.000"
         },
         {
-          "title": "Svelte joins note 4337"
+          "title": "SQL indexes",
+          "distance": "0.000"
         },
         {
-          "title": "Sqlite chatbots note 3982"
-        },
-        {
-          "title": "Svelte tuning note 3627"
-        },
-        {
-          "title": "Sqlite search note 3272"
+          "title": "JOIN patterns",
+          "distance": "0.044"
         }
       ],
-      "plan": "Limit  (cost=83.96..85.03 rows=5 width=32)\n  ->  Index Scan using documents_embedding_idx on documents  (cost=83.96..1156.16 rows=5008 width=32)\n        Order By: (embedding <=> '[0.85,0.1,0.05]'::vector)"
+      "plan": "Limit  (cost=8.57..8.88 rows=3 width=72)\n  ->  Index Scan using documents_embedding_idx on documents  (cost=8.57..62.02 rows=510 width=72)\n        Order By: (embedding <=> '[0.94,0.04,0.03]'::vector)"
     },
     "status": "done"
   },
@@ -563,68 +583,43 @@
     },
     "status": "done"
   },
-  "05933b33ed9500": {
-    "output": {
-      "rows": [
-        {
-          "title": "SQL indexes"
-        },
-        {
-          "title": "JOIN patterns"
-        },
-        {
-          "title": "Query tuning"
-        }
-      ],
-      "plan": "Limit  (cost=32.49..32.49 rows=3 width=40)\n  ->  Sort  (cost=32.49..32.50 rows=6 width=40)\n        Sort Key: ((candidates.embedding <=> '[0.85,0.1,0.05]'::vector))\n        ->  Subquery Scan on candidates  (cost=32.32..32.41 rows=6 width=40)\n              ->  Limit  (cost=32.32..32.33 rows=6 width=72)\n                    ->  Sort  (cost=32.32..33.89 rows=630 width=72)\n                          Sort Key: (((binary_quantize(documents.embedding))::bit(3) <~> '111'::\"bit\"))\n                          ->  Seq Scan on documents  (cost=0.00..21.02 rows=630 width=72)"
-    },
-    "status": "done"
-  },
-  "05d17a17e4a4ee": {
+  "053c40e299b9ae": {
     "output": {
       "rows": [
         {
           "title": "SQL indexes",
-          "half": "[0.89990234,0.099975586,0.099975586]",
-          "bits": "111"
+          "embedding": "{0.95,0.03,0.02}"
         },
         {
           "title": "JOIN patterns",
-          "half": "[0.85009766,0.049987793,0.049987793]",
-          "bits": "111"
+          "embedding": "{0.66,0.17,0.17}"
         },
         {
           "title": "Query tuning",
-          "half": "[0.7998047,0.15002441,0.099975586]",
-          "bits": "111"
+          "embedding": "{0.62,0.15,0.23}"
         },
         {
           "title": "React components",
-          "half": "[0.049987793,0.9501953,0.099975586]",
-          "bits": "111"
+          "embedding": "{0.25,0.26,0.49}"
         },
         {
           "title": "CSS grid layouts",
-          "half": "[0.049987793,0.89990234,0]",
-          "bits": "110"
+          "embedding": "{0.15,0.82,0.03}"
         },
         {
           "title": "Neural networks",
-          "half": "[0.049987793,0.049987793,0.9501953]",
-          "bits": "111"
+          "embedding": "{0.14,0.08,0.78}"
         },
         {
           "title": "Chatbots",
-          "half": "[0.099975586,0.25,0.89990234]",
-          "bits": "111"
+          "embedding": "{0.32,0.26,0.42}"
         },
         {
           "title": "Vector search",
-          "half": "[0.60009766,0.049987793,0.7998047]",
-          "bits": "111"
+          "embedding": "{0.91,0.04,0.04}"
         }
       ],
-      "plan": "Seq Scan on documents  (cost=0.00..25.75 rows=630 width=96)"
+      "plan": "Unavailable: EXPLAIN doesn't support this statement."
     },
     "status": "done"
   },
@@ -645,62 +640,6 @@
         }
       ],
       "plan": "Limit  (cost=35.86..35.87 rows=3 width=64)\n  ->  Sort  (cost=35.86..37.99 rows=850 width=64)\n        Sort Key: (round((similarity(title, 'nueral netwrks'::text))::numeric, 3)) DESC\n        ->  Seq Scan on documents  (cost=0.00..24.88 rows=850 width=64)"
-    },
-    "status": "done"
-  },
-  "06159b42f19197": {
-    "output": {
-      "rows": [
-        {
-          "title": "Neural networks",
-          "l2": "0.158",
-          "cosine": "0.013",
-          "inner_product": "-0.917"
-        },
-        {
-          "title": "Chatbots",
-          "l2": "0.187",
-          "cosine": "0.018",
-          "inner_product": "-0.900"
-        },
-        {
-          "title": "Vector search",
-          "l2": "0.430",
-          "cosine": "0.094",
-          "inner_product": "-0.885"
-        },
-        {
-          "title": "Query tuning",
-          "l2": "1.042",
-          "cosine": "0.663",
-          "inner_product": "-0.270"
-        },
-        {
-          "title": "SQL indexes",
-          "l2": "1.101",
-          "cosine": "0.679",
-          "inner_product": "-0.285"
-        },
-        {
-          "title": "JOIN patterns",
-          "l2": "1.111",
-          "cosine": "0.733",
-          "inner_product": "-0.222"
-        },
-        {
-          "title": "React components",
-          "l2": "1.211",
-          "cosine": "0.786",
-          "inner_product": "-0.200"
-        },
-        {
-          "title": "CSS grid layouts",
-          "l2": "1.251",
-          "cosine": "0.886",
-          "inner_product": "-0.100"
-        }
-      ],
-      "plan": "Sort  (cost=61.34..62.92 rows=630 width=136)\n  Sort Key: ((embedding <=> '[0.2,0.1,0.95]'::vector))\n  ->  Seq Scan on documents  (cost=0.00..32.05 rows=630 width=136)"
     },
     "status": "done"
   },
@@ -840,23 +779,6 @@
     },
     "status": "done"
   },
-  "0794d231cb3435": {
-    "output": {
-      "rows": [
-        {
-          "title": "JOIN patterns"
-        },
-        {
-          "title": "SQL indexes"
-        },
-        {
-          "title": "Query tuning"
-        }
-      ],
-      "plan": "Limit  (cost=181.94..181.95 rows=3 width=40)\n  ->  Sort  (cost=181.94..183.52 rows=630 width=40)\n        Sort Key: (l2_distance(embedding, '{0.85,0.1,0.05}'::double precision[]))\n        ->  Seq Scan on documents  (cost=0.00..173.80 rows=630 width=40)"
-    },
-    "status": "done"
-  },
   "07cba151ff23d8": {
     "output": {
       "rows": [
@@ -866,67 +788,6 @@
         }
       ],
       "plan": "Limit  (cost=1.07..1.08 rows=1 width=21)\n  ->  Sort  (cost=1.07..1.09 rows=5 width=21)\n        Sort Key: starts_at DESC\n        ->  Seq Scan on events  (cost=0.00..1.05 rows=5 width=21)"
-    },
-    "status": "done"
-  },
-  "0805ec97cc13c5": {
-    "output": {
-      "rows": [
-        {
-          "title": "Vector search",
-          "keyword_position": 1,
-          "semantic_position": 1,
-          "score": "0.0328"
-        },
-        {
-          "title": "SQL indexes",
-          "keyword_position": 2,
-          "semantic_position": 5,
-          "score": "0.0315"
-        },
-        {
-          "title": "Chatbots",
-          "keyword_position": null,
-          "semantic_position": 2,
-          "score": "0.0161"
-        },
-        {
-          "title": "Neural networks",
-          "keyword_position": null,
-          "semantic_position": 3,
-          "score": "0.0159"
-        },
-        {
-          "title": "Query tuning",
-          "keyword_position": null,
-          "semantic_position": 4,
-          "score": "0.0156"
-        }
-      ],
-      "plan": "Limit  (cost=63.72..63.73 rows=5 width=80)\n  ->  Sort  (cost=63.72..65.00 rows=510 width=80)\n        Sort Key: (round((COALESCE((1.0 / ((60 + keyword.\"position\"))::numeric), '0'::numeric) + COALESCE((1.0 / ((60 + semantic.\"position\"))::numeric), '0'::numeric)), 4)) DESC\n        ->  Hash Left Join  (cost=26.03..55.25 rows=510 width=80)\n              Hash Cond: (documents.id = semantic.id)\n              Filter: ((keyword.id IS NOT NULL) OR (semantic.id IS NOT NULL))\n              ->  Hash Left Join  (cost=16.66..33.72 rows=510 width=48)\n                    Hash Cond: (documents.id = keyword.id)\n                    ->  Seq Scan on documents  (cost=0.00..15.10 rows=510 width=36)\n                    ->  Hash  (cost=16.60..16.60 rows=5 width=12)\n                          ->  Subquery Scan on keyword  (cost=16.46..16.60 rows=5 width=12)\n                                ->  WindowAgg  (cost=16.46..16.55 rows=5 width=16)\n                                      Window: w1 AS (ORDER BY (ts_rank(documents_1.search, '''find'' | ''mean'''::tsquery)) ROWS UNBOUNDED PRECEDING)\n                                      ->  Sort  (cost=16.45..16.46 rows=5 width=8)\n                                            Sort Key: (ts_rank(documents_1.search, '''find'' | ''mean'''::tsquery)) DESC\n                                            ->  Seq Scan on documents documents_1  (cost=0.00..16.39 rows=5 width=8)\n                                                  Filter: (search @@ '''find'' | ''mean'''::tsquery)\n              ->  Hash  (cost=9.31..9.31 rows=5 width=12)\n                    ->  Subquery Scan on semantic  (cost=8.68..9.31 rows=5 width=12)\n                          ->  Limit  (cost=8.68..9.26 rows=5 width=20)\n                                ->  WindowAgg  (cost=8.68..67.12 rows=510 width=20)\n                                      Window: w1 AS (ORDER BY (documents_2.embedding <=> '[0.6,0.05,0.8]'::vector) ROWS UNBOUNDED PRECEDING)\n                                      ->  Index Scan using documents_embedding_idx on documents documents_2  (cost=8.57..58.20 rows=510 width=12)\n                                            Order By: (embedding <=> '[0.6,0.05,0.8]'::vector)"
-    },
-    "status": "done"
-  },
-  "081c7e1d02bf30": {
-    "output": {
-      "rows": [
-        {
-          "title": "JOIN patterns"
-        },
-        {
-          "title": "Sqlite networks note 4692"
-        },
-        {
-          "title": "Svelte joins note 4337"
-        },
-        {
-          "title": "Sqlite chatbots note 3982"
-        },
-        {
-          "title": "Svelte tuning note 3627"
-        }
-      ],
-      "plan": "Limit  (cost=3.50..4.00 rows=5 width=32)\n  ->  Index Scan using documents_embedding_ivfflat_idx on documents  (cost=3.50..505.66 rows=5008 width=32)\n        Order By: (embedding <=> '[0.85,0.1,0.05]'::vector)"
     },
     "status": "done"
   },
@@ -969,6 +830,44 @@
     },
     "status": "done"
   },
+  "09d2ef69a93632": {
+    "output": {
+      "rows": [
+        {
+          "title": "SQL indexes",
+          "dims": 3,
+          "length": "0.951",
+          "as_array": "{0.95,0.03,0.02}"
+        },
+        {
+          "title": "JOIN patterns",
+          "dims": 3,
+          "length": "0.702",
+          "as_array": "{0.66,0.17,0.17}"
+        },
+        {
+          "title": "Query tuning",
+          "dims": 3,
+          "length": "0.678",
+          "as_array": "{0.62,0.15,0.23}"
+        }
+      ],
+      "plan": "Limit  (cost=0.00..0.13 rows=3 width=100)\n  ->  Seq Scan on documents  (cost=0.00..27.33 rows=630 width=100)"
+    },
+    "status": "done"
+  },
+  "09f33843b1fc1c": {
+    "output": {
+      "rows": [
+        {
+          "title": "SQL indexes",
+          "score": "0.643"
+        }
+      ],
+      "plan": "Sort  (cost=16.47..16.48 rows=5 width=64)\n  Sort Key: (round((similarity(title, 'sql indxes'::text))::numeric, 3)) DESC\n  ->  Seq Scan on documents  (cost=0.00..16.41 rows=5 width=64)\n        Filter: (title % 'sql indxes'::text)"
+    },
+    "status": "done"
+  },
   "0a7aaeb4b37798": {
     "output": {
       "rows": [
@@ -1000,66 +899,89 @@
     },
     "status": "done"
   },
-  "0bfc75bfe60d8b": {
+  "0bf68d4a77353c": {
+    "output": {
+      "rows": [
+        {
+          "title": "Vector search",
+          "keyword_position": 1,
+          "semantic_position": 5,
+          "score": "0.0318"
+        },
+        {
+          "title": "Chatbots",
+          "keyword_position": null,
+          "semantic_position": 1,
+          "score": "0.0164"
+        },
+        {
+          "title": "SQL indexes",
+          "keyword_position": 2,
+          "semantic_position": null,
+          "score": "0.0161"
+        },
+        {
+          "title": "Query tuning",
+          "keyword_position": null,
+          "semantic_position": 2,
+          "score": "0.0161"
+        },
+        {
+          "title": "JOIN patterns",
+          "keyword_position": null,
+          "semantic_position": 3,
+          "score": "0.0159"
+        }
+      ],
+      "plan": "Limit  (cost=63.72..63.73 rows=5 width=80)\n  ->  Sort  (cost=63.72..65.00 rows=510 width=80)\n        Sort Key: (round((COALESCE((1.0 / ((60 + keyword.\"position\"))::numeric), '0'::numeric) + COALESCE((1.0 / ((60 + semantic.\"position\"))::numeric), '0'::numeric)), 4)) DESC\n        ->  Hash Left Join  (cost=26.03..55.25 rows=510 width=80)\n              Hash Cond: (documents.id = semantic.id)\n              Filter: ((keyword.id IS NOT NULL) OR (semantic.id IS NOT NULL))\n              ->  Hash Left Join  (cost=16.66..33.72 rows=510 width=48)\n                    Hash Cond: (documents.id = keyword.id)\n                    ->  Seq Scan on documents  (cost=0.00..15.10 rows=510 width=36)\n                    ->  Hash  (cost=16.60..16.60 rows=5 width=12)\n                          ->  Subquery Scan on keyword  (cost=16.46..16.60 rows=5 width=12)\n                                ->  WindowAgg  (cost=16.46..16.55 rows=5 width=16)\n                                      Window: w1 AS (ORDER BY (ts_rank(documents_1.search, '''find'' | ''mean'''::tsquery)) ROWS UNBOUNDED PRECEDING)\n                                      ->  Sort  (cost=16.45..16.46 rows=5 width=8)\n                                            Sort Key: (ts_rank(documents_1.search, '''find'' | ''mean'''::tsquery)) DESC\n                                            ->  Seq Scan on documents documents_1  (cost=0.00..16.39 rows=5 width=8)\n                                                  Filter: (search @@ '''find'' | ''mean'''::tsquery)\n              ->  Hash  (cost=9.31..9.31 rows=5 width=12)\n                    ->  Subquery Scan on semantic  (cost=8.68..9.31 rows=5 width=12)\n                          ->  Limit  (cost=8.68..9.26 rows=5 width=20)\n                                ->  WindowAgg  (cost=8.68..67.12 rows=510 width=20)\n                                      Window: w1 AS (ORDER BY (documents_2.embedding <=> '[0.41,0.3,0.28]'::vector) ROWS UNBOUNDED PRECEDING)\n                                      ->  Index Scan using documents_embedding_idx on documents documents_2  (cost=8.57..58.20 rows=510 width=12)\n                                            Order By: (embedding <=> '[0.41,0.3,0.28]'::vector)"
+    },
+    "status": "done"
+  },
+  "0c5a6f9ee1aecd": {
     "output": {
       "rows": [
         {
           "title": "SQL indexes",
-          "embedding": "{0.9,0.1,0.1}"
+          "half": "[0.9501953,0.02999878,0.020004272]",
+          "bits": "111"
         },
         {
           "title": "JOIN patterns",
-          "embedding": "{0.85,0.05,0.05}"
+          "half": "[0.66015625,0.17004395,0.17004395]",
+          "bits": "111"
         },
         {
           "title": "Query tuning",
-          "embedding": "{0.8,0.15,0.1}"
+          "half": "[0.6201172,0.15002441,0.22998047]",
+          "bits": "111"
         },
         {
           "title": "React components",
-          "embedding": "{0.05,0.95,0.1}"
+          "half": "[0.25,0.26000977,0.48999023]",
+          "bits": "111"
         },
         {
           "title": "CSS grid layouts",
-          "embedding": "{0.05,0.9,0}"
+          "half": "[0.15002441,0.8198242,0.02999878]",
+          "bits": "111"
         },
         {
           "title": "Neural networks",
-          "embedding": "{0.05,0.05,0.95}"
+          "half": "[0.14001465,0.08001709,0.77978516]",
+          "bits": "111"
         },
         {
           "title": "Chatbots",
-          "embedding": "{0.1,0.25,0.9}"
+          "half": "[0.32006836,0.26000977,0.41992188]",
+          "bits": "111"
         },
         {
           "title": "Vector search",
-          "embedding": "{0.6,0.05,0.8}"
+          "half": "[0.91015625,0.040008545,0.040008545]",
+          "bits": "111"
         }
       ],
-      "plan": "Unavailable: EXPLAIN doesn't support this statement."
-    },
-    "status": "done"
-  },
-  "0c61bc92cd645f": {
-    "output": {
-      "rows": [
-        {
-          "title": "SQL indexes"
-        },
-        {
-          "title": "JOIN patterns"
-        },
-        {
-          "title": "Svelte joins note 4337"
-        },
-        {
-          "title": "Sqlite networks note 4692"
-        },
-        {
-          "title": "Sqlite chatbots note 3982"
-        }
-      ],
-      "plan": "Limit  (cost=212.78..212.79 rows=5 width=32)\n  ->  Sort  (cost=212.78..225.30 rows=5008 width=32)\n        Sort Key: ((embedding <=> '[0.85,0.1,0.05]'::vector))\n        ->  Seq Scan on documents  (cost=0.00..129.60 rows=5008 width=32)"
+      "plan": "Seq Scan on documents  (cost=0.00..25.75 rows=630 width=96)"
     },
     "status": "done"
   },
@@ -1086,10 +1008,43 @@
     },
     "status": "done"
   },
-  "0e506534ccf482": {
+  "0c6dd4fd8058c1": {
     "output": {
-      "rows": [],
-      "plan": "Seq Scan on documents  (cost=0.00..19.45 rows=1 width=32)\n  Filter: ((title ~~* '%speed up%'::text) OR (body ~~* '%speed up%'::text))"
+      "rows": [
+        {
+          "title": "SQL indexes",
+          "distance": "0.017"
+        },
+        {
+          "title": "Vector search",
+          "distance": "0.032"
+        },
+        {
+          "title": "JOIN patterns",
+          "distance": "0.339"
+        },
+        {
+          "title": "Query tuning",
+          "distance": "0.393"
+        },
+        {
+          "title": "Chatbots",
+          "distance": "0.765"
+        },
+        {
+          "title": "React components",
+          "distance": "0.858"
+        },
+        {
+          "title": "Neural networks",
+          "distance": "1.097"
+        },
+        {
+          "title": "CSS grid layouts",
+          "distance": "1.110"
+        }
+      ],
+      "plan": "Sort  (cost=62.92..64.49 rows=630 width=64)\n  Sort Key: (round((sqrt(((power((embedding[1] - '0.94'::double precision), '2'::double precision) + power((embedding[2] - '0.04'::double precision), '2'::double precision)) + power((embedding[3] - '0.03'::double precision), '2'::double precision))))::numeric, 3))\n  ->  Seq Scan on documents  (cost=0.00..33.62 rows=630 width=64)"
     },
     "status": "done"
   },
@@ -1278,17 +1233,23 @@
     },
     "status": "done"
   },
-  "0fd5b82e2a7446": {
+  "0fd0920aa360ba": {
     "output": {
       "rows": [
         {
-          "title": "SQL indexes"
+          "title": "SQL indexes",
+          "distance": "0.017"
         },
         {
-          "title": "Query tuning"
+          "title": "Vector search",
+          "distance": "0.032"
+        },
+        {
+          "title": "JOIN patterns",
+          "distance": "0.339"
         }
       ],
-      "plan": "Seq Scan on documents  (cost=0.00..17.65 rows=2 width=32)\n  Filter: ((title ~~* '%index%'::text) OR (body ~~* '%index%'::text))"
+      "plan": "Limit  (cost=30.74..30.75 rows=3 width=72)\n  ->  Sort  (cost=30.74..32.32 rows=630 width=72)\n        Sort Key: ((embedding <-> '[0.94,0.04,0.03]'::vector))\n        ->  Seq Scan on documents  (cost=0.00..22.60 rows=630 width=72)"
     },
     "status": "done"
   },
@@ -1566,15 +1527,15 @@
     },
     "status": "done"
   },
-  "12cefb17df6c81": {
+  "12ad49d5f72fd4": {
     "output": {
       "rows": [
         {
           "title": "SQL indexes",
-          "score": "0.643"
+          "rank": "0.406"
         }
       ],
-      "plan": "Sort  (cost=16.47..16.48 rows=5 width=64)\n  Sort Key: (round((similarity(title, 'sql indxes'::text))::numeric, 3)) DESC\n  ->  Seq Scan on documents  (cost=0.00..16.41 rows=5 width=64)\n        Filter: (title % 'sql indxes'::text)"
+      "plan": "Sort  (cost=16.39..16.40 rows=1 width=64)\n  Sort Key: (round((ts_rank(documents.search, '''index'' & ''tabl'''::tsquery))::numeric, 3)) DESC\n  ->  Seq Scan on documents  (cost=0.00..16.38 rows=1 width=64)\n        Filter: (search @@ '''index'' & ''tabl'''::tsquery)"
     },
     "status": "done"
   },
@@ -1608,32 +1569,6 @@
         }
       ],
       "plan": "Limit  (cost=0.29..1.70 rows=5 width=22)\n  ->  Index Scan using orders_status_created_at_idx on orders  (cost=0.29..305.54 rows=1080 width=22)\n        Index Cond: (status = 'pending'::text)"
-    },
-    "status": "done"
-  },
-  "132f63574e04df": {
-    "output": {
-      "rows": [
-        {
-          "title": "SQL indexes",
-          "dims": 3,
-          "length": "0.911",
-          "as_array": "{0.9,0.1,0.1}"
-        },
-        {
-          "title": "JOIN patterns",
-          "dims": 3,
-          "length": "0.853",
-          "as_array": "{0.85,0.05,0.05}"
-        },
-        {
-          "title": "Query tuning",
-          "dims": 3,
-          "length": "0.820",
-          "as_array": "{0.8,0.15,0.1}"
-        }
-      ],
-      "plan": "Limit  (cost=0.00..0.13 rows=3 width=100)\n  ->  Seq Scan on documents  (cost=0.00..27.33 rows=630 width=100)"
     },
     "status": "done"
   },
@@ -1719,18 +1654,6 @@
     },
     "status": "done"
   },
-  "13b0dc2e07abe7": {
-    "output": {
-      "rows": [
-        {
-          "title": "SQL indexes",
-          "rank": "0.406"
-        }
-      ],
-      "plan": "Sort  (cost=16.39..16.40 rows=1 width=64)\n  Sort Key: (round((ts_rank(documents.search, '''index'' & ''tabl'''::tsquery))::numeric, 3)) DESC\n  ->  Seq Scan on documents  (cost=0.00..16.38 rows=1 width=64)\n        Filter: (search @@ '''index'' & ''tabl'''::tsquery)"
-    },
-    "status": "done"
-  },
   "13c07ee60a9f6e": {
     "output": {
       "rows": [
@@ -1760,6 +1683,23 @@
     },
     "status": "done"
   },
+  "141e7ddfa5a5b3": {
+    "output": {
+      "rows": [
+        {
+          "title": "SQL indexes"
+        },
+        {
+          "title": "Vector search"
+        },
+        {
+          "title": "JOIN patterns"
+        }
+      ],
+      "plan": "Limit  (cost=181.94..181.95 rows=3 width=40)\n  ->  Sort  (cost=181.94..183.52 rows=630 width=40)\n        Sort Key: (l2_distance(embedding, '{0.94,0.04,0.03}'::double precision[]))\n        ->  Seq Scan on documents  (cost=0.00..173.80 rows=630 width=40)"
+    },
+    "status": "done"
+  },
   "143a87a633d135": {
     "output": {
       "rows": [
@@ -1771,6 +1711,29 @@
         }
       ],
       "plan": "Seq Scan on users  (cost=0.00..218.00 rows=1 width=39)\n  Filter: (email = 'user9000@example.com'::text)"
+    },
+    "status": "done"
+  },
+  "145a16d3daf86a": {
+    "output": {
+      "rows": [
+        {
+          "title": "Vector search"
+        },
+        {
+          "title": "SQL indexes"
+        },
+        {
+          "title": "Python indexes note 4648"
+        },
+        {
+          "title": "Redis networks note 4293"
+        },
+        {
+          "title": "Python joins note 3938"
+        }
+      ],
+      "plan": "Limit  (cost=3.35..3.85 rows=5 width=32)\n  ->  Index Scan using documents_embedding_ivfflat_idx on documents  (cost=3.35..498.16 rows=5008 width=32)\n        Order By: (embedding <=> '[0.94,0.04,0.03]'::vector)"
     },
     "status": "done"
   },
@@ -1805,6 +1768,62 @@
         }
       ],
       "plan": "Unavailable: plan not requested."
+    },
+    "status": "done"
+  },
+  "151eadc4aadfe9": {
+    "output": {
+      "rows": [
+        {
+          "title": "Neural networks",
+          "l2": "0.041",
+          "cosine": "0.001",
+          "inner_product": "-0.615"
+        },
+        {
+          "title": "React components",
+          "l2": "0.318",
+          "cosine": "0.079",
+          "inner_product": "-0.433"
+        },
+        {
+          "title": "Chatbots",
+          "l2": "0.400",
+          "cosine": "0.138",
+          "inner_product": "-0.392"
+        },
+        {
+          "title": "Query tuning",
+          "l2": "0.696",
+          "cosine": "0.453",
+          "inner_product": "-0.287"
+        },
+        {
+          "title": "JOIN patterns",
+          "l2": "0.769",
+          "cosine": "0.540",
+          "inner_product": "-0.250"
+        },
+        {
+          "title": "Vector search",
+          "l2": "1.035",
+          "cosine": "0.745",
+          "inner_product": "-0.180"
+        },
+        {
+          "title": "SQL indexes",
+          "l2": "1.078",
+          "cosine": "0.769",
+          "inner_product": "-0.170"
+        },
+        {
+          "title": "CSS grid layouts",
+          "l2": "1.018",
+          "cosine": "0.801",
+          "inner_product": "-0.128"
+        }
+      ],
+      "plan": "Sort  (cost=61.34..62.92 rows=630 width=136)\n  Sort Key: ((embedding <=> '[0.16,0.1,0.75]'::vector))\n  ->  Seq Scan on documents  (cost=0.00..32.05 rows=630 width=136)"
     },
     "status": "done"
   },
@@ -1874,46 +1893,6 @@
     },
     "status": "done"
   },
-  "15e6daaedfdbc4": {
-    "output": {
-      "rows": [
-        {
-          "title": "JOIN patterns",
-          "distance": "0.050"
-        },
-        {
-          "title": "SQL indexes",
-          "distance": "0.071"
-        },
-        {
-          "title": "Query tuning",
-          "distance": "0.087"
-        },
-        {
-          "title": "Vector search",
-          "distance": "0.792"
-        },
-        {
-          "title": "CSS grid layouts",
-          "distance": "1.132"
-        },
-        {
-          "title": "Chatbots",
-          "distance": "1.143"
-        },
-        {
-          "title": "React components",
-          "distance": "1.168"
-        },
-        {
-          "title": "Neural networks",
-          "distance": "1.205"
-        }
-      ],
-      "plan": "Sort  (cost=62.92..64.49 rows=630 width=64)\n  Sort Key: (round((sqrt(((power((embedding[1] - '0.85'::double precision), '2'::double precision) + power((embedding[2] - '0.1'::double precision), '2'::double precision)) + power((embedding[3] - '0.05'::double precision), '2'::double precision))))::numeric, 3))\n  ->  Seq Scan on documents  (cost=0.00..33.62 rows=630 width=64)"
-    },
-    "status": "done"
-  },
   "162b153394a8da": {
     "output": {
       "rows": [
@@ -1950,51 +1929,20 @@
     },
     "status": "done"
   },
-  "165ebbc84f7e91": {
+  "166868e1753a4a": {
     "output": {
       "rows": [
         {
-          "title": "Neural networks",
-          "distance": "0.158",
-          "similarity": "0.987"
+          "title": "SQL indexes"
         },
         {
-          "title": "Chatbots",
-          "distance": "0.187",
-          "similarity": "0.982"
+          "title": "JOIN patterns"
         },
         {
-          "title": "Vector search",
-          "distance": "0.430",
-          "similarity": "0.906"
-        },
-        {
-          "title": "Query tuning",
-          "distance": "1.042",
-          "similarity": "0.337"
-        },
-        {
-          "title": "SQL indexes",
-          "distance": "1.101",
-          "similarity": "0.321"
-        },
-        {
-          "title": "JOIN patterns",
-          "distance": "1.111",
-          "similarity": "0.267"
-        },
-        {
-          "title": "React components",
-          "distance": "1.211",
-          "similarity": "0.214"
-        },
-        {
-          "title": "CSS grid layouts",
-          "distance": "1.251",
-          "similarity": "0.114"
+          "title": "Query tuning"
         }
       ],
-      "plan": "Sort  (cost=366.89..368.47 rows=630 width=96)\n  Sort Key: (round((cosine_similarity(embedding, '{0.2,0.1,0.95}'::double precision[]))::numeric, 3)) DESC\n  ->  Seq Scan on documents  (cost=0.00..337.60 rows=630 width=96)"
+      "plan": "Limit  (cost=558.67..558.68 rows=3 width=40)\n  ->  Sort  (cost=558.67..563.39 rows=1887 width=40)\n        Sort Key: (cosine_similarity(other.embedding, source.embedding)) DESC\n        ->  Nested Loop  (cost=0.00..534.28 rows=1887 width=40)\n              Join Filter: (other.id <> source.id)\n              ->  Seq Scan on documents other  (cost=0.00..16.30 rows=630 width=68)\n              ->  Materialize  (cost=0.00..17.89 rows=3 width=36)\n                    ->  Seq Scan on documents source  (cost=0.00..17.88 rows=3 width=36)\n                          Filter: (title = 'Vector search'::text)"
     },
     "status": "done"
   },
@@ -2192,23 +2140,6 @@
     },
     "status": "done"
   },
-  "16f2507f595192": {
-    "output": {
-      "rows": [
-        {
-          "title": "Chatbots"
-        },
-        {
-          "title": "Neural networks"
-        },
-        {
-          "title": "Query tuning"
-        }
-      ],
-      "plan": "Limit  (cost=91.64..91.65 rows=3 width=40)\n  ->  Sort  (cost=91.64..96.36 rows=1887 width=40)\n        Sort Key: ((other.embedding <=> source.embedding))\n        ->  Nested Loop  (cost=0.00..67.25 rows=1887 width=40)\n              Join Filter: (other.id <> source.id)\n              ->  Seq Scan on documents other  (cost=0.00..16.30 rows=630 width=68)\n              ->  Materialize  (cost=0.00..17.89 rows=3 width=36)\n                    ->  Seq Scan on documents source  (cost=0.00..17.88 rows=3 width=36)\n                          Filter: (title = 'Vector search'::text)"
-    },
-    "status": "done"
-  },
   "1717424c30eb89": {
     "output": {
       "rows": [
@@ -2280,20 +2211,6 @@
     },
     "status": "done"
   },
-  "186ba5704cede6": {
-    "output": {
-      "rows": [
-        {
-          "title": "Neural networks"
-        },
-        {
-          "title": "Chatbots"
-        }
-      ],
-      "plan": "Sort  (cost=235.97..236.50 rows=210 width=40)\n  Sort Key: (l2_distance(embedding, '{0.2,0.1,0.95}'::double precision[]))\n  ->  Seq Scan on documents  (cost=0.00..227.88 rows=210 width=40)\n        Filter: (l2_distance(embedding, '{0.2,0.1,0.95}'::double precision[]) < '0.3'::double precision)"
-    },
-    "status": "done"
-  },
   "1870f328968c04": {
     "output": {
       "rows": [
@@ -2305,26 +2222,6 @@
         }
       ],
       "plan": "Seq Scan on articles  (cost=0.00..20.62 rows=1 width=32)\n  Filter: (title ~~* '%postgres%'::text)"
-    },
-    "status": "done"
-  },
-  "188c2084caa087": {
-    "output": {
-      "rows": [
-        {
-          "title": "SQL indexes",
-          "distance": "0.001"
-        },
-        {
-          "title": "JOIN patterns",
-          "distance": "0.002"
-        },
-        {
-          "title": "Query tuning",
-          "distance": "0.004"
-        }
-      ],
-      "plan": "Limit  (cost=8.57..8.88 rows=3 width=72)\n  ->  Index Scan using documents_embedding_idx on documents  (cost=8.57..62.02 rows=510 width=72)\n        Order By: (embedding <=> '[0.85,0.1,0.05]'::vector)"
     },
     "status": "done"
   },
@@ -2357,6 +2254,13 @@
         }
       ],
       "plan": "Sort  (cost=32.83..32.84 rows=3 width=128)\n  Sort Key: i.relname\n  ->  Nested Loop  (cost=21.62..32.81 rows=3 width=128)\n        ->  Hash Join  (cost=21.35..27.66 rows=7 width=68)\n              Hash Cond: (x.indrelid = c.oid)\n              ->  Seq Scan on pg_index x  (cost=0.00..5.63 rows=163 width=8)\n              ->  Hash  (cost=21.14..21.14 rows=17 width=68)\n                    ->  Hash Join  (cost=1.06..21.14 rows=17 width=68)\n                          Hash Cond: (c.relnamespace = n.oid)\n                          ->  Seq Scan on pg_class c  (cost=0.00..19.71 rows=68 width=72)\n                                Filter: (relkind = ANY ('{r,m,p}'::\"char\"[]))\n                          ->  Hash  (cost=1.05..1.05 rows=1 width=4)\n                                ->  Seq Scan on pg_namespace n  (cost=0.00..1.05 rows=1 width=4)\n                                      Filter: (nspname = 'public'::name)\n        ->  Index Scan using pg_class_oid_index on pg_class i  (cost=0.27..0.73 rows=1 width=72)\n              Index Cond: (oid = x.indexrelid)\n              Filter: (relkind = ANY ('{i,I}'::\"char\"[]))"
+    },
+    "status": "done"
+  },
+  "1900fc58670f97": {
+    "output": {
+      "rows": [],
+      "plan": "Seq Scan on documents  (cost=0.00..19.45 rows=1 width=32)\n  Filter: ((title ~~* '%speed up%'::text) OR (body ~~* '%speed up%'::text))"
     },
     "status": "done"
   },
@@ -2423,6 +2327,37 @@
     },
     "status": "done"
   },
+  "1987bc9de24000": {
+    "output": {
+      "rows": [
+        {
+          "title": "SQL indexes"
+        },
+        {
+          "title": "JOIN patterns"
+        },
+        {
+          "title": "Query tuning"
+        }
+      ],
+      "plan": "Limit  (cost=91.64..91.65 rows=3 width=40)\n  ->  Sort  (cost=91.64..96.36 rows=1887 width=40)\n        Sort Key: ((other.embedding <=> source.embedding))\n        ->  Nested Loop  (cost=0.00..67.25 rows=1887 width=40)\n              Join Filter: (other.id <> source.id)\n              ->  Seq Scan on documents other  (cost=0.00..16.30 rows=630 width=68)\n              ->  Materialize  (cost=0.00..17.89 rows=3 width=36)\n                    ->  Seq Scan on documents source  (cost=0.00..17.88 rows=3 width=36)\n                          Filter: (title = 'Vector search'::text)"
+    },
+    "status": "done"
+  },
+  "198daf130b695c": {
+    "output": {
+      "rows": [
+        {
+          "title": "SQL indexes"
+        },
+        {
+          "title": "Query tuning"
+        }
+      ],
+      "plan": "Seq Scan on documents  (cost=0.00..17.65 rows=2 width=32)\n  Filter: ((title ~~* '%index%'::text) OR (body ~~* '%index%'::text))"
+    },
+    "status": "done"
+  },
   "1a6b4bd3ca8c37": {
     "output": {
       "rows": [
@@ -2471,6 +2406,23 @@
         }
       ],
       "plan": "Index Scan using documents_title_trgm_gist_idx on documents  (cost=0.15..8.17 rows=1 width=24)\n  Index Cond: (title ~~* '%note 4711%'::text)"
+    },
+    "status": "done"
+  },
+  "1b59cd7e69988a": {
+    "output": {
+      "rows": [
+        {
+          "title": "SQL indexes"
+        },
+        {
+          "title": "JOIN patterns"
+        },
+        {
+          "title": "Query tuning"
+        }
+      ],
+      "plan": "Limit  (cost=32.49..32.49 rows=3 width=40)\n  ->  Sort  (cost=32.49..32.50 rows=6 width=40)\n        Sort Key: ((candidates.embedding <=> '[0.94,0.04,0.03]'::vector))\n        ->  Subquery Scan on candidates  (cost=32.32..32.41 rows=6 width=40)\n              ->  Limit  (cost=32.32..32.33 rows=6 width=72)\n                    ->  Sort  (cost=32.32..33.89 rows=630 width=72)\n                          Sort Key: (((binary_quantize(documents.embedding))::bit(3) <~> '111'::\"bit\"))\n                          ->  Seq Scan on documents  (cost=0.00..21.02 rows=630 width=72)"
     },
     "status": "done"
   },
@@ -2627,6 +2579,54 @@
     },
     "status": "done"
   },
+  "1e03bf2dbe85a0": {
+    "output": {
+      "rows": [
+        {
+          "title": "Neural networks",
+          "distance": "0.041",
+          "similarity": "0.999"
+        },
+        {
+          "title": "React components",
+          "distance": "0.318",
+          "similarity": "0.921"
+        },
+        {
+          "title": "Chatbots",
+          "distance": "0.400",
+          "similarity": "0.862"
+        },
+        {
+          "title": "Query tuning",
+          "distance": "0.696",
+          "similarity": "0.547"
+        },
+        {
+          "title": "JOIN patterns",
+          "distance": "0.769",
+          "similarity": "0.460"
+        },
+        {
+          "title": "Vector search",
+          "distance": "1.035",
+          "similarity": "0.255"
+        },
+        {
+          "title": "SQL indexes",
+          "distance": "1.078",
+          "similarity": "0.231"
+        },
+        {
+          "title": "CSS grid layouts",
+          "distance": "1.018",
+          "similarity": "0.199"
+        }
+      ],
+      "plan": "Sort  (cost=366.89..368.47 rows=630 width=96)\n  Sort Key: (round((cosine_similarity(embedding, '{0.16,0.1,0.75}'::double precision[]))::numeric, 3)) DESC\n  ->  Seq Scan on documents  (cost=0.00..337.60 rows=630 width=96)"
+    },
+    "status": "done"
+  },
   "1e7cba80e6617e": {
     "output": {
       "rows": [
@@ -2672,6 +2672,29 @@
     },
     "status": "done"
   },
+  "1eeff9e922b6c3": {
+    "output": {
+      "rows": [
+        {
+          "title": "Vector search"
+        },
+        {
+          "title": "SQL indexes"
+        },
+        {
+          "title": "Python indexes note 4648"
+        },
+        {
+          "title": "Redis networks note 4293"
+        },
+        {
+          "title": "Python joins note 3938"
+        }
+      ],
+      "plan": "Limit  (cost=212.78..212.79 rows=5 width=32)\n  ->  Sort  (cost=212.78..225.30 rows=5008 width=32)\n        Sort Key: ((embedding <=> '[0.94,0.04,0.03]'::vector))\n        ->  Seq Scan on documents  (cost=0.00..129.60 rows=5008 width=32)"
+    },
+    "status": "done"
+  },
   "1f5236860f9f47": {
     "output": {
       "rows": [
@@ -2685,6 +2708,17 @@
         }
       ],
       "plan": "Unavailable for a multi-statement SQL example."
+    },
+    "status": "done"
+  },
+  "1f7a4b1bc703e5": {
+    "output": {
+      "rows": [
+        {
+          "title": "Neural networks"
+        }
+      ],
+      "plan": "Sort  (cost=235.97..236.50 rows=210 width=40)\n  Sort Key: (l2_distance(embedding, '{0.16,0.1,0.75}'::double precision[]))\n  ->  Seq Scan on documents  (cost=0.00..227.88 rows=210 width=40)\n        Filter: (l2_distance(embedding, '{0.16,0.1,0.75}'::double precision[]) < '0.3'::double precision)"
     },
     "status": "done"
   },
@@ -2711,47 +2745,10 @@
     },
     "status": "done"
   },
-  "1fafbca5f402cd": {
-    "output": {
-      "rows": [
-        {
-          "title": "Chatbots"
-        },
-        {
-          "title": "Neural networks"
-        },
-        {
-          "title": "Query tuning"
-        }
-      ],
-      "plan": "Limit  (cost=558.67..558.68 rows=3 width=40)\n  ->  Sort  (cost=558.67..563.39 rows=1887 width=40)\n        Sort Key: (cosine_similarity(other.embedding, source.embedding)) DESC\n        ->  Nested Loop  (cost=0.00..534.28 rows=1887 width=40)\n              Join Filter: (other.id <> source.id)\n              ->  Seq Scan on documents other  (cost=0.00..16.30 rows=630 width=68)\n              ->  Materialize  (cost=0.00..17.89 rows=3 width=36)\n                    ->  Seq Scan on documents source  (cost=0.00..17.88 rows=3 width=36)\n                          Filter: (title = 'Vector search'::text)"
-    },
-    "status": "done"
-  },
   "1feb0e2b02304a": {
     "output": {
       "rows": [],
       "plan": "Update on users  (cost=0.00..218.00 rows=0 width=0)\n  ->  Seq Scan on users  (cost=0.00..218.00 rows=1 width=38)\n        Filter: (email = 'user9000@example.com'::text)"
-    },
-    "status": "done"
-  },
-  "1ffce66110d239": {
-    "output": {
-      "rows": [
-        {
-          "title": "JOIN patterns",
-          "distance": "0.050"
-        },
-        {
-          "title": "SQL indexes",
-          "distance": "0.071"
-        },
-        {
-          "title": "Query tuning",
-          "distance": "0.087"
-        }
-      ],
-      "plan": "Limit  (cost=30.74..30.75 rows=3 width=72)\n  ->  Sort  (cost=30.74..32.32 rows=630 width=72)\n        Sort Key: ((embedding <-> '[0.85,0.1,0.05]'::vector))\n        ->  Seq Scan on documents  (cost=0.00..22.60 rows=630 width=72)"
     },
     "status": "done"
   }

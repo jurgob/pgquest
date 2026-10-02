@@ -174,7 +174,7 @@ const vectorApproaches: readonly ApproachSummary[] = [
     example: {
       search: "speed up my database",
       result: (
-        <>JOIN patterns, SQL indexes, Query tuning: no shared words, same meaning.</>
+        <>SQL indexes, Vector search, JOIN patterns: found by meaning, not by words.</>
       ),
     },
     warning: (
@@ -257,14 +257,13 @@ const vectorApproaches: readonly ApproachSummary[] = [
     summary: "Store each number in 16 bits, or even 1 bit, instead of 32.",
     example: {
       search: "speed up my database",
-      result: <>the same three in the same order with halfvec, in half the space.</>,
+      result: <>the same three with halfvec, in half the space.</>,
     },
     warning: (
       <>
         With binary quantization, this lesson&apos;s 3-number vectors all become the bits
-        111, except CSS grid layouts (110): 7 of 8 documents look identical. Real
-        1,536-number vectors fare much better, but re-rank the top results with the full
-        vectors.
+        111: all 8 documents look identical. Real 1,536-number vectors fare much better,
+        but re-rank the top results with the full vectors.
       </>
     ),
     pros: [
@@ -312,8 +311,8 @@ const hybridApproach: ApproachSummary = {
     search: "find meaning",
     result: (
       <>
-        Vector search first: top of both lists. SQL indexes second: it matches the word
-        &quot;find&quot;, though it is only 5th by meaning.
+        Vector search first: top keyword match, and 5th by meaning. Chatbots second: first
+        by meaning, though it shares no word.
       </>
     ),
   },
